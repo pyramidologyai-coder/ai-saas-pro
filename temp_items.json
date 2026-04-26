@@ -1,0 +1,26 @@
+﻿[
+    {
+        "name":  "كشف أسنان عام",
+        "duration_minutes":  30,
+        "description":  "فحص شامل للأسنان واللثة",
+        "price":  500,
+        "tenant_id":  "13814bff-a653-439a-8891-2c5a81124eb8",
+        "category":  "Dentistry"
+    },
+    {
+        "name":  "تبييض أسنان ليزر",
+        "duration_minutes":  60,
+        "description":  "تبييض احترافي بجلسة واحدة",
+        "price":  2500,
+        "tenant_id":  "13814bff-a653-439a-8891-2c5a81124eb8",
+        "category":  "Cosmetic"
+    },
+    {
+        "name":  "حشو عصب",
+        "duration_minutes":  45,
+        "description":  "علاج جذور متقدم",
+        "price":  1500,
+        "tenant_id":  "13814bff-a653-439a-8891-2c5a81124eb8",
+        "category":  "Treatment"
+    }
+]

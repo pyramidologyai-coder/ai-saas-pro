@@ -1,0 +1,248 @@
+'use client';
+import React, { useState } from 'react';
+import { Megaphone, Plus, Sparkles, Send, Users, Activity } from 'lucide-react';
+import Link from 'next/link';
+
+export default function MarketingPage() {
+  const [showModal, setShowModal] = useState(false);
+  const [campaignMode, setCampaignMode] = useState<'ai' | 'manual'>('ai');
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  // Mock Data
+  const campaigns = [
+    {
+      id: 1,
+      name: 'عرض تبييض الأسنان الصيفي',
+      type: 'Retargeting',
+      date: '2026-04-20 10:00:00',
+      status: 'Sent',
+      recipients: 150
+    },
+    {
+      id: 2,
+      name: 'تهنئة عيد الفطر',
+      type: 'General',
+      date: '2026-03-30 09:00:00',
+      status: 'Sent',
+      recipients: 840
+    }
+  ];
+
+  const handleGenerate = () => {
+    setIsGenerating(true);
+    setTimeout(() => {
+      setIsGenerating(false);
+      alert('تم إنشاء نص الحملة التسويقية بنجاح باستخدام الذكاء الاصطناعي!');
+      setShowModal(false);
+    }, 1500);
+  };
+
+  return (
+    <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <Megaphone size={28} color="var(--accent-primary)" />
+            التسويق وحملات الواتساب
+          </h1>
+          <p style={{ color: 'var(--text-dim)' }}>أعد استهداف عملائك وزود أرباحك بضغطة زرار (Retarget your Patients)</p>
+        </div>
+        <button 
+          onClick={() => setShowModal(true)}
+          style={{ 
+            background: 'var(--accent-primary)', color: 'white', border: 'none', 
+            padding: '0.8rem 1.5rem', borderRadius: '12px', fontWeight: 600, 
+            display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+          }}
+        >
+          <Plus size={20} /> إطلاق حملة جديدة
+        </button>
+      </div>
+
+      {/* Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>إجمالي الحملات</h3>
+            <Activity size={20} color="#10b981" />
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>2</div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>الرسائل المرسلة</h3>
+            <Send size={20} color="var(--accent-primary)" />
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>990</div>
+        </div>
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>العملاء المستهدفين</h3>
+            <Users size={20} color="#a855f7" />
+          </div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>1,200</div>
+        </div>
+      </div>
+
+      {/* Campaigns Table */}
+      <div style={{ ...cardStyle, padding: '0', overflow: 'hidden' }}>
+        <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
+          <h2 style={{ fontSize: '1.2rem', fontWeight: 700 }}>سجل الحملات (Campaigns History)</h2>
+        </div>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '800px' }}>
+            <thead>
+              <tr style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                <th style={thStyle}>اسم الحملة</th>
+                <th style={thStyle}>النوع</th>
+                <th style={thStyle}>تاريخ الإرسال</th>
+                <th style={thStyle}>الحالة</th>
+                <th style={thStyle}>عدد المستلمين</th>
+                <th style={thStyle}>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {campaigns.map(camp => (
+                <tr key={camp.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                  <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-bright)' }}>{camp.name}</td>
+                  <td style={{ ...tdStyle, color: '#f59e0b' }}>{camp.type}</td>
+                  <td style={tdStyle}>{camp.date}</td>
+                  <td style={tdStyle}>
+                    <span style={{ background: '#10b98115', color: '#10b981', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                      {camp.status}
+                    </span>
+                  </td>
+                  <td style={tdStyle}>{camp.recipients}</td>
+                  <td style={tdStyle}>
+                    <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer' }}>التفاصيل</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Create Campaign Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
+          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }}>
+          <div style={{
+            background: 'var(--bg-color)', border: '1px solid var(--glass-border)',
+            borderRadius: '24px', width: '90%', maxWidth: '600px', padding: '2rem',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 700 }}>إطلاق حملة تسويقية جديدة</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', fontSize: '1.5rem', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+              <button 
+                onClick={() => setCampaignMode('ai')}
+                style={{ ...modeBtnStyle, border: campaignMode === 'ai' ? '2px solid var(--accent-primary)' : '1px solid var(--glass-border)', background: campaignMode === 'ai' ? 'var(--accent-primary)15' : 'transparent' }}
+              >
+                <Sparkles size={18} color={campaignMode === 'ai' ? 'var(--accent-primary)' : 'var(--text-dim)'} />
+                <span style={{ color: campaignMode === 'ai' ? 'var(--accent-primary)' : 'var(--text-main)' }}>توليد نص بالـ AI</span>
+              </button>
+              <button 
+                onClick={() => setCampaignMode('manual')}
+                style={{ ...modeBtnStyle, border: campaignMode === 'manual' ? '2px solid var(--accent-primary)' : '1px solid var(--glass-border)', background: campaignMode === 'manual' ? 'var(--accent-primary)15' : 'transparent' }}
+              >
+                <span style={{ color: campaignMode === 'manual' ? 'var(--accent-primary)' : 'var(--text-main)' }}>كتابة يدوية</span>
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>الجمهور المستهدف</label>
+              <select style={inputStyle}>
+                <option>كل المرضى المسجلين (All Patients)</option>
+                <option>المرضى الذين لم يزوروا العيادة منذ 3 أشهر</option>
+                <option>عملاء لم يكملوا الحجز</option>
+              </select>
+            </div>
+
+            {campaignMode === 'ai' && (
+              <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b30', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                <p style={{ color: '#f59e0b', fontSize: '0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <Sparkles size={16} /> هنكتبلك الحملة بالذكاء الاصطناعي بناءً على اختيارك!
+                </p>
+                <input type="text" placeholder="مثال: اكتبلي رسالة ترويجية عن خصم 30% على تنظيف الأسنان بمناسبة الصيف" style={{ ...inputStyle, marginTop: '1rem' }} />
+              </div>
+            )}
+
+            {campaignMode === 'manual' && (
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>نص الرسالة</label>
+                <textarea rows={4} placeholder="اكتب نص رسالة الواتساب هنا..." style={inputStyle}></textarea>
+              </div>
+            )}
+
+            <button 
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              style={{
+                width: '100%', background: 'var(--accent-primary)', color: 'white', border: 'none',
+                padding: '1rem', borderRadius: '12px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
+              }}
+            >
+              {isGenerating ? 'جاري التحضير...' : (campaignMode === 'ai' ? 'توليد الرسالة بالـ AI' : 'إرسال الحملة')} <Send size={18} />
+            </button>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+const cardStyle: React.CSSProperties = {
+  background: 'var(--card-bg)',
+  borderRadius: '24px',
+  padding: '1.5rem',
+  border: '1px solid var(--glass-border)',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.05)'
+};
+
+const thStyle: React.CSSProperties = {
+  textAlign: 'right',
+  padding: '1.2rem',
+  fontWeight: 600,
+  borderBottom: '1px solid var(--glass-border)'
+};
+
+const tdStyle: React.CSSProperties = {
+  padding: '1.2rem',
+  color: 'var(--text-dim)'
+};
+
+const modeBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '1rem',
+  borderRadius: '12px',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '0.5rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+  transition: 'all 0.2s'
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '1rem',
+  borderRadius: '12px',
+  border: '1px solid var(--glass-border)',
+  background: 'rgba(0,0,0,0.1)',
+  color: 'var(--text-main)',
+  fontSize: '1rem',
+  outline: 'none',
+};

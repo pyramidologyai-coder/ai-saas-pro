@@ -1,0 +1,145 @@
+.container {
+  padding: 2rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  color: var(--text-primary, #111827);
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: var(--text-secondary, #6b7280);
+}
+
+.addCard {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--glass-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.addCard h3 {
+  margin-bottom: 1rem;
+  color: var(--text-primary, #111827);
+}
+
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text-primary, #374151);
+}
+
+.input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border-color, #d1d5db);
+  border-radius: 8px;
+  background: var(--bg-input, #f9fafb);
+  color: var(--text-primary, #111827);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent-primary, #4f46e5);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.saveBtn {
+  background: var(--accent-primary, #4f46e5);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.saveBtn:hover {
+  background: var(--accent-hover, #4338ca);
+}
+
+.saveBtn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.teamList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.memberCard {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--glass-border, #e5e7eb);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.memberName {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #111827);
+  margin-bottom: 0.25rem;
+}
+
+.memberRole {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #6b7280);
+  margin-bottom: 1rem;
+}
+
+.memberInfo {
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.connectBtn {
+  display: inline-block;
+  background-color: #4285F4;
+  color: white;
+  text-decoration: none;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  width: 100%;
+}
+
+.connectBtn:hover {
+  background-color: #3367D6;
+}
+
+.connectedStatus {
+  display: inline-block;
+  background-color: #DEF7EC;
+  color: #03543F;
+  text-align: center;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-weight: 500;
+  width: 100%;
+}
