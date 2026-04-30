@@ -96,9 +96,9 @@ export async function POST(req: Request) {
         }
 
         if (!tenant) {
-
-
-        if (tenant.status === 'suspended') {
+          console.warn(`[Webhook] Unrecognized business phone number ID: ${businessPhoneNumberId}`);
+          return NextResponse.json({ status: 'ok' });
+        }        if (tenant.status === 'suspended') {
           console.log(`[Webhook] Tenant ${tenant.name} is suspended. Skipping.`);
           return NextResponse.json({ status: 'ok' });
         }
