@@ -146,7 +146,7 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
                       <Tooltip 
                         cursor={{fill: 'rgba(255,255,255,0.02)'}}
                         contentStyle={{ background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} 
-                        formatter={(value: number) => [`$${Math.abs(value)}`, 'القيمة']}
+                        formatter={(value: any) => [`$${Math.abs(value || 0)}`, 'القيمة']}
                       />
                       <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" />
                       <Bar dataKey="value" radius={[6, 6, 6, 6]} barSize={50}>
