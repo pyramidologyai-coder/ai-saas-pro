@@ -62,13 +62,13 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
           <div className="flex bg-[rgba(255,255,255,0.05)] p-1 rounded-xl border border-[var(--glass-border)]">
             <button 
               onClick={() => setViewMode('executive')}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'executive' ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-white'}`}
+              className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'executive' ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-[var(--text-main)] shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'}`}
             >
               <Eye size={18}/> الإدارة العليا (Executive)
             </button>
             <button 
               onClick={() => setViewMode('accounting')}
-              className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'accounting' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-white'}`}
+              className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${viewMode === 'accounting' ? 'bg-[var(--accent-primary)] text-[var(--text-main)] shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'}`}
             >
               <Calculator size={18}/> المحاسبة (Accounting)
             </button>
@@ -87,11 +87,11 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
                    <TrendingUp size={200}/>
                  </div>
                  <p className="text-emerald-400/80 text-sm font-bold uppercase tracking-wider mb-2">صافي الأرباح النهائية (Final Net Profit)</p>
-                 <h3 className="text-6xl font-black text-white flex items-end gap-2 drop-shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                 <h3 className="text-6xl font-black text-[var(--text-main)] flex items-end gap-2 drop-shadow-[0_0_20px_rgba(16,185,129,0.3)]">
                    <span className="text-emerald-500">$</span>{metrics?.netProfit?.toLocaleString() || '0.00'}
                  </h3>
                  <div className="mt-6 flex items-center gap-4">
-                   <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1"><CheckCircle size={12}/> Audited</span>
+                   <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1"><CheckCircle size={12}/> Audited</span>
                    <span className="text-xs text-[var(--text-dim)]">جاهزة للسحب المباشر (Payout Ready)</span>
                  </div>
               </div>
@@ -102,7 +102,7 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
                    <Activity size={32}/>
                  </div>
                  <p className="text-[var(--text-dim)] text-xs font-bold uppercase tracking-wider mb-2">معدل الربحية</p>
-                 <h3 className="text-4xl font-black text-white">{metrics?.netMargin || '0%'}</h3>
+                 <h3 className="text-4xl font-black text-[var(--text-main)]">{metrics?.netMargin || '0%'}</h3>
               </div>
 
               {/* API Burn Rate */}
@@ -111,7 +111,7 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
                    <Zap size={32}/>
                  </div>
                  <p className="text-[var(--text-dim)] text-xs font-bold uppercase tracking-wider mb-2">إجمالي التكاليف التشغيلية</p>
-                 <h3 className="text-4xl font-black text-white">${metrics?.apiCosts?.toFixed(2) || '0.00'}</h3>
+                 <h3 className="text-4xl font-black text-[var(--text-main)]">${metrics?.apiCosts?.toFixed(2) || '0.00'}</h3>
               </div>
             </div>
           </div>
@@ -133,19 +133,19 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
             {/* Waterfall Chart Section */}
             <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] p-8 rounded-[2rem]">
                <div className="mb-8">
-                 <h3 className="text-xl font-bold text-white mb-2">تحليل الإيرادات (Waterfall Financial Breakdown)</h3>
+                 <h3 className="text-xl font-bold text-[var(--text-main)] mb-2">تحليل الإيرادات (Waterfall Financial Breakdown)</h3>
                  <p className="text-sm text-[var(--text-dim)]">يوضح كيف نصل من إجمالي المبيعات إلى صافي الربح الفعلي بعد خصم كافة الرسوم والعمولات.</p>
                </div>
                
-               <div className="h-[450px] w-full">
+               <div className="h-[450px] w-full" dir="ltr">
                  <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={metrics?.waterfall || []} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                      <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
-                      <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" vertical={false} />
+                      <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} dy={10} />
+                      <YAxis stroke="var(--text-dim)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                       <Tooltip 
                         cursor={{fill: 'rgba(255,255,255,0.02)'}}
-                        contentStyle={{ background: 'rgba(10,10,10,0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }} 
+                        contentStyle={{ background: 'var(--bg-color)', border: '1px solid var(--glass-border)', borderRadius: '12px' }} 
                         formatter={(value: any) => [`$${Math.abs(value || 0)}`, 'القيمة']}
                       />
                       <ReferenceLine y={0} stroke="rgba(255,255,255,0.2)" />
