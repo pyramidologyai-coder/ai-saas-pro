@@ -51,12 +51,25 @@ export async function GET(req: Request) {
       };
     } else if (agencyId) {
        // Agency Profit View (Aggregate)
-       // Mock aggregation for demonstration
+       // Mock aggregation for demonstration of Reconciler and Waterfall
        metrics = {
-          netProfit: 1250.00,
+          grossRevenue: 1500.00,
+          taxes: 50.00,
+          deliveryFees: 120.00,
           apiCosts: 45.00,
-          netMargin: '96.4%',
-          activeClinics: 12
+          platformFees: 35.00,
+          netProfit: 1250.00,
+          netMargin: '83.3%',
+          activeClinics: 12,
+          reconciliationStatus: 'Audited & Balanced',
+          waterfall: [
+            { name: 'إجمالي المبيعات', value: 1500, type: 'positive' },
+            { name: 'الضرائب', value: -50, type: 'negative' },
+            { name: 'رسوم التوصيل', value: -120, type: 'negative' },
+            { name: 'تكلفة الـ APIs', value: -45, type: 'negative' },
+            { name: 'عمولة المنصة', value: -35, type: 'negative' },
+            { name: 'صافي الربح', value: 1250, type: 'total' }
+          ]
        };
     }
 
