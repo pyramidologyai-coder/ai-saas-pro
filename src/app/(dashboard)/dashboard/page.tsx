@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
+import CognitiveDashboard from './cognitive-view';
 
 export default function Home() {
   const [dict, setDict] = useState(() => getDictionary('clinic'));
@@ -101,6 +102,8 @@ export default function Home() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {tenantId && <CognitiveDashboard tenantId={tenantId} industryType={currentType as any} />}
       
       {/* Demo Switcher (Can be removed in production) */}
       <div style={{ 
