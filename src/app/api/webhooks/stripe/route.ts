@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Now it is safe to extract tenantId from the verified event object
-    const rawTenantId = event.data.object.client_reference_id || (event.data.object as any).metadata?.tenantId;
+    const rawTenantId = (event.data.object as any).client_reference_id || (event.data.object as any).metadata?.tenantId;
 
     if (!rawTenantId) {
       return NextResponse.json({ received: true, note: 'No client_reference_id found' });
