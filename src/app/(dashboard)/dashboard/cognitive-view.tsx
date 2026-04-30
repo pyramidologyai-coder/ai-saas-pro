@@ -27,6 +27,21 @@ const revenueData = [
 export default function CognitiveDashboard({ tenantId, isAgency = false, industryType = 'clinic' }: { tenantId?: string, isAgency?: boolean, industryType?: 'clinic' | 'restaurant' | 'ecommerce' | 'realestate' }) {
   const [viewMode, setViewMode] = useState<'executive' | 'accounting'>('executive');
 
+  // SWR: Stale-While-Revalidate for Optimistic UI and Caching
+  const endpoint = isAgency 
+    ? `/api/bi/metrics?agencyId=${tenantId}` 
+    : `/api/bi/metrics?tenantId=${tenantId}&industry=${industryType}`;
+    
+  const { data, error, isLoading } = useSWR(tenantId ? endpoint : null, fetcher, {
+    refreshInterval: 30000, // Background updates every 30s
+    revalidateOnFocus: true,
+  });
+
+  if (isLoading) return <div className="p-8 text-center animate-pulse text-[var(--text-dim)]">جاري تحميل بيانات العقل التحليلي...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">حدث خطأ في جلب البيانات المحاسبية المشفرة.</div>;
+
+  const metrics = data?.data;
+
   if (isAgency) {
     return (
       <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
