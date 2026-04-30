@@ -90,6 +90,16 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  overflow-y: auto;
+  padding-left: 5px; /* RTL padding for scrollbar */
+}
+
+.nav::-webkit-scrollbar {
+  width: 4px;
+}
+.nav::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 .navItem {
@@ -131,8 +141,8 @@
 }
 
 .footer {
-  margin-top: 2rem;
-  padding-top: 2rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
   border-top: 1px solid var(--glass-border);
 }
 
@@ -181,3 +191,109 @@
 .logoutBtn:hover {
   background: rgba(239, 68, 68, 0.1);
 }
+ 
+
+.workspaceSelector {
+  position: relative;
+  margin-bottom: 1.5rem;
+  z-index: 50;
+}
+
+.workspaceHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.workspaceHeader:hover {
+  background: var(--hover-bg);
+}
+
+.workspaceAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+
+.workspaceInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspaceName {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspaceEmail {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.workspaceChevron {
+  color: var(--text-dim);
+  transition: transform 0.2s;
+}
+
+.workspaceDropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  background: var(--bg-color);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 0.5rem;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  z-index: 1000;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.dropdownItem:hover {
+  background: var(--hover-bg);
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 0.3rem 0;
+}
+

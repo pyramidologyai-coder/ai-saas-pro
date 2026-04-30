@@ -1,12 +1,30 @@
 'use client';
 import React, { useState } from 'react';
-import { Megaphone, Plus, Sparkles, Send, Users, Activity } from 'lucide-react';
+import { Megaphone, Plus, Sparkles, Send, Users, Activity, Info } from 'lucide-react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase';
+import { getDictionary } from '@/lib/dictionary';
 
 export default function MarketingPage() {
   const [showModal, setShowModal] = useState(false);
-  const [campaignMode, setCampaignMode] = useState<'ai' | 'manual'>('ai');
+  const [campaignMode, setCampaignMode] = useState<'ai' | 'template'>('template');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [dict, setDict] = useState(() => getDictionary('clinic'));
+  const [tenantType, setTenantType] = useState('clinic');
+
+  React.useEffect(() => {
+    const fetchTenant = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const { data: tenant } = await supabase.from('tenants').select('type').eq('user_id', session.user.id).single();
+        if (tenant) {
+          setTenantType(tenant.type);
+          setDict(getDictionary(tenant.type));
+        }
+      }
+    };
+    fetchTenant();
+  }, []);
 
   // Mock Data
   const campaigns = [
@@ -47,7 +65,7 @@ export default function MarketingPage() {
             <Megaphone size={28} color="var(--accent-primary)" />
             التسويق وحملات الواتساب
           </h1>
-          <p style={{ color: 'var(--text-dim)' }}>أعد استهداف عملائك وزود أرباحك بضغطة زرار (Retarget your Patients)</p>
+          <p style={{ color: 'var(--text-dim)' }}>أعد استهداف {dict.customers} وزود أرباحك بضغطة زرار (Retarget your {dict.customers})</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
@@ -80,7 +98,7 @@ export default function MarketingPage() {
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>العملاء المستهدفين</h3>
+            <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>إجمالي {dict.customers} المستهدفين</h3>
             <Users size={20} color="#a855f7" />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: 800 }}>1,200</div>
@@ -152,35 +170,46 @@ export default function MarketingPage() {
                 <span style={{ color: campaignMode === 'ai' ? 'var(--accent-primary)' : 'var(--text-main)' }}>توليد نص بالـ AI</span>
               </button>
               <button 
-                onClick={() => setCampaignMode('manual')}
-                style={{ ...modeBtnStyle, border: campaignMode === 'manual' ? '2px solid var(--accent-primary)' : '1px solid var(--glass-border)', background: campaignMode === 'manual' ? 'var(--accent-primary)15' : 'transparent' }}
+                onClick={() => setCampaignMode('template')}
+                style={{ ...modeBtnStyle, border: campaignMode === 'template' ? '2px solid var(--accent-primary)' : '1px solid var(--glass-border)', background: campaignMode === 'template' ? 'var(--accent-primary)15' : 'transparent' }}
               >
-                <span style={{ color: campaignMode === 'manual' ? 'var(--accent-primary)' : 'var(--text-main)' }}>كتابة يدوية</span>
+                <span style={{ color: campaignMode === 'template' ? 'var(--accent-primary)' : 'var(--text-main)' }}>قوالب ميتا المعتمدة</span>
               </button>
+            </div>
+
+            <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+              <p style={{ fontSize: '0.85rem', color: '#60a5fa', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Info size={16} /> تنويه: شركة ميتا (واتساب) تمنع إرسال رسائل تسويقية حرة. يجب اختيار "قالب معتمد" (Template) مسبقاً للحملات.
+              </p>
             </div>
 
             <div style={{ marginBottom: '1.5rem' }}>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>الجمهور المستهدف</label>
               <select style={inputStyle}>
-                <option>كل المرضى المسجلين (All Patients)</option>
-                <option>المرضى الذين لم يزوروا العيادة منذ 3 أشهر</option>
-                <option>عملاء لم يكملوا الحجز</option>
+                <option>كل الـ {dict.customers} المسجلين في النظام</option>
+                <option>الـ {dict.customers} الذين لم يتواصلوا منذ 3 أشهر</option>
+                <option>الـ {dict.customers} الذين لم يكملوا {dict.bookings}</option>
               </select>
             </div>
 
             {campaignMode === 'ai' && (
               <div style={{ background: '#f59e0b10', border: '1px solid #f59e0b30', padding: '1rem', borderRadius: '12px', marginBottom: '1.5rem' }}>
-                <p style={{ color: '#f59e0b', fontSize: '0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <Sparkles size={16} /> هنكتبلك الحملة بالذكاء الاصطناعي بناءً على اختيارك!
+                <p style={{ color: '#f59e0b', fontSize: '0.9rem', display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '1rem' }}>
+                  <Sparkles size={16} /> سنقوم بصياغة قالب احترافي وإرساله لميتا للموافقة (يستغرق 5 دقائق).
                 </p>
-                <input type="text" placeholder="مثال: اكتبلي رسالة ترويجية عن خصم 30% على تنظيف الأسنان بمناسبة الصيف" style={{ ...inputStyle, marginTop: '1rem' }} />
+                <input type="text" placeholder={`مثال: عرض خصم 30% على ${dict.item} بمناسبة العيد`} style={inputStyle} />
               </div>
             )}
 
-            {campaignMode === 'manual' && (
+            {campaignMode === 'template' && (
               <div style={{ marginBottom: '1.5rem' }}>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>نص الرسالة</label>
-                <textarea rows={4} placeholder="اكتب نص رسالة الواتساب هنا..." style={inputStyle}></textarea>
+                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>اختر القالب المعتمد من ميتا</label>
+                <select style={inputStyle}>
+                  <option value="">اختر قالب مسجل...</option>
+                  <option value="eid_offer_1">eid_offer_1 (تمت الموافقة ✅)</option>
+                  <option value="welcome_back">welcome_back (تمت الموافقة ✅)</option>
+                  <option value="flash_sale">flash_sale (قيد المراجعة ⏳)</option>
+                </select>
               </div>
             )}
 
@@ -193,7 +222,7 @@ export default function MarketingPage() {
                 display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem'
               }}
             >
-              {isGenerating ? 'جاري التحضير...' : (campaignMode === 'ai' ? 'توليد الرسالة بالـ AI' : 'إرسال الحملة')} <Send size={18} />
+              {isGenerating ? 'جاري التنفيذ...' : (campaignMode === 'ai' ? 'اعتماد وإرسال لميتا' : 'إرسال الحملة الآن')} <Send size={18} />
             </button>
           </div>
         </div>

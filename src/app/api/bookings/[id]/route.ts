@@ -5,6 +5,19 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      // GHOST DEFENDER: Honeytoken / Fail-Safe response
+      console.warn('Ghost Defender: Unauthorized delete attempt blocked.');
+      return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+    }
+
     const params = await props.params;
     const bookingId = params.id;
     
@@ -12,6 +25,28 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     const { data: booking } = await supabase.from('bookings').select('*').eq('id', bookingId).single();
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+    }
+
+    // OBJECT-LEVEL AUTHORIZATION: Verify user owns the tenant that owns this booking
+    const { data: tenantData } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('id', booking.tenant_id)
+      .eq('user_id', user.id)
+      .single();
+
+    if (!tenantData) {
+      const { data: profileAccess } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('tenant_id', booking.tenant_id)
+        .eq('id', user.id)
+        .single();
+        
+      if (!profileAccess) {
+        console.warn(`Ghost Defender: Horizontal Privilege Escalation blocked. User ${user.id} tried to delete booking ${bookingId} from tenant ${booking.tenant_id}`);
+        return NextResponse.json({ error: 'Forbidden: You do not have access to this Object' }, { status: 403 });
+      }
     }
 
     // 2. Delete from Google Calendar if event exists

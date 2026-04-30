@@ -6,11 +6,44 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export async function POST(req: Request) {
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return NextResponse.json({ error: 'Unauthorized: Missing token' }, { status: 401 });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
+    }
+
     const body = await req.json();
     const { tenant_id, customer_name, customer_phone, service_name, booking_time } = body;
 
     if (!tenant_id || !customer_name || !customer_phone || !booking_time) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    // IDOR Protection: Verify that the authenticated user actually owns/has access to this tenant_id
+    const { data: tenantData } = await supabase
+      .from('tenants')
+      .select('id')
+      .eq('id', tenant_id)
+      .eq('user_id', user.id)
+      .single();
+      
+    if (!tenantData) {
+      // Try to check if they have access via profiles (RBAC)
+      const { data: profileAccess } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('tenant_id', tenant_id)
+        .eq('id', user.id) // Assuming profiles.id == auth.users.id
+        .single();
+        
+      if (!profileAccess) {
+        return NextResponse.json({ error: 'Forbidden: You do not have access to this Workspace' }, { status: 403 });
+      }
     }
 
     // Normalize Egyptian Phone Numbers automatically

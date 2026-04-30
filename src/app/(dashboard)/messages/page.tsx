@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './Messages.module.css';
+import { supabase } from '@/lib/supabase';
 import { 
   Search, 
   Send, 
   MoreVertical, 
   MessageCircle, 
   Loader2,
-  CheckCheck
+  CheckCheck,
+  Filter,
+  AlertTriangle,
+  ShieldAlert
 } from 'lucide-react';
 
 const MessagesPage = () => {
@@ -17,7 +21,25 @@ const MessagesPage = () => {
   const [messages, setMessages] = useState([
     { id: 1, text: 'أهلاً بك يا فندم! منورنا في عيادة النخبة. أقدر أساعد حضرتك في حجز أي موعد النهاردة؟', sender: 'outgoing', time: 'الآن' },
   ]);
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
+  const [branches, setBranches] = useState<any[]>([]);
 
+  useEffect(() => {
+    async function fetchBranches() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+      if (!tenant) return;
+      
+      const { data: branchData } = await supabase.from('branches').select('id, name').eq('tenant_id', tenant.id);
+      if (branchData) {
+        setBranches(branchData);
+      }
+    }
+    fetchBranches();
+  }, []);
+
+  // Using real tenant id for chat if needed, but for now we keep the UI logic
   const tenantId = '13814bff-a653-439a-8891-2c5a81124eb8';
 
   const handleSendMessage = async () => {
@@ -55,14 +77,76 @@ const MessagesPage = () => {
     }
   };
 
+  // 1000-Year Hacker Defense: Advanced Phishing & Link Scanner
+  const renderMessageWithLinkScanner = (text: string, sender: string) => {
+    // Only scan incoming messages from patients/strangers
+    if (sender === 'outgoing') return <span>{text}</span>;
+
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        const lowerUrl = part.toLowerCase();
+        // Check for common phishing keywords in the URL
+        const isPhishing = ['login', 'verify', 'update', 'account', 'password', 'billing', 'admin', 'auth', 'support', 'secure', 'facebook', 'meta', 'whatsapp'].some(keyword => lowerUrl.includes(keyword));
+        
+        if (isPhishing) {
+          return (
+            <span key={index} style={{ display: 'block', margin: '0.5rem 0', padding: '0.8rem', background: '#ef444415', border: '1px solid #ef444450', borderRadius: '12px' }}>
+              <span style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                <AlertTriangle size={16} /> تحذير أمني خطير (Phishing Link)
+              </span>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.5rem' }}>
+                هذا الرابط قد يكون محاولة اختراق أو نصب لسرقة حسابات العيادة. يرجى عدم النقر عليه أو إدخال أي أرقام سرية.
+              </div>
+              <span style={{ color: '#ef4444', textDecoration: 'line-through', wordBreak: 'break-all', opacity: 0.7 }}>{part}</span>
+            </span>
+          );
+        } else {
+          return (
+            <span key={index} style={{ display: 'block', margin: '0.5rem 0', padding: '0.8rem', background: '#f59e0b15', border: '1px solid #f59e0b50', borderRadius: '12px' }}>
+              <span style={{ color: '#f59e0b', fontSize: '0.85rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                <ShieldAlert size={16} /> تنبيه: رابط خارجي مجهول
+              </span>
+              <a href={part} target="_blank" rel="noopener noreferrer" style={{ color: '#60a5fa', wordBreak: 'break-all' }}>{part}</a>
+            </span>
+          );
+        }
+      }
+      return <span key={index}>{part}</span>;
+    });
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <h2>المحادثات</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2>المحادثات</h2>
+            <select 
+              value={selectedBranchFilter} 
+              onChange={e => setSelectedBranchFilter(e.target.value)}
+              style={{
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-main)',
+                padding: '0.4rem',
+                borderRadius: '8px',
+                fontSize: '0.8rem',
+                maxWidth: '120px'
+              }}
+            >
+              <option value="all">كل الفروع</option>
+              <option value="unassigned">فرع غير محدد</option>
+              {branches.map(b => (
+                <option key={b.id} value={b.id}>فرع {b.name}</option>
+              ))}
+            </select>
+          </div>
           <div className={styles.searchBox}>
             <Search size={18} />
-            <input type="text" placeholder="بحث..." />
+            <input type="text" placeholder="بحث باسم المريض..." />
           </div>
         </div>
         <div className={styles.chatList}>
@@ -93,7 +177,7 @@ const MessagesPage = () => {
         <div className={styles.messagesList}>
           {messages.map((msg) => (
             <div key={msg.id} className={`${styles.message} ${msg.sender === 'incoming' ? styles.incoming : styles.outgoing}`}>
-              {msg.text}
+              {renderMessageWithLinkScanner(msg.text, msg.sender)}
               <div style={{ fontSize: '0.65rem', marginTop: '4px', opacity: 0.6, display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
                 {msg.time}
                 {msg.sender === 'outgoing' && <CheckCheck size={12} color="#25D366" />}

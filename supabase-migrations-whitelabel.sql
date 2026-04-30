@@ -1,0 +1,4 @@
+ALTER TABLE tenants 
+ADD COLUMN IF NOT EXISTS custom_domain TEXT UNIQUE,
+ADD COLUMN IF NOT EXISTS custom_logo_url TEXT,
+ADD COLUMN IF NOT EXISTS custom_brand_name TEXT;

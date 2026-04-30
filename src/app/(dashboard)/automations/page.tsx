@@ -1,17 +1,38 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, Save, AlertTriangle, Settings2, Mic, FileText } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 export default function AutomationsPage() {
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [dialect, setDialect] = useState('Egyptian');
 
   const [automations, setAutomations] = useState([
-    { id: 1, type: 'رسالة شكر وتقدير بعد الزيارة (Greet and thank)', textOn: true, voiceOn: false, delayHour: 0, delayMin: 15 },
-    { id: 2, type: 'تعليمات ما بعد العلاج (Post-Op Instructions)', textOn: true, voiceOn: true, delayHour: 0, delayMin: 30 },
-    { id: 3, type: 'طلب تقييم على خرائط جوجل (Google Maps Review)', textOn: true, voiceOn: false, delayHour: 24, delayMin: 0 },
-    { id: 4, type: 'تذكير بالمراجعة القادمة (Next Visit Reminder)', textOn: true, voiceOn: true, delayHour: 48, delayMin: 0 },
+    { id: 1, type: 'رسالة شكر وتقدير بعد الزيارة (Greet and thank)', textOn: false, voiceOn: false, delayHour: 0, delayMin: 15 },
+    { id: 2, type: 'تعليمات ما بعد العلاج (Post-Op Instructions)', textOn: false, voiceOn: false, delayHour: 0, delayMin: 30 },
+    { id: 3, type: 'طلب تقييم على خرائط جوجل (Google Maps Review)', textOn: true, voiceOn: false, delayHour: 2, delayMin: 0 },
+    { id: 4, type: 'تذكير بالموعد (قبل الزيارة بـ 24 ساعة)', textOn: true, voiceOn: false, delayHour: 24, delayMin: 0 },
   ]);
+
+  useEffect(() => {
+    async function loadData() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase.from('tenants').select('*').eq('user_id', session.user.id).single();
+      if (data) {
+        setTenantId(data.id);
+        setAutomations(prev => prev.map(a => {
+          if (a.id === 3) return { ...a, textOn: data.enable_reviews !== false };
+          if (a.id === 4) return { ...a, textOn: data.enable_reminders !== false };
+          return a;
+        }));
+      }
+      setLoading(false);
+    }
+    loadData();
+  }, []);
 
   const handleToggle = (id: number, field: 'textOn' | 'voiceOn') => {
     setAutomations(prev => prev.map(item => 
@@ -25,13 +46,29 @@ export default function AutomationsPage() {
     ));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!tenantId) return;
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    
+    const enableReviews = automations.find(a => a.id === 3)?.textOn;
+    const enableReminders = automations.find(a => a.id === 4)?.textOn;
+
+    try {
+      await supabase.from('tenants').update({
+        enable_reviews: enableReviews,
+        enable_reminders: enableReminders
+      }).eq('id', tenantId);
+      
       alert('تم حفظ إعدادات الرسائل التلقائية بنجاح!');
-    }, 1000);
+    } catch (err) {
+      console.error(err);
+      alert('حدث خطأ أثناء الحفظ');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>

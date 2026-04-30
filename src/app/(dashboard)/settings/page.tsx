@@ -3,42 +3,63 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
 import { supabase } from '@/lib/supabase';
+import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock } from 'lucide-react';
+import { getActiveTenant } from '@/lib/tenant';
+import { saveTenantSettingsAction } from './actions';
 
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
+  const [subscriptionTier, setSubscriptionTier] = useState<string>('trial');
+  const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api'>('general');
   
+  // General Settings State
   const [formData, setFormData] = useState({
     name: '',
     google_review_link: '',
+    main_location_url: '',
     working_hours: '',
     custom_prompt: '',
     whatsapp_number_id: '',
     meta_token: '',
-    instagram_id: ''
+    instagram_id: '',
+    zapier_webhook: '',
+    custom_domain: '',
+    api_key: ''
   });
+
+  // Quick Setup States
+  const [branchName, setBranchName] = useState('');
+  const [doctorName, setDoctorName] = useState('');
+  const [doctorSpecialty, setDoctorSpecialty] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
     async function loadSettings() {
-      // In a real app, this comes from auth context. Using the demo tenant for now.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         window.location.href = '/auth';
         return;
       }
-      const { data, error } = await supabase.from('tenants').select('*').eq('user_id', session.user.id).single();
+      
+      const data = await getActiveTenant(session.user);
       
       if (data) {
         setTenantId(data.id);
+        setSubscriptionTier(data.subscription_tier || 'trial');
         setFormData({
           name: data.name || '',
           google_review_link: data.google_review_link || '',
+          main_location_url: data.main_location_url || '',
           working_hours: data.working_hours || '',
           custom_prompt: data.custom_prompt || '',
           whatsapp_number_id: data.whatsapp_number_id || '',
           meta_token: data.meta_token || '',
-          instagram_id: data.instagram_id || ''
+          instagram_id: data.instagram_id || '',
+          zapier_webhook: data.zapier_webhook || '',
+          custom_domain: data.custom_domain || '',
+          api_key: data.api_key || ''
         });
       }
       setLoading(false);
@@ -47,159 +68,314 @@ const SettingsPage = () => {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value, type } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
     });
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSaveGeneral = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!tenantId) return;
 
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('tenants')
-        .update({
-          name: formData.name,
-          google_review_link: formData.google_review_link,
-          working_hours: formData.working_hours,
-          custom_prompt: formData.custom_prompt,
-          whatsapp_number_id: formData.whatsapp_number_id,
-          meta_token: formData.meta_token,
-          instagram_id: formData.instagram_id
-        })
-        .eq('id', tenantId);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
 
-      if (error) throw error;
-      alert('تم حفظ الإعدادات بنجاح!');
+      // SECURITY: Sanitize input to prevent Mass Assignment Privilege Escalation
+      const { subscription_tier, status, trial_ends_at, agency_id, ...safeFormData } = formData as any;
+      
+      await saveTenantSettingsAction(session.access_token, tenantId, safeFormData);
+      
+      setSuccessMsg('تم حفظ الإعدادات بنجاح!');
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      console.error('Error saving settings:', error);
       alert('حدث خطأ أثناء الحفظ.');
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return <div className={styles.container}>جاري التحميل...</div>;
-  }
+  const handleQuickAddBranch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantId || !branchName) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('branches').insert([{ tenant_id: tenantId, name: branchName, ai_status: 'Online' }]);
+      if (error) throw error;
+      setBranchName('');
+      setSuccessMsg('تم إضافة الفرع بنجاح!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (error) {
+      alert('حدث خطأ أثناء إضافة الفرع.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleQuickAddDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantId || !doctorName || !doctorSpecialty) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('team_members').insert([{ tenant_id: tenantId, name: doctorName, role_or_specialty: doctorSpecialty }]);
+      if (error) throw error;
+      setDoctorName('');
+      setDoctorSpecialty('');
+      setSuccessMsg('تم إضافة الطبيب بنجاح!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (error) {
+      alert('حدث خطأ أثناء إضافة الطبيب.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className={styles.container}>جاري التحميل...</div>;
 
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <h1>إعدادات الذكاء الاصطناعي والعيادة</h1>
-        <p>قم بتخصيص طريقة رد الذكاء الاصطناعي ومعلومات العيادة الخاصة بك.</p>
+        <h1>مركز الإعدادات (Settings Hub)</h1>
+        <p>قم بإدارة كل تفاصيل عيادتك وفروعك من مكان واحد بكل سهولة.</p>
       </div>
 
-      <form className={styles.formCard} onSubmit={handleSave}>
-        
-        <div className={styles.formGroup}>
-          <label>اسم العيادة / المطعم</label>
-          <input 
-            type="text" 
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="مثال: عيادة د. أحمد للأسنان"
-            required
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>مواعيد العمل</label>
-          <input 
-            type="text" 
-            name="working_hours"
-            value={formData.working_hours}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="مثال: يومياً من 12 ظهراً لـ 10 مساءً ما عدا الجمعة"
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>رابط تقييم جوجل (Google Review)</label>
-          <input 
-            type="url" 
-            name="google_review_link"
-            value={formData.google_review_link}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="https://g.page/review/..."
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>تعليمات خاصة للذكاء الاصطناعي (Custom Prompt)</label>
-          <textarea 
-            name="custom_prompt"
-            value={formData.custom_prompt}
-            onChange={handleChange}
-            className={`${styles.input} ${styles.textarea}`} 
-            placeholder="أضف أي معلومات تريد من الذكاء الاصطناعي أن يعرفها. مثال: د. أحمد عنده خبرة 20 سنة، وتكلفة الكشف المستعجل 500 جنيه، والكشف العادي 300 جنيه."
-          />
-        </div>
-
-        <div className={styles.formGroup} style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem', marginTop: '1rem' }}>
-          <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)' }}>ربط مواعيد جوجل (Google Calendar)</h3>
-          <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            اربط نتيجتك عشان الذكاء الاصطناعي يقدر يضيف الحجوزات أوتوماتيك وتسمع في موبايلك.
-          </p>
-          <a 
-            href={`/api/calendar/auth?tenantId=${tenantId}`}
-            className={styles.saveBtn} 
-            style={{ display: 'inline-block', backgroundColor: '#4285F4', color: 'white', textDecoration: 'none', textAlign: 'center', width: 'auto', padding: '0.8rem 2rem' }}
+      <div className={styles.layout}>
+        {/* Sidebar Tabs */}
+        <div className={styles.sidebar}>
+          <button 
+            className={`${styles.tab} ${activeTab === 'general' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('general')}
           >
-            ربط حساب جوجل
-          </a>
+            <Settings size={20} /> بيانات العيادة الأساسية
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === 'quick_setup' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('quick_setup')}
+          >
+            <Database size={20} /> الإعداد السريع (فروع وتخصصات)
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === 'integrations' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('integrations')}
+          >
+            <LinkIcon size={20} /> مركز الربط والتكامل (Integrations)
+          </button>
+          <button 
+            className={`${styles.tab} ${activeTab === 'api' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('api')}
+          >
+            <Database size={20} /> الدومين الخاص والـ API
+          </button>
         </div>
 
-        <div className={styles.formGroup} style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem', marginTop: '2rem' }}>
-          <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)' }}>ربط السوشيال ميديا والذكاء الاصطناعي (Meta API)</h3>
-          
-          <label>رقم معرف واتساب (WhatsApp Phone ID)</label>
-          <input 
-            type="text" 
-            name="whatsapp_number_id"
-            value={formData.whatsapp_number_id}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="مثال: 1046139101921254"
-          />
+        {/* Content Area */}
+        <div className={styles.content}>
+          {successMsg && (
+            <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '12px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
+              <CheckCircle2 size={20} /> {successMsg}
+            </div>
+          )}
+
+          {/* TAB 1: General Settings */}
+          {activeTab === 'general' && (
+            <form onSubmit={handleSaveGeneral}>
+              <h2 className={styles.sectionTitle}><Settings size={24} color="var(--accent-primary)"/> البيانات الأساسية</h2>
+              
+              <div className={styles.formGroup}>
+                <label>اسم العيادة / المركز الرئيسي</label>
+                <input type="text" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="مثال: عيادات د. أحمد" required />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>مواعيد العمل (للرد الآلي)</label>
+                <input type="text" name="working_hours" value={formData.working_hours} onChange={handleChange} className={styles.input} placeholder="مثال: يومياً من 12 ظهراً لـ 10 مساءً" />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>رابط تقييم جوجل (Google Review)</label>
+                <input type="url" name="google_review_link" value={formData.google_review_link} onChange={handleChange} className={styles.input} placeholder="https://g.page/review/..." />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label>تعليمات الذكاء الاصطناعي (Custom Prompt)</label>
+                <textarea name="custom_prompt" value={formData.custom_prompt} onChange={handleChange} className={`${styles.input} ${styles.textarea}`} placeholder="أضف معلومات إضافية للذكاء الاصطناعي، مثلاً: تكلفة الكشف 500 جنيه." />
+              </div>
+
+              <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '2rem' }}>
+                {saving ? 'جاري الحفظ...' : 'حفظ التغييرات'}
+              </button>
+            </form>
+          )}
+
+          {/* TAB 2: Quick Setup */}
+          {activeTab === 'quick_setup' && (
+            <div>
+              <h2 className={styles.sectionTitle}><Database size={24} color="var(--accent-primary)"/> الإعداد السريع</h2>
+              <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>من هنا تقدر تضيف الفروع والأطباء بسرعة بدون ما تروح لصفحات تانية.</p>
+
+              {/* Quick Add Branch */}
+              <form className={styles.quickAddCard} onSubmit={handleQuickAddBranch}>
+                <h4><GitBranch size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> إضافة فرع جديد</h4>
+                <div className={styles.grid2}>
+                  <div className={styles.formGroup}>
+                    <label>اسم الفرع</label>
+                    <input type="text" value={branchName} onChange={(e) => setBranchName(e.target.value)} className={styles.input} placeholder="مثال: فرع التجمع الخامس" required />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', marginBottom: '1.5rem' }}>
+                    <button type="submit" className={styles.saveBtn} disabled={saving} style={{ padding: '0.8rem' }}>
+                      <Plus size={20} /> إضافة الفرع
+                    </button>
+                  </div>
+                </div>
+              </form>
+
+              {/* Quick Add Doctor */}
+              <form className={styles.quickAddCard} onSubmit={handleQuickAddDoctor}>
+                <h4><Stethoscope size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> إضافة طبيب / تخصص</h4>
+                <div className={styles.grid2}>
+                  <div className={styles.formGroup}>
+                    <label>اسم الطبيب</label>
+                    <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={styles.input} placeholder="مثال: د. محمد علي" required />
+                  </div>
+                  <div className={styles.formGroup}>
+                    <label>التخصص</label>
+                    <input type="text" value={doctorSpecialty} onChange={(e) => setDoctorSpecialty(e.target.value)} className={styles.input} placeholder="مثال: طب أسنان أطفال" required />
+                  </div>
+                </div>
+                <button type="submit" className={styles.saveBtn} disabled={saving} style={{ padding: '0.8rem', marginTop: '0.5rem' }}>
+                  <Plus size={20} /> إضافة الطبيب
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* TAB 3: Integrations */}
+          {activeTab === 'integrations' && (
+            <form onSubmit={handleSaveGeneral}>
+              <h2 className={styles.sectionTitle}><LinkIcon size={24} color="var(--accent-primary)"/> ربط المنصات (Integrations)</h2>
+              
+              <div className={styles.quickAddCard} style={{ borderColor: '#4285F4', background: 'rgba(66, 133, 244, 0.05)' }}>
+                <h4 style={{ color: '#4285F4' }}>مواعيد جوجل (Google Calendar)</h4>
+                <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>اربط نتيجة المركز الأساسية للمواعيد.</p>
+                <button 
+                  type="button" 
+                  onClick={async () => {
+                    try {
+                      const { data: { session } } = await supabase.auth.getSession();
+                      const res = await fetch('/api/calendar/auth', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+                        },
+                        body: JSON.stringify({ tenantId })
+                      });
+                      const data = await res.json();
+                      if (data.url) {
+                        window.location.href = data.url;
+                      } else {
+                        alert(data.error || 'Failed to authenticate');
+                      }
+                    } catch (e) {
+                      alert('Connection error');
+                    }
+                  }} 
+                  className={styles.saveBtn} 
+                  style={{ background: '#4285F4', display: 'inline-flex', width: 'auto', border: 'none', cursor: 'pointer' }}>
+                  ربط حساب جوجل
+                </button>
+              </div>
+
+              <div className={styles.quickAddCard} style={{ borderColor: '#25D366', background: 'rgba(37, 211, 102, 0.05)' }}>
+                <h4 style={{ color: '#25D366' }}><MessageSquare size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> إعدادات الواتساب (Meta API)</h4>
+                <div className={styles.formGroup}>
+                  <label>رقم معرف واتساب (Phone ID)</label>
+                  <input type="text" name="whatsapp_number_id" value={formData.whatsapp_number_id} onChange={handleChange} className={styles.input} placeholder="مثال: 1046139101921254" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label>توكن ميتا (Access Token)</label>
+                  <input type="password" name="meta_token" value={formData.meta_token} onChange={handleChange} className={styles.input} placeholder="EAAX..." />
+                </div>
+              </div>
+
+              <div className={styles.quickAddCard} style={{ borderColor: '#f97316', background: 'rgba(249, 115, 22, 0.05)' }}>
+                <h4 style={{ color: '#f97316' }}><LinkIcon size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> ربط Zapier & Make (Webhooks)</h4>
+                <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>أدخل رابط الـ Webhook الخاص بك ليقوم النظام بإرسال بيانات الحجوزات أو الطلبات فور اكتمالها لأي برنامج آخر (سلاك، CRM، إكسيل).</p>
+                <div className={styles.formGroup}>
+                  <label>رابط الـ Webhook URL</label>
+                  <input type="url" name="zapier_webhook" value={formData.zapier_webhook} onChange={handleChange} className={styles.input} placeholder="https://hooks.zapier.com/hooks/catch/..." />
+                </div>
+              </div>
+
+              <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '1rem' }}>
+                حفظ إعدادات الربط
+              </button>
+            </form>
+          )}
+
+          {/* TAB 4: API & Custom Domain */}
+          {activeTab === 'api' && (
+            <form onSubmit={handleSaveGeneral}>
+              <h2 className={styles.sectionTitle}><Database size={24} color="var(--accent-primary)"/> الدومين الخاص والربط المباشر (API)</h2>
+              
+              <div className={styles.quickAddCard} style={{ borderColor: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }}>
+                <h4 style={{ color: '#6366f1' }}>الدومين الخاص (White-Label)</h4>
+                <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                  يمكنك استخدام نطاق خاص بعيادتك أو وكالتك (مثال: myclinic.com). 
+                  قم بتوجيه إعدادات الـ DNS (A Record) إلى سيرفراتنا قبل الحفظ.
+                </p>
+                {subscriptionTier === 'trial' || subscriptionTier === 'basic' ? (
+                  <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', display: 'flex', gap: '0.5rem', alignItems: 'center', color: '#ef4444' }}>
+                    <Lock size={20} />
+                    <span>هذه الميزة متاحة فقط في الباقات المتقدمة (Pro). يرجى ترقية حسابك لاستخدام الدومين المخصص.</span>
+                  </div>
+                ) : (
+                  <div className={styles.formGroup}>
+                    <label>اسم الدومين</label>
+                    <input type="text" name="custom_domain" value={formData.custom_domain} onChange={handleChange} className={styles.input} placeholder="بدون https:// مثال: clinic.com" />
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.quickAddCard} style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.05)' }}>
+                <h4 style={{ color: '#8b5cf6' }}>مفتاح الربط البرمجي (API Key)</h4>
+                <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                  استخدم هذا المفتاح إذا كان لديك مطورين يريدون ربط النظام بتطبيقك الخاص لإرسال الحجوزات مباشرة للـ API الخاص بنا (<code>/api/v1/bookings</code>).
+                </p>
+                <div className={styles.formGroup}>
+                  <label>مفتاح الـ API</label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input type="text" name="api_key" value={formData.api_key} readOnly className={styles.input} style={{ flex: 1, backgroundColor: 'var(--bg-color)', color: 'var(--accent-primary)', opacity: 0.8 }} placeholder="اضغط على توليد لإنشاء مفتاح" />
+                    <button 
+                      type="button" 
+                      className={styles.saveBtn} 
+                      style={{ width: 'auto', background: '#8b5cf6' }}
+                      onClick={() => {
+                        // SECURITY: Use Cryptographically Secure PRNG for API Keys
+                        const array = new Uint8Array(16);
+                        window.crypto.getRandomValues(array);
+                        const secureRandomStr = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+                        const newKey = 'sk_live_' + secureRandomStr;
+                        setFormData({...formData, api_key: newKey});
+                      }}
+                    >
+                      توليد مفتاح
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '1rem' }}>
+                حفظ الإعدادات
+              </button>
+            </form>
+          )}
+
         </div>
-
-        <div className={styles.formGroup}>
-          <label>توكن ميتا (Meta Access Token)</label>
-          <input 
-            type="password" 
-            name="meta_token"
-            value={formData.meta_token}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="EAAX..."
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>معرف انستجرام / ماسنجر (اختياري)</label>
-          <input 
-            type="text" 
-            name="instagram_id"
-            value={formData.instagram_id}
-            onChange={handleChange}
-            className={styles.input} 
-            placeholder="مثال: 1234567890123"
-          />
-        </div>
-
-        <button type="submit" className={styles.saveBtn} disabled={saving}>
-          {saving ? 'جاري الحفظ...' : 'حفظ التعديلات'}
-        </button>
-
-      </form>
+      </div>
     </div>
   );
 };

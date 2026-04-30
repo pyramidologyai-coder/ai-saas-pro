@@ -1,6 +1,6 @@
 .container {
   padding: 2rem;
-  max-width: 1000px;
+  max-width: 1200px; /* Made wider for table */
   margin: 0 auto;
 }
 
@@ -10,16 +10,16 @@
 
 .header h1 {
   font-size: 2rem;
-  color: var(--text-primary, #111827);
+  color: var(--text-main);
   margin-bottom: 0.5rem;
 }
 
 .header p {
-  color: var(--text-secondary, #6b7280);
+  color: var(--text-dim);
 }
 
 .addCard {
-  background: var(--bg-card, #ffffff);
+  background: var(--card-bg);
   border: 1px solid var(--glass-border, #e5e7eb);
   border-radius: 12px;
   padding: 1.5rem;
@@ -29,7 +29,7 @@
 
 .addCard h3 {
   margin-bottom: 1rem;
-  color: var(--text-primary, #111827);
+  color: var(--text-main);
 }
 
 .formGroup {
@@ -41,7 +41,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   margin-bottom: 0.5rem;
-  color: var(--text-primary, #374151);
+  color: var(--text-dim);
 }
 
 .input {
@@ -50,7 +50,7 @@
   border: 1px solid var(--border-color, #d1d5db);
   border-radius: 8px;
   background: var(--bg-input, #f9fafb);
-  color: var(--text-primary, #111827);
+  color: var(--text-main);
   font-size: 1rem;
   transition: all 0.2s ease;
 }
@@ -81,39 +81,40 @@
   cursor: not-allowed;
 }
 
-.teamList {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
-
-.memberCard {
-  background: var(--bg-card, #ffffff);
+/* Table Styles */
+.tableWrapper {
+  background: var(--card-bg);
   border: 1px solid var(--glass-border, #e5e7eb);
   border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  display: flex;
-  flex-direction: column;
+  overflow-x: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
-.memberName {
-  font-size: 1.25rem;
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+}
+
+.table th, .table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.table th {
+  background: var(--bg-main, #f9fafb);
+  color: var(--text-dim);
   font-weight: 600;
-  color: var(--text-primary, #111827);
-  margin-bottom: 0.25rem;
+  font-size: 0.95rem;
 }
 
-.memberRole {
-  font-size: 0.9rem;
-  color: var(--text-secondary, #6b7280);
-  margin-bottom: 1rem;
+.table tr:last-child td {
+  border-bottom: none;
 }
 
-.memberInfo {
-  font-size: 0.9rem;
-  margin-bottom: 1.5rem;
-  flex-grow: 1;
+.table td {
+  vertical-align: middle;
+  font-size: 0.95rem;
 }
 
 .connectBtn {
@@ -122,11 +123,11 @@
   color: white;
   text-decoration: none;
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   font-weight: 500;
   transition: background-color 0.2s;
-  width: 100%;
+  white-space: nowrap;
 }
 
 .connectBtn:hover {
@@ -138,8 +139,8 @@
   background-color: #DEF7EC;
   color: #03543F;
   text-align: center;
-  padding: 0.75rem;
+  padding: 0.6rem 1rem;
   border-radius: 8px;
   font-weight: 500;
-  width: 100%;
+  white-space: nowrap;
 }

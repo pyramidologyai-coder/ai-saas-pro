@@ -1,0 +1,3 @@
+ALTER TABLE tenants 
+ADD COLUMN IF NOT EXISTS subscription_tier TEXT DEFAULT 'trial',
+ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active';

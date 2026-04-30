@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 
+import { getActiveTenant } from '@/lib/tenant';
+
 const BookingsPage = () => {
   const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const [realBookings, setRealBookings] = useState<any[]>([]);
@@ -31,7 +33,8 @@ const BookingsPage = () => {
         window.location.href = '/auth';
         return;
       }
-      const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+      
+      const tenant = await getActiveTenant(session.user);
       if (tenant) setTenantId(tenant.id);
       
       const { data, error } = await supabase
@@ -84,10 +87,14 @@ const BookingsPage = () => {
     
     try {
       const combinedDateTime = `${formData.booking_date}T${formData.booking_time}`;
+      const { data: { session } } = await supabase.auth.getSession();
       
       const res = await fetch('/api/bookings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {})
+        },
         body: JSON.stringify({
           tenant_id: tenantId,
           customer_name: formData.customer_name,
@@ -118,7 +125,12 @@ const BookingsPage = () => {
     if (!confirm('هل أنت متأكد من إلغاء هذا الحجز؟ سيتم حذفه من النظام ومن جوجل كالندر.')) return;
     
     try {
-      const res = await fetch(`/api/bookings/${id}`, { method: 'DELETE' });
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`/api/bookings/${id}`, { 
+        method: 'DELETE',
+        headers: session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}
+      });
+      
       if (res.ok) {
         setRealBookings(realBookings.filter(b => b.id !== id));
         if (dayBookingsModal) {

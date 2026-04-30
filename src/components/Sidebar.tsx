@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -17,82 +17,189 @@ import {
   Megaphone,
   Bot,
   Building2,
-  Wallet
+  Wallet,
+  UserCog,
+  Shield,
+  ChevronDown,
+  CreditCard,
+  Network,
+  Plus
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import { getDictionary, BusinessType } from '@/lib/dictionary';
+import { getActiveTenant, getAllTenants } from '@/lib/tenant';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const { t } = useLanguage();
   const [businessName, setBusinessName] = useState('جارِ التحميل...');
-  const [businessType, setBusinessType] = useState('Clinic');
+  const [tenantType, setTenantType] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAgencyOwner, setIsAgencyOwner] = useState(false);
+  const [tenants, setTenants] = useState<any[]>([]);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function loadUserData() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUserEmail(session.user.email || '');
-        const { data: tenant } = await supabase
-          .from('tenants')
-          .select('name, type')
+        
+        // 1. Fetch Active Tenant and All Tenants
+        const activeTenant = await getActiveTenant(session.user);
+        const allTenantsList = await getAllTenants(session.user);
+        setTenants(allTenantsList);
+
+        if (activeTenant) {
+          setBusinessName(activeTenant.name);
+          setTenantType(activeTenant.type);
+        }
+
+        // 2. Fetch User Role from profiles table
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile && profile.role) {
+          setUserRole(profile.role as 'admin' | 'staff');
+        } else {
+          setUserRole('admin'); 
+        }
+
+        // 3. Check if Agency Owner
+        const { data: agency } = await supabase
+          .from('agencies')
+          .select('id')
           .eq('user_id', session.user.id)
           .single();
-        if (tenant) {
-          setBusinessName(tenant.name);
-          setBusinessType(tenant.type === 'restaurant' ? 'Restaurant' : 'Clinic');
+        if (agency) {
+          setIsAgencyOwner(true);
         }
       }
     }
     loadUserData();
   }, []);
 
-  // Mocking user role for demonstration
-  const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
 
+  // Real user role fetched from DB, defaults to empty until loaded
+  const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
+
+  const dict = getDictionary(tenantType);
+
   const adminNavItems = [
-    { icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
-    { icon: Briefcase, label: t.services, href: '/services' },
-    { icon: Calendar, label: t.bookings, href: '/bookings' },
-    { icon: MessageSquare, label: t.messages, href: '/messages' },
-    { icon: Bot, label: 'الرسائل التلقائية', href: '/automations' },
-    { icon: Users, label: t.customers, href: '/customers' },
-    { icon: Megaphone, label: 'التسويق', href: '/marketing' },
-    { icon: Users, label: 'فريق العمل', href: '/team' },
-    { icon: Building2, label: 'إدارة الفروع', href: '/branches' },
-    { icon: BarChart3, label: t.reports, href: '/reports' },
-    { icon: Wallet, label: 'المحفظة', href: '/wallet' },
-    { icon: Settings, label: t.settings, href: '/settings' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
+    ...(isAgencyOwner ? [{ id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' }] : []),
+    { id: 'services', icon: Briefcase, label: dict.services, href: '/services' },
+    { id: 'bookings', icon: Calendar, label: dict.bookings, href: '/bookings' },
+    { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
+    { id: 'automations', icon: Bot, label: 'الرسائل التلقائية', href: '/automations' },
+    { id: 'customers', icon: Users, label: dict.customers, href: '/customers' },
+    { id: 'marketing', icon: Megaphone, label: 'التسويق', href: '/marketing' },
+    { id: 'team', icon: UserCog, label: dict.team, href: '/team' },
+    { id: 'users', icon: Shield, label: 'صلاحيات المستخدمين', href: '/users' },
+    { id: 'branches', icon: Building2, label: 'إدارة الفروع', href: '/branches' },
+    { id: 'billing', icon: CreditCard, label: 'الفواتير والاشتراكات', href: '/billing' },
   ];
 
   const staffNavItems = [
-    { icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
-    { icon: Calendar, label: t.bookings, href: '/bookings' },
-    { icon: MessageSquare, label: t.messages, href: '/messages' },
-    { icon: Users, label: t.customers, href: '/customers' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
+    { id: 'bookings', icon: Calendar, label: dict.bookings, href: '/bookings' },
+    { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
+    { id: 'customers', icon: Users, label: dict.customers, href: '/customers' },
   ];
 
-  const navItems = userRole === 'admin' ? adminNavItems : staffNavItems;
+  // Feature Toggling Logic (Chameleon UI)
+  const hiddenFeatures: Record<string, string[]> = {
+    ecommerce: ['team', 'branches'], // E-commerce usually doesn't need bookable staff or physical branches
+    restaurant: ['team'], // Restaurants primarily use the delivery logic or simple table booking
+    clinic: [],
+    real_estate: [],
+    salon: [],
+    car_rental: ['team'], // Cars are items, not team members usually
+  };
+
+  const hiddenForCurrentType = tenantType ? (hiddenFeatures[tenantType] || []) : [];
+  const baseNavItems = userRole === 'admin' ? adminNavItems : staffNavItems;
+  const navItems = baseNavItems.filter(item => !hiddenForCurrentType.includes(item.id));
 
   return (
     <aside className={styles.sidebar}>
       <div className={styles.logoContainer}>
         <div className={styles.logoGlow}></div>
         <h1 className={styles.logoText}>AI SAAS PRO</h1>
-        <div className={styles.aiStatus}>
-          <span className={styles.pulseDot}></span>
-          AI Active
-        </div>
       </div>
-      
-      <div className={styles.businessContext}>
-        <div className={styles.businessBadge}>{businessType} Mode</div>
-        <p className={styles.businessName}>{businessName}</p>
+
+      <div className={styles.workspaceSelector} ref={dropdownRef}>
+        <div className={styles.workspaceHeader} onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
+          <div className={styles.workspaceAvatar}>
+            {businessName ? businessName.charAt(0).toUpperCase() : 'C'}
+          </div>
+          <div className={styles.workspaceInfo}>
+            <span className={styles.workspaceName}>{businessName}</span>
+            <span className={styles.workspaceEmail}>{userEmail}</span>
+          </div>
+          <ChevronDown size={16} className={styles.workspaceChevron} style={{ transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0)' }} />
+        </div>
+
+        {isDropdownOpen && (
+          <div className={styles.workspaceDropdown}>
+            {/* WORKSPACE SWITCHER */}
+            <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>مساحات العمل الخاصة بك</div>
+              {tenants.map((t) => (
+                <div 
+                  key={t.id} 
+                  className={styles.dropdownItem} 
+                  onClick={() => {
+                    localStorage.setItem('active_tenant_id', t.id);
+                    window.location.reload();
+                  }}
+                  style={{ background: t.name === businessName ? 'var(--accent-primary-transparent)' : 'transparent', fontWeight: t.name === businessName ? 600 : 400 }}
+                >
+                  <Building2 size={16} /> {t.name}
+                </div>
+              ))}
+              <Link href="/onboarding" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)} style={{ color: 'var(--accent-primary)', marginTop: '0.25rem' }}>
+                <Plus size={16} /> إضافة نشاط جديد
+              </Link>
+            </div>
+
+            {userRole === 'admin' && (
+              <>
+                <Link href="/reports" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                  <BarChart3 size={16} /> التقارير
+                </Link>
+                <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                  <Settings size={16} /> الإعدادات
+                </Link>
+                <Link href="/wallet" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                  <Wallet size={16} /> المحفظة
+                </Link>
+                <div className={styles.dropdownDivider}></div>
+              </>
+            )}
+            <div className={styles.dropdownItem} onClick={handleLogout} style={{ color: '#ef4444' }}>
+              <LogOut size={16} /> تسجيل الخروج
+            </div>
+          </div>
+        )}
       </div>
 
       <nav className={styles.nav}>
@@ -112,19 +219,6 @@ const Sidebar = () => {
         })}
       </nav>
 
-      <div className={styles.footer}>
-        <div className={styles.userCard}>
-          <div className={styles.avatar}>{userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}</div>
-          <div className={styles.userInfo}>
-            <h4 style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>{userEmail || 'User'}</h4>
-            <p>Admin</p>
-          </div>
-        </div>
-        <div className={styles.logoutBtn} onClick={handleLogout} style={{ cursor: 'pointer' }}>
-          <LogOut size={18} />
-          <span>{t.logout}</span>
-        </div>
-      </div>
     </aside>
   );
 };

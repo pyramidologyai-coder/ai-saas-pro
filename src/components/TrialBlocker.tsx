@@ -18,11 +18,11 @@ export default function TrialBlocker({ children }: { children: React.ReactNode }
 
         const { data: tenant } = await supabase
           .from('tenants')
-          .select('trial_ends_at')
+          .select('trial_ends_at, subscription_tier')
           .eq('user_id', session.user.id)
           .single();
 
-        if (tenant && tenant.trial_ends_at) {
+        if (tenant && tenant.trial_ends_at && tenant.subscription_tier === 'trial') {
           const expirationDate = new Date(tenant.trial_ends_at);
           if (new Date() > expirationDate) {
             setIsExpired(true);

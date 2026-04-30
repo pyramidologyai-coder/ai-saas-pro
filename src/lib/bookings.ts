@@ -6,6 +6,7 @@ export interface BookingData {
   customer_phone?: string;
   booking_time: string;
   service_name: string;
+  provider_name?: string;
   source: 'whatsapp' | 'instagram' | 'facebook' | 'web';
 }
 
@@ -21,12 +22,26 @@ export const createBooking = async (data: BookingData) => {
 
     const serviceId = services?.[0]?.id;
 
-    // 2. Insert the booking
+    // 2. Find the team member ID from the provider name
+    let teamMemberId = null;
+    if (data.provider_name) {
+      const { data: members } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('tenant_id', data.tenant_id)
+        .ilike('name', `%${data.provider_name}%`)
+        .limit(1);
+      
+      teamMemberId = members?.[0]?.id || null;
+    }
+
+    // 3. Insert the booking
     const { data: booking, error } = await supabase
       .from('bookings')
       .insert({
         tenant_id: data.tenant_id,
         item_id: serviceId,
+        team_member_id: teamMemberId,
         customer_name: data.customer_name,
         customer_phone: data.customer_phone,
         booking_time: data.booking_time,

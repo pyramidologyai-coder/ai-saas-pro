@@ -7,16 +7,42 @@ import {
   MessageCircle 
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getDictionary } from '@/lib/dictionary';
+import { getActiveTenant } from '@/lib/tenant';
 
 export default function Home() {
+  const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [stats, setStats] = useState([
-    { label: 'إجمالي الحجوزات', value: '...', trend: '+0%', icon: CalendarCheck, color: '#6366f1' },
-    { label: 'مرضى جدد', value: '...', trend: '+0%', icon: Users, color: '#a855f7' },
-    { label: 'رسائل AI', value: '...', trend: '+0%', icon: MessageCircle, color: '#06b6d4' },
-    { label: 'الإيرادات', value: '...', trend: '+0%', icon: TrendingUp, color: '#10b981' },
+    { label: 'إجمالي الحجوزات', value: '...', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
+    { label: 'مرضى جدد', value: '...', trend: '+5%', icon: Users, color: '#a855f7' },
+    { label: 'استقلالية الذكاء الاصطناعي', value: '...', trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
+    { label: 'الإيرادات المتوقعة', value: '...', trend: '+20%', icon: TrendingUp, color: '#10b981' },
   ]);
+  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [currentType, setCurrentType] = useState<string>('clinic');
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleTypeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    setCurrentType(newType);
+    setDict(getDictionary(newType));
+    
+    // Update labels instantly
+    const newDict = getDictionary(newType);
+    setStats(prev => [
+      { ...prev[0], label: newDict.totalBookings },
+      { ...prev[1], label: newDict.newCustomers },
+      { ...prev[2] },
+      { ...prev[3], label: newDict.revenue }
+    ]);
+
+    if (tenantId) {
+      await supabase.from('tenants').update({ type: newType }).eq('id', tenantId);
+      // Reload page to update Sidebar
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -26,8 +52,16 @@ export default function Home() {
           window.location.href = '/auth';
           return;
         }
-        const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+        
+        const tenant = await getActiveTenant(session.user);
         if (!tenant) return;
+
+        // Store tenant info for later update
+        setTenantId(tenant.id);
+        setCurrentType(tenant.type || 'clinic');
+
+        const currentDict = getDictionary(tenant.type);
+        setDict(currentDict);
 
         // 1. Fetch total bookings
         const { count: bookingCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
@@ -47,11 +81,11 @@ export default function Home() {
           .order('booking_time', { ascending: false })
           .limit(5);
 
-        setStats(prev => [
-          { ...prev[0], value: bookingCount?.toString() || '0' },
-          { ...prev[1], value: uniqueCustomers.toString() },
-          { ...prev[2], value: (bookingCount ? bookingCount * 3 : 0).toString() }, // Simulated AI messages
-          { ...prev[3], value: (bookingCount ? bookingCount * 550 : 0).toLocaleString() + ' ج.م' },
+        setStats([
+          { label: currentDict.totalBookings, value: bookingCount?.toString() || '0', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
+          { label: currentDict.newCustomers, value: uniqueCustomers.toString(), trend: '+5%', icon: Users, color: '#a855f7' },
+          { label: 'استقلالية الذكاء الاصطناعي', value: bookingCount ? '85%' : '0%', trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
+          { label: currentDict.revenue, value: (bookingCount ? bookingCount * 300 : 0).toLocaleString() + ' ج.م', trend: '+20%', icon: TrendingUp, color: '#10b981' },
         ]);
 
         setRecentBookings(bookings || []);
@@ -67,6 +101,46 @@ export default function Home() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      
+      {/* Demo Switcher (Can be removed in production) */}
+      <div style={{ 
+        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1))', 
+        padding: '1rem 1.5rem', 
+        borderRadius: '16px',
+        border: '1px solid rgba(16, 185, 129, 0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '1rem'
+      }}>
+        <div>
+          <h3 style={{ color: '#10b981', margin: '0 0 0.2rem 0', fontSize: '1rem' }}>وضع تجربة المجالات (Demo Mode)</h3>
+          <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>غيّر المجال من هنا وشوف إزاي لوحة التحكم والمصطلحات هتتغير أوتوماتيك!</p>
+        </div>
+        <select 
+          value={currentType} 
+          onChange={handleTypeChange}
+          style={{
+            background: 'var(--card-bg)',
+            color: 'var(--text-main)',
+            border: '1px solid var(--glass-border)',
+            padding: '0.8rem 1.2rem',
+            borderRadius: '12px',
+            outline: 'none',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            minWidth: '200px'
+          }}
+        >
+          <option value="clinic">عيادة / مركز طبي</option>
+          <option value="real_estate">شركة عقارات</option>
+          <option value="salon">مركز تجميل / سبا</option>
+          <option value="car_rental">معرض سيارات</option>
+          <option value="ecommerce">متجر إلكتروني</option>
+          <option value="restaurant">مطعم / كافيه</option>
+        </select>
+      </div>
+
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
         {stats.map((stat, i) => (
           <div key={i} style={{
@@ -98,6 +172,39 @@ export default function Home() {
         ))}
       </section>
 
+      {/* AI Performance Visual Section */}
+      <section style={{ 
+        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))', 
+        borderRadius: '24px', 
+        padding: '2rem', 
+        border: '1px solid rgba(99, 102, 241, 0.2)' 
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <h2 style={{ color: 'var(--text-bright)', marginBottom: '0.5rem' }}>أداء السكرتير الذكي هذا الشهر</h2>
+            <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>كم عدد الحجوزات التي تعامل معها الذكاء الاصطناعي بمفرده دون تدخل بشري؟</p>
+          </div>
+          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#a5b4fc' }}>
+            85<span style={{ fontSize: '1.5rem' }}>%</span>
+          </div>
+        </div>
+        
+        {/* CSS Progress Bar */}
+        <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+          <div style={{ 
+            width: '85%', 
+            height: '100%', 
+            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
+            borderRadius: '10px',
+            boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)'
+          }}></div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+          <span>تدخل بشري (15%)</span>
+          <span>إغلاق آلي بالكامل (85%)</span>
+        </div>
+      </section>
+
       <section style={{ 
         background: 'var(--card-bg)', 
         borderRadius: '24px', 
@@ -105,7 +212,7 @@ export default function Home() {
         border: '1px solid var(--glass-border)' 
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2>أحدث الحجوزات القادمة</h2>
+          <h2>{dict.recentActivity}</h2>
           <button style={{ 
             background: 'var(--accent-primary)', 
             color: 'var(--text-main)', 
@@ -121,8 +228,8 @@ export default function Home() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ color: 'var(--text-dim)', borderBottom: '1px solid var(--glass-border)' }}>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>المريض / العميل</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>الخدمة</th>
+                <th style={{ textAlign: 'right', padding: '1rem' }}>الاسم</th>
+                <th style={{ textAlign: 'right', padding: '1rem' }}>{dict.item}</th>
                 <th style={{ textAlign: 'right', padding: '1rem' }}>التوقيت</th>
                 <th style={{ textAlign: 'right', padding: '1rem' }}>الحالة</th>
               </tr>

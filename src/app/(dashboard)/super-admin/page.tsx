@@ -11,58 +11,156 @@ import {
   ExternalLink,
   ShieldCheck,
   AlertCircle,
-  Zap
+  Zap,
+  Lock,
+  MessageCircle,
+  Power,
+  PowerOff,
+  Briefcase
 } from 'lucide-react';
+
+import { 
+  fetchSuperAdminData, 
+  toggleTenantStatusAction, 
+  saveAgencyPricingAction 
+} from './actions';
+
+const SUPER_ADMIN_EMAILS = ['ashsameh1@gmail.com', 'pyramidology.ai@gmail.com']; 
 
 const SuperAdminDashboard = () => {
   const [tenants, setTenants] = useState<any[]>([]);
+  const [agencies, setAgencies] = useState<any[]>([]);
   const [stats, setStats] = useState({
+    totalAgencies: 0,
     totalTenants: 0,
     activeSubscriptions: 0,
     totalBookings: 0,
     systemHealth: '100%'
   });
+  const [agencyPricing, setAgencyPricing] = useState({
+    baseFee: 100,
+    percentage: 20
+  });
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    checkAdminAndFetch();
   }, []);
 
-  const fetchData = async () => {
+  const checkAdminAndFetch = async () => {
     try {
-      const { data: tenantsData } = await supabase.from('tenants').select('*');
-      const { count: bookingsCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true });
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !SUPER_ADMIN_EMAILS.includes(session.user.email || '')) {
+        setIsAdmin(false);
+        setLoading(false);
+        return; // Not authorized
+      }
+      setIsAdmin(true);
+      await fetchData(session.access_token);
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
+    }
+  };
 
-      setTenants(tenantsData || []);
+  const fetchData = async (token: string) => {
+    try {
+      const response = await fetchSuperAdminData(token);
+      
+      if (!response.success) {
+         setIsAdmin(false);
+         return;
+      }
+
+      const { adminTenantsData, agenciesData, messagesData, platformSettings } = response;
+
+      if (platformSettings) {
+        setAgencyPricing({
+          baseFee: platformSettings.agency_base_fee || 100,
+          percentage: platformSettings.agency_percentage || 20
+        });
+      }
+
+      setAgencies(agenciesData || []);
+      
+      let totalUsage = 0;
+      const tenantsWithUsage = adminTenantsData?.map((t: any) => {
+        const usage = messagesData?.filter((m: any) => m.tenant_id === t.id && m.sender === 'model').length || 0;
+        totalUsage += usage;
+        return { ...t, ai_usage: usage };
+      }) || [];
+
+      setTenants(tenantsWithUsage);
       setStats({
-        totalTenants: tenantsData?.length || 0,
-        activeSubscriptions: tenantsData?.filter(t => t.subscription_tier !== 'expired').length || 0,
-        totalBookings: bookingsCount || 0,
-        systemHealth: '99.9%'
+        totalAgencies: agenciesData?.length || 0,
+        totalTenants: adminTenantsData?.length || 0,
+        activeSubscriptions: adminTenantsData?.filter((t: any) => t.status === 'active').length || 0,
+        totalBookings: totalUsage, // using AI usage as a metric here
+        systemHealth: '100%'
       });
-    } catch (err) {
-      console.error(err);
+
+    } catch (e) {
+      console.error(e);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleSaveAgencyPricing = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      await saveAgencyPricingAction(session.access_token, agencyPricing.baseFee, agencyPricing.percentage);
+      alert('تم حفظ الإعدادات بنجاح!');
+    } catch (err) {
+      alert('حدث خطأ أثناء الحفظ.');
+    }
+  };
+
+  const toggleTenantStatus = async (tenantId: string, currentStatus: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const newStatus = await toggleTenantStatusAction(session.access_token, tenantId, currentStatus, session.user.id);
+      setTenants(tenants.map(t => t.id === tenantId ? { ...t, status: newStatus } : t));
+    } catch (e) {
+      console.error('Toggle status error', e);
+      alert('حدث خطأ أثناء تغيير الحالة');
+    }
+  };
+
+  if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: '5rem 2rem', textAlign: 'center', color: 'var(--text-main)' }}>
+        <Lock size={64} color="#ef4444" style={{ margin: '0 auto 1rem auto' }} />
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>غير مصرح لك بالدخول</h1>
+        <p style={{ color: 'var(--text-dim)' }}>هذه الصفحة مخصصة للإدارة العليا فقط.</p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', color: 'var(--text-main)' }}>
       {/* Header section with Stats */}
       <div style={{ marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '0.5rem', background: 'linear-gradient(to right, #fff, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Super Admin Control Panel
+          Master Admin Control Panel
         </h1>
         <p style={{ color: 'var(--text-dim)' }}>إدارة المنصة الشاملة ومتابعة الـ 1000 عيادة والمطاعم.</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         {[
-          { label: 'إجمالي المشتركين', value: stats.totalTenants, icon: Building2, color: '#6366f1' },
+          { label: 'إجمالي الوكالات', value: stats.totalAgencies, icon: Briefcase, color: '#f59e0b' },
+          { label: 'إجمالي المشتركين (End Clients)', value: stats.totalTenants, icon: Building2, color: '#6366f1' },
           { label: 'اشتراكات نشطة', value: stats.activeSubscriptions, icon: ShieldCheck, color: '#10b981' },
-          { label: 'إجمالي عمليات الـ AI', value: stats.totalBookings, icon: Activity, color: '#a855f7' },
-          { label: 'سلامة النظام', value: stats.systemHealth, icon: Zap, color: '#f59e0b' },
+          { label: 'عمليات الـ AI الكلية', value: stats.totalBookings, icon: Activity, color: '#a855f7' },
         ].map((s, i) => (
           <div key={i} style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '24px', border: '1px solid var(--glass-border)', backdropFilter: 'blur(10px)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -96,8 +194,9 @@ const SuperAdminDashboard = () => {
               <tr style={{ color: 'var(--text-dim)', borderBottom: '1px solid var(--glass-border)', fontSize: '0.9rem' }}>
                 <th style={{ textAlign: 'right', padding: '1rem' }}>المؤسسة</th>
                 <th style={{ textAlign: 'right', padding: '1rem' }}>النوع</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>الباقة</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>تاريخ التسجيل</th>
+                <th style={{ textAlign: 'center', padding: '1rem' }}>استهلاك الـ AI</th>
+                <th style={{ textAlign: 'right', padding: '1rem' }}>الحالة</th>
+                <th style={{ textAlign: 'right', padding: '1rem' }}>انتهاء الـ Trial</th>
                 <th style={{ textAlign: 'center', padding: '1rem' }}>الإجراءات</th>
               </tr>
             </thead>
@@ -106,27 +205,46 @@ const SuperAdminDashboard = () => {
                 <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: '0.2s' }}>
                   <td style={{ padding: '1.2rem' }}>
                     <div style={{ fontWeight: '600' }}>{t.name}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{t.slug}.aisaas.pro</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                      {t.agency ? `وكالة: ${t.agency.name}` : 'عميل مباشر (Direct)'}
+                    </div>
                   </td>
                   <td style={{ padding: '1.2rem' }}>
                     <span style={{ fontSize: '0.8rem', padding: '0.3rem 0.7rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)' }}>
-                      {t.type === 'clinic' ? '🏥 عيادة' : '🍔 مطعم'}
+                      {t.type === 'clinic' ? '🏥 عيادة' : 
+                       t.type === 'real_estate' ? '🏢 عقارات' :
+                       t.type === 'salon' ? '✂️ صالون' :
+                       t.type === 'car_rental' ? '🚗 سيارات' :
+                       t.type === 'ecommerce' ? '🛍️ متجر' :
+                       '🍔 مطعم/كافيه'}
                     </span>
+                  </td>
+                  <td style={{ padding: '1.2rem', textAlign: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: 'rgba(168, 85, 247, 0.1)', color: '#a855f7', padding: '0.4rem 0.8rem', borderRadius: '12px', fontWeight: 'bold' }}>
+                      <MessageCircle size={16} /> {t.ai_usage || 0}
+                    </div>
                   </td>
                   <td style={{ padding: '1.2rem' }}>
                     <span style={{ 
                       fontSize: '0.8rem', 
                       padding: '0.3rem 0.7rem', 
                       borderRadius: '8px', 
-                      background: t.subscription_tier === 'pro' ? '#6366f120' : '#94a3b820',
-                      color: t.subscription_tier === 'pro' ? '#6366f1' : '#94a3b8',
+                      background: t.status === 'suspended' ? '#ef444420' : '#10b98120',
+                      color: t.status === 'suspended' ? '#ef4444' : '#10b981',
                       fontWeight: '700'
                     }}>
-                      {t.subscription_tier?.toUpperCase() || 'BASIC'}
+                      {t.status === 'suspended' ? 'متوقف' : 'نشط'}
                     </span>
                   </td>
-                  <td style={{ padding: '1.2rem', fontSize: '0.85rem' }}>{new Date(t.created_at).toLocaleDateString('ar-EG')}</td>
-                  <td style={{ padding: '1.2rem', textAlign: 'center' }}>
+                  <td style={{ padding: '1.2rem', fontSize: '0.85rem' }}>{t.trial_ends_at ? new Date(t.trial_ends_at).toLocaleDateString('ar-EG') : 'غير محدد'}</td>
+                  <td style={{ padding: '1.2rem', textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                    <button 
+                      onClick={() => toggleTenantStatus(t.id, t.status)}
+                      style={{ background: t.status === 'suspended' ? '#10b981' : '#ef4444', border: 'none', color: 'white', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}
+                    >
+                      {t.status === 'suspended' ? <Power size={14} /> : <PowerOff size={14} />}
+                      {t.status === 'suspended' ? 'تفعيل' : 'إيقاف'}
+                    </button>
                     <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', display: 'inline-flex', gap: '0.4rem', alignItems: 'center' }}>
                       <ExternalLink size={14} /> دخول
                     </button>
@@ -137,6 +255,49 @@ const SuperAdminDashboard = () => {
           </table>
         </div>
       </div>
+
+      {/* Agency Pricing Settings */}
+      <div style={{ background: 'var(--card-bg)', borderRadius: '28px', border: '1px solid var(--glass-border)', padding: '2rem', marginTop: '3rem' }}>
+        <h2 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <CreditCard color="var(--accent-primary)" /> إعدادات أرباح المنصة من الوكالات (Agency Billing)
+        </h2>
+        <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>حدد كيف سيقوم النظام بمحاسبة الوكالات وسحب أرباحك منهم تلقائياً كل شهر.</p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>الاشتراك الشهري الثابت للوكالة (Base Fee)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input 
+                type="number" 
+                value={agencyPricing.baseFee}
+                onChange={(e) => setAgencyPricing({...agencyPricing, baseFee: parseInt(e.target.value) || 0})}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--bg-color)', color: 'var(--text-main)', fontSize: '1.2rem', fontWeight: 'bold' }} 
+              />
+              <span style={{ fontSize: '1.2rem', color: 'var(--text-dim)' }}>$</span>
+            </div>
+            <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-dim)' }}>يتم سحبه شهرياً كرسوم ترخيص (White-label).</small>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>نسبتك من مبيعات الوكالة (Percentage)</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <input 
+                type="number" 
+                value={agencyPricing.percentage}
+                onChange={(e) => setAgencyPricing({...agencyPricing, percentage: parseInt(e.target.value) || 0})}
+                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'var(--bg-color)', color: '#10b981', fontSize: '1.2rem', fontWeight: 'bold' }} 
+              />
+              <span style={{ fontSize: '1.2rem', color: 'var(--text-dim)' }}>%</span>
+            </div>
+            <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-dim)' }}>النسبة التي سيتم استقطاعها من إجمالي مبيعات الوكالة.</small>
+          </div>
+        </div>
+
+        <button onClick={handleSaveAgencyPricing} style={{ marginTop: '2rem', background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.8rem 2rem', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
+          حفظ تسعيرة الوكالات
+        </button>
+      </div>
+
     </div>
   );
 };

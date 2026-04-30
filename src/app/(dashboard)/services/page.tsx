@@ -1,14 +1,17 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Plus, Trash2, Edit2, Loader2, Stethoscope, Utensils } from 'lucide-react';
+import { getDictionary } from '@/lib/dictionary';
+import { Plus, Trash2, Edit2, Loader2, Upload, FileSpreadsheet, Stethoscope, Utensils } from 'lucide-react';
 
 const ServicesPage = () => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
+  const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [isAdding, setIsAdding] = useState(false);
-  const [newItem, setNewItem] = useState({ name: '', price: '', duration: '30' });
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [newItem, setNewItem] = useState({ name: '', price: '', duration: '30', image_url: '' });
 
   useEffect(() => {
     fetchData();
@@ -23,6 +26,7 @@ const ServicesPage = () => {
       }
       const { data: tenantData } = await supabase.from('tenants').select('*').eq('user_id', session.user.id).single();
       setTenant(tenantData);
+      setDict(getDictionary(tenantData.type));
 
       const { data: itemsData } = await supabase
         .from('items')
@@ -50,7 +54,7 @@ const ServicesPage = () => {
       if (data) {
         setItems([...items, data]);
         setIsAdding(false);
-        setNewItem({ name: '', price: '', duration: '30' });
+        setNewItem({ name: '', price: '', duration: '30', image_url: '' });
       }
     } catch (err) {
       console.error(err);
@@ -73,17 +77,38 @@ const ServicesPage = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
         <div>
           <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '0.5rem' }}>
-            {tenant?.type === 'clinic' ? 'الخدمات الطبية' : 'قائمة الطعام / المنيو'}
+            {dict.services}
           </h1>
-          <p style={{ color: 'var(--text-dim)' }}>أضف أو عدل الخدمات التي سيقوم الـ AI بعرضها للعملاء.</p>
+          <p style={{ color: 'var(--text-dim)' }}>أضف أو عدل {dict.services} التي سيقوم الـ AI بعرضها للعملاء.</p>
         </div>
-        <button 
-          onClick={() => setIsAdding(true)}
-          style={{ background: 'var(--accent-primary)', color: 'white', padding: '0.8rem 1.5rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '600' }}
-        >
-          <Plus size={20} /> إضافة جديد
-        </button>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <button 
+            onClick={() => setIsBulkUploading(true)}
+            style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.8rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '600' }}
+          >
+            <FileSpreadsheet size={20} /> رفع ملف إكسيل (Bulk)
+          </button>
+          <button 
+            onClick={() => setIsAdding(true)}
+            style={{ background: 'var(--accent-primary)', color: 'white', padding: '0.8rem 1.5rem', borderRadius: '12px', border: 'none', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '600' }}
+          >
+            <Plus size={20} /> إضافة جديد
+          </button>
+        </div>
       </div>
+
+      {isBulkUploading && (
+        <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '2rem', borderRadius: '24px', border: '1px dashed #10b981', marginBottom: '2rem', textAlign: 'center' }}>
+          <Upload size={40} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
+          <h3 style={{ marginBottom: '0.5rem', color: '#10b981' }}>رفع المنيو أو الخدمات دفعة واحدة</h3>
+          <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>يمكنك رفع ملف CSV أو Excel يحتوي على (الاسم، السعر، رابط الصورة). سيتم قراءته وإضافته للذكاء الاصطناعي فوراً.</p>
+          <input type="file" accept=".csv, .xlsx" style={{ display: 'none' }} id="file-upload" />
+          <label htmlFor="file-upload" style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+            اختر ملف
+          </label>
+          <button onClick={() => setIsBulkUploading(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', marginLeft: '1rem', cursor: 'pointer' }}>إلغاء</button>
+        </div>
+      )}
 
       {isAdding && (
         <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '24px', border: '1px solid var(--accent-primary)', marginBottom: '2rem' }}>

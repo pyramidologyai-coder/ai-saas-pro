@@ -1,14 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getGoogleTokens } from '@/lib/googleCalendar';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
+);
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const code = url.searchParams.get('code');
-  const tenantId = url.searchParams.get('state'); // Note: tenantId here could be 'tenantId' or 'tenantId|memberId'
+  const tenantId = url.searchParams.get('state');
 
+  // SECURITY: OAuth CSRF Protection using cookies
+  const cookieState = req.headers.get('cookie')?.split('; ').find(row => row.startsWith('oauth_state='))?.split('=')[1];
+  
   if (!code || !tenantId) {
-    return NextResponse.json({ error: 'Missing code or state parameter' }, { status: 400 });
+    return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
+  }
+
+  if (!cookieState || cookieState !== tenantId) {
+    console.error(`[SECURITY ALERT] OAuth CSRF Attempt blocked. State mismatch.`);
+    return NextResponse.json({ error: 'Security Violation: State Mismatch (CSRF)' }, { status: 403 });
   }
 
   try {
@@ -19,31 +32,29 @@ export async function GET(req: Request) {
       console.warn('No refresh token received. User might need to revoke access and try again.');
     }
 
-    // 2. Save tokens to Supabase
+    // 2. Save tokens to Supabase (using Admin client because user isn't authenticated in this callback via Bearer)
     const [parsedTenantId, parsedMemberId] = tenantId.split('|');
 
     if (parsedMemberId) {
-      // It's a team member connection
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('team_members')
-        .update({
-          google_calendar_refresh_token: tokens.refresh_token || null,
-        })
+        .update({ google_calendar_refresh_token: tokens.refresh_token || null })
         .eq('id', parsedMemberId);
 
       if (error) throw error;
-      return NextResponse.redirect(new URL('/team?calendar_connected=true', req.url));
+      const res = NextResponse.redirect(new URL('/team?calendar_connected=true', req.url));
+      res.cookies.delete('oauth_state');
+      return res;
     } else {
-      // It's a main tenant connection (legacy/fallback)
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from('tenants')
-        .update({
-          google_calendar_refresh_token: tokens.refresh_token || null,
-        })
+        .update({ google_calendar_refresh_token: tokens.refresh_token || null })
         .eq('id', parsedTenantId);
 
       if (error) throw error;
-      return NextResponse.redirect(new URL('/settings?calendar_connected=true', req.url));
+      const res = NextResponse.redirect(new URL('/settings?calendar_connected=true', req.url));
+      res.cookies.delete('oauth_state');
+      return res;
     }
 
   } catch (error: any) {
