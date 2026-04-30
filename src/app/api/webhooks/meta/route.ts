@@ -338,7 +338,7 @@ export async function POST(req: Request) {
                 }
               }
               // Delete from Supabase
-              await supabase.from('bookings').delete().eq('id', booking.id);
+              await supabaseAdmin.from('bookings').delete().eq('id', booking.id);
             }
           }
         }
