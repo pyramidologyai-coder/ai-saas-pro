@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       
       // Calculate "Revenue Generated" (Mocked based on $50 per booking average)
       const avgBookingValue = 50; 
-      const revenueGenerated = funnelData.totalBookings * avgBookingValue;
+      const revenueGenerated = (funnelData.totalBookings || 0) * avgBookingValue;
 
       metrics = {
         wallet: {
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
         tripleCrown: {
           conversionRate: funnelData.conversionRate,
           revenueGenerated: revenueGenerated,
-          resolutionRate: Math.min(100, Math.floor((aiData.resolutionRate / (funnelData.uniqueLeads || 1)) * 100)) + '%'
+          resolutionRate: Math.min(100, Math.floor(((aiData.resolutionRate || 0) / (funnelData.uniqueLeads || 1)) * 100)) + '%'
         },
         risk: {
           churnRisk: profitData.churnRiskScore
