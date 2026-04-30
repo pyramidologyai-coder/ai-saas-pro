@@ -23,6 +23,7 @@ export default function Home() {
   const [currentType, setCurrentType] = useState<string>('clinic');
   const [recentBookings, setRecentBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMaster, setIsMaster] = useState(false);
 
   const handleTypeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value;
@@ -54,7 +55,18 @@ export default function Home() {
           return;
         }
         
+        const userEmail = session.user.email;
+        const isMasterUser = userEmail === 'ashsameh1@gmail.com' || userEmail === 'pyramidology.ai@gmail.com';
+        setIsMaster(isMasterUser);
+
         const tenant = await getActiveTenant(session.user);
+        
+        // If master admin and has no tenant, just stop here but keep isMaster=true
+        if (!tenant && isMasterUser) {
+           setLoading(false);
+           return;
+        }
+        
         if (!tenant) return;
 
         // Store tenant info for later update
@@ -103,7 +115,8 @@ export default function Home() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {tenantId && <CognitiveDashboard tenantId={tenantId} industryType={currentType as any} />}
+      {isMaster && !tenantId && <CognitiveDashboard isAgency={true} tenantId="master" industryType="clinic" />}
+      {tenantId && <CognitiveDashboard tenantId={tenantId} isAgency={isMaster} industryType={currentType as any} />}
       
       {/* Demo Switcher (Can be removed in production) */}
       <div style={{ 
