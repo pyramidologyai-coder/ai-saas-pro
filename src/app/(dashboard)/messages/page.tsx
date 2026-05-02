@@ -19,7 +19,7 @@ const MessagesPage = () => {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState([
-    { id: 1, text: 'أهلاً بك يا فندم! منورنا في عيادة النخبة. أقدر أساعد حضرتك في حجز أي موعد النهاردة؟', sender: 'outgoing', time: 'الآن' },
+    { id: 1, text: 'أهلاً بك يا فندم! منورنا. أقدر أساعد حضرتك إزاي النهاردة؟', sender: 'outgoing', time: 'الآن' },
   ]);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
   const [branches, setBranches] = useState<any[]>([]);
@@ -146,7 +146,7 @@ const MessagesPage = () => {
           </div>
           <div className={styles.searchBox}>
             <Search size={18} />
-            <input type="text" placeholder="بحث باسم المريض..." />
+            <input type="text" placeholder="بحث بالاسم..." />
           </div>
         </div>
         <div className={styles.chatList}>

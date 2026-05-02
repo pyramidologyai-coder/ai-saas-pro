@@ -41,9 +41,9 @@ export default function Home() {
 
     if (tenantId) {
       await supabase.from('tenants').update({ type: newType }).eq('id', tenantId);
-      // Reload page to update Sidebar
-      window.location.reload();
     }
+    localStorage.setItem('demo_tenant_type', newType);
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -63,6 +63,19 @@ export default function Home() {
         
         // If master admin and has no tenant, just stop here but keep isMaster=true
         if (!tenant && isMasterUser) {
+           const demoType = localStorage.getItem('demo_tenant_type') || 'clinic';
+           setCurrentType(demoType);
+           
+           const demoDict = getDictionary(demoType);
+           setDict(demoDict);
+           
+           setStats([
+             { label: demoDict.totalBookings, value: '0', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
+             { label: demoDict.newCustomers, value: '0', trend: '+5%', icon: Users, color: '#a855f7' },
+             { label: 'استقلالية الذكاء الاصطناعي', value: '0%', trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
+             { label: demoDict.revenue, value: '0 ج.م', trend: '+20%', icon: TrendingUp, color: '#10b981' },
+           ]);
+           
            setLoading(false);
            return;
         }
@@ -198,7 +211,7 @@ export default function Home() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <div>
             <h2 style={{ color: 'var(--text-bright)', marginBottom: '0.5rem' }}>أداء السكرتير الذكي هذا الشهر</h2>
-            <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>كم عدد الحجوزات التي تعامل معها الذكاء الاصطناعي بمفرده دون تدخل بشري؟</p>
+            <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>كم عدد {dict.bookings} التي تعامل معها الذكاء الاصطناعي بمفرده دون تدخل بشري؟</p>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#a5b4fc' }}>
             85<span style={{ fontSize: '1.5rem' }}>%</span>
@@ -270,7 +283,7 @@ export default function Home() {
               {!loading && recentBookings.length === 0 && (
                 <tr>
                   <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>
-                    لا يوجد حجوزات حالية.. ابدأ بمشاركة رابط الواتساب!
+                    لا يوجد {dict.bookings} حالية.. ابدأ بمشاركة رابط الواتساب!
                   </td>
                 </tr>
               )}

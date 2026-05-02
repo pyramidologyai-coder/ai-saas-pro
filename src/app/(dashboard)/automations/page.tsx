@@ -80,7 +80,7 @@ export default function AutomationsPage() {
             <Bot size={28} color="var(--accent-primary)" />
             الرسائل التلقائية والمتابعة (Automations)
           </h1>
-          <p style={{ color: 'var(--text-dim)' }}>إدارة الرسائل المجدولة اللي الذكاء الاصطناعي بيبعتها للمرضى أوتوماتيك</p>
+          <p style={{ color: 'var(--text-dim)' }}>إدارة الرسائل المجدولة اللي الذكاء الاصطناعي بيبعتها للعملاء أوتوماتيك</p>
         </div>
       </div>
 

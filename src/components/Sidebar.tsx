@@ -54,6 +54,8 @@ const Sidebar = () => {
         if (activeTenant) {
           setBusinessName(activeTenant.name);
           setTenantType(activeTenant.type);
+        } else {
+          setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
         }
 
         // 2. Fetch User Role from profiles table

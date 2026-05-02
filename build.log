@@ -1,0 +1,289 @@
+
+> ai-saas-clinics-restaurants@0.1.0 build
+> next build
+
+▲ Next.js 16.2.4 (Turbopack)
+- Environments: .env.local, .env.production
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 13 errors:
+./node_modules/react-phone-number-input/style.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/react-phone-number-input/style.css [Client Component Browser]
+    ./src/app/(dashboard)/bookings/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/bookings/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/bookings/Bookings.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/bookings/Bookings.module.css [Client Component Browser]
+    ./src/app/(dashboard)/bookings/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/bookings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/bookings/Bookings.module.css [Client Component SSR]
+    ./src/app/(dashboard)/bookings/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/bookings/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/messages/Messages.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/messages/Messages.module.css [Client Component Browser]
+    ./src/app/(dashboard)/messages/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/messages/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/messages/Messages.module.css [Client Component SSR]
+    ./src/app/(dashboard)/messages/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/messages/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/reports/Reports.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/reports/Reports.module.css [Client Component Browser]
+    ./src/app/(dashboard)/reports/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/reports/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/reports/Reports.module.css [Client Component SSR]
+    ./src/app/(dashboard)/reports/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/reports/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/settings/Settings.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/settings/Settings.module.css [Client Component Browser]
+    ./src/app/(dashboard)/settings/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/settings/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/settings/Settings.module.css [Client Component SSR]
+    ./src/app/(dashboard)/settings/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/settings/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/team/Team.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/team/Team.module.css [Client Component Browser]
+    ./src/app/(dashboard)/team/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/team/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/team/Team.module.css [Client Component SSR]
+    ./src/app/(dashboard)/team/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/team/page.tsx [Server Component]
+
+
+./src/app/(dashboard)/users/Users.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/(dashboard)/users/Users.module.css [Client Component Browser]
+    ./src/app/(dashboard)/users/page.tsx [Client Component Browser]
+    ./src/app/(dashboard)/users/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/(dashboard)/users/Users.module.css [Client Component SSR]
+    ./src/app/(dashboard)/users/page.tsx [Client Component SSR]
+    ./src/app/(dashboard)/users/page.tsx [Server Component]
+
+
+./src/app/Landing.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import trace:
+  Server Component:
+    ./src/app/Landing.module.css
+    ./src/app/page.tsx
+
+
+./src/app/auth/Auth.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/auth/Auth.module.css [Client Component Browser]
+    ./src/app/auth/page.tsx [Client Component Browser]
+    ./src/app/auth/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/auth/Auth.module.css [Client Component SSR]
+    ./src/app/auth/page.tsx [Client Component SSR]
+    ./src/app/auth/page.tsx [Server Component]
+
+
+./src/app/globals.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import trace:
+  Client Component Browser:
+    ./src/app/globals.css [Client Component Browser]
+    ./src/app/layout.tsx [Server Component]
+
+
+./src/app/onboarding/Onboarding.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/app/onboarding/Onboarding.module.css [Client Component Browser]
+    ./src/app/onboarding/page.tsx [Client Component Browser]
+    ./src/app/onboarding/page.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/app/onboarding/Onboarding.module.css [Client Component SSR]
+    ./src/app/onboarding/page.tsx [Client Component SSR]
+    ./src/app/onboarding/page.tsx [Server Component]
+
+
+./src/components/Header.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/components/Header.module.css [Client Component Browser]
+    ./src/components/Header.tsx [Client Component Browser]
+    ./src/components/Header.tsx [Server Component]
+    ./src/app/(dashboard)/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/Header.module.css [Client Component SSR]
+    ./src/components/Header.tsx [Client Component SSR]
+    ./src/components/Header.tsx [Server Component]
+    ./src/app/(dashboard)/layout.tsx [Server Component]
+
+
+./src/components/Sidebar.module.css
+Error evaluating Node.js code
+Error: It looks like you're trying to use `tailwindcss` directly as a PostCSS plugin. The PostCSS plugin has moved to a separate package, so to continue using Tailwind CSS with PostCSS you'll need to install `@tailwindcss/postcss` and update your PostCSS configuration.
+    [at ft (C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\node_modules\tailwindcss\dist\lib.js:38:1643)]
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20]
+    [at <anonymous>]
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35]
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26]
+    [at process.processTicksAndRejections (node:internal/process/task_queues:104:5)]
+
+Import traces:
+  Client Component Browser:
+    ./src/components/Sidebar.module.css [Client Component Browser]
+    ./src/components/Sidebar.tsx [Client Component Browser]
+    ./src/components/Sidebar.tsx [Server Component]
+    ./src/app/(dashboard)/layout.tsx [Server Component]
+
+  Client Component SSR:
+    ./src/components/Sidebar.module.css [Client Component SSR]
+    ./src/components/Sidebar.tsx [Client Component SSR]
+    ./src/components/Sidebar.tsx [Server Component]
+    ./src/app/(dashboard)/layout.tsx [Server Component]
+
+
+    at pluginFactory (turbopack:///[turbopack-node]/transforms/postcss.ts:56:14) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:165:20])
+    at map (turbopack:///[turbopack-node]/transforms/postcss.ts:43:33) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0iv9ksq._.js:155:35])
+    at init (turbopack:///[turbopack-node]/child_process/evaluate.ts:74:20) [C:\Users\Ahmad\.gemini\antigravity\scratch\ai-saas-clinics-restaurants\.next\build\chunks\[root-of-the-server]__0rua-~2._.js:429:26])
+    ... collapsed 36 duplicate lines matching above 3 lines 12 times...

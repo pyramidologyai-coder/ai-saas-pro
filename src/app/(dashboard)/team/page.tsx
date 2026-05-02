@@ -359,7 +359,7 @@ const TeamPage = () => {
                     {!member.google_calendar_refresh_token && (
                       <button 
                         onClick={() => copyToClipboard(member.id)}
-                        title="نسخ الرابط لمشاركته مع الطبيب"
+                        title="نسخ الرابط للمشاركة"
                         style={{
                           background: 'var(--bg-input)',
                           border: '1px solid var(--border-color)',

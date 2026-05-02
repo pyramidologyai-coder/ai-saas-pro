@@ -32,19 +32,20 @@ export default function LandingPage() {
           <Sparkles size={16} /> المدعوم بأحدث نماذج الذكاء الاصطناعي
         </div>
         <h1 className={styles.title}>
-          حوّل عيادتك أو مطعمك ليعمل آلياً 24/7 مع سكرتير الذكاء الاصطناعي
+          حوّل عيادتك أو نشاطك ليعمل بذكاء اصطناعي 100% 
         </h1>
         <p className={styles.subtitle}>
-          أول نظام متكامل في الشرق الأوسط يجمع بين قوة الذكاء الاصطناعي ومرونة تطبيق الواتساب. 
-          دع المساعد الذكي يرد على عملائك، يحجز المواعيد، يستقبل الطلبات، ويرسل التنبيهات تلقائياً.
+          وداعاً للأنظمة القديمة. أول نظام <strong>Cyber-Omniscience</strong> في الشرق الأوسط يقدم استجابة فورية للعملاء، تدقيق مالي ذاتي، وشريط أوامر عصبي متقدم لإدارة عملك في أجزاء من الثانية.
         </p>
         <div className={styles.ctaGroup}>
-          <Link href="/dashboard">
+          <Link href="/auth?signup=true">
             <button className={styles.primaryCta}>
-              ابدأ تجربتك المجانية <ChevronLeft size={20} />
+              ابدأ الآن (التسجيل الذاتي) <ChevronLeft size={20} />
             </button>
           </Link>
-          <button className={styles.secondaryCta}>شاهد كيف يعمل</button>
+          <Link href="/dashboard">
+            <button className={styles.secondaryCta}>تجربة النظام (Live Demo)</button>
+          </Link>
         </div>
 
         {/* 3D Mockup Image */}
@@ -60,17 +61,28 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* USPs Section */}
       <section id="features" className={styles.featuresSection}>
-        <h2 className={styles.sectionTitle}>كل ما تحتاجه لإدارة عملك بذكاء</h2>
+        <h2 className={styles.sectionTitle}>لماذا نحن الجيل القادم؟ (Vs. Gabster)</h2>
         <div className={styles.featuresGrid}>
+          
+          <div className={styles.featureCard}>
+            <div className={styles.iconBox}>
+              <Sparkles size={36} />
+            </div>
+            <h3>استجابة لحظية (Zero-Latency)</h3>
+            <p>
+              يعمل نظامنا على بيئة Edge Runtime مما يضمن زمن استجابة أقل من 400ms، لتجربة محادثات وتحليل بيانات فورية لا تقارن بالأنظمة التقليدية.
+            </p>
+          </div>
+
           <div className={styles.featureCard}>
             <div className={styles.iconBox}>
               <Bot size={36} />
             </div>
-            <h3>رد آلي طبيعي جداً</h3>
+            <h3>شريط الأوامر العصبي (Neural-Cmd)</h3>
             <p>
-              وداعاً للردود الآلية المملة. مساعدنا الذكي يتحدث بلهجة طبيعية، يفهم أسئلة عملائك المعقدة ويجيب عليها كأنه موظف بشري حقيقي متواجد طوال اليوم.
+              بضغطة (Ctrl+K) يمكنك إصدار أوامر صوتية أو نصية للنظام بالكامل للبحث، الاستعلام عن الأرباح، أو تغيير الإعدادات بدون التنقل بين الصفحات.
             </p>
           </div>
 
@@ -78,9 +90,9 @@ export default function LandingPage() {
             <div className={styles.iconBox}>
               <CalendarClock size={36} />
             </div>
-            <h3>حجز واستقبال طلبات بدون أخطاء</h3>
+            <h3>تدقيق مالي ذاتي (Auto-Reconciled)</h3>
             <p>
-              يستعلم المساعد عن المواعيد والخدمات ويقوم بحجز الميعاد أو استقبال الطلب للعميل مباشرة في تقويم عملك مع ضمان الدقة الكاملة.
+              لوحة القيادة تحلل حجوزات الواتساب وتطابقها مع مدفوعات Stripe تلقائياً لتعطيك صافي الربح الحقيقي بدقة تامة دون أي تدخل بشري.
             </p>
           </div>
 
@@ -88,11 +100,12 @@ export default function LandingPage() {
             <div className={styles.iconBox}>
               <MessageSquareText size={36} />
             </div>
-            <h3>متابعة وتقييم تلقائي</h3>
+            <h3>جدار حماية 6-Stage Firewall</h3>
             <p>
-              منبه تلقائي يرسل رسالة تذكير للعميل قبل موعده لتقليل نسبة التخلف عن الحضور، وبعد الزيارة يرسل رسالة تطلب منه تقييم عملك لرفع تصنيفك على خرائط جوجل.
+              تشفير كامل للبيانات (Tokenization) وعزل حتمي باستخدام (RLS)، لضمان استحالة تداخل بيانات العيادات وحمايتها بمعايير HIPAA العالمية.
             </p>
           </div>
+
         </div>
       </section>
     </div>

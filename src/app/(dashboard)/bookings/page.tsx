@@ -278,14 +278,14 @@ const BookingsPage = () => {
 
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
         <select style={{ padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--card-bg)', color: 'var(--text-main)', flex: 1, outline: 'none' }}>
-          <option>كل الأطباء (All Doctors)</option>
-          <option>د. أحمد (جلدية)</option>
-          <option>د. نورة (طبيب ذكاء اصطناعي)</option>
+          <option>الكل (All Providers)</option>
+          <option>مقدم خدمة 1</option>
+          <option>المساعد الذكي (AI)</option>
         </select>
         <select style={{ padding: '0.8rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'var(--card-bg)', color: 'var(--text-main)', flex: 1, outline: 'none' }}>
-          <option>كل التخصصات (Specialties)</option>
-          <option>أسنان</option>
-          <option>جلدية</option>
+          <option>كل التخصصات / الأقسام (Categories)</option>
+          <option>قسم 1</option>
+          <option>قسم 2</option>
         </select>
       </div>
 

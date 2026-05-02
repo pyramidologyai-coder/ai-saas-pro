@@ -6,12 +6,14 @@ import { supabase } from '@/lib/supabase';
 import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock } from 'lucide-react';
 import { getActiveTenant } from '@/lib/tenant';
 import { saveTenantSettingsAction } from './actions';
+import { getDictionary } from '@/lib/dictionary';
 
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('trial');
+  const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api'>('general');
   
   // General Settings State
@@ -47,6 +49,7 @@ const SettingsPage = () => {
       
       if (data) {
         setTenantId(data.id);
+        setDict(getDictionary(data.type));
         setSubscriptionTier(data.subscription_tier || 'trial');
         setFormData({
           name: data.name || '',
@@ -124,10 +127,10 @@ const SettingsPage = () => {
       if (error) throw error;
       setDoctorName('');
       setDoctorSpecialty('');
-      setSuccessMsg('تم إضافة الطبيب بنجاح!');
+      setSuccessMsg('تم الإضافة بنجاح!');
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
-      alert('حدث خطأ أثناء إضافة الطبيب.');
+      alert('حدث خطأ أثناء الإضافة.');
     } finally {
       setSaving(false);
     }
@@ -139,7 +142,7 @@ const SettingsPage = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>مركز الإعدادات (Settings Hub)</h1>
-        <p>قم بإدارة كل تفاصيل عيادتك وفروعك من مكان واحد بكل سهولة.</p>
+        <p>قم بإدارة كل تفاصيل نشاطك وفروعك من مكان واحد بكل سهولة.</p>
       </div>
 
       <div className={styles.layout}>
@@ -149,7 +152,7 @@ const SettingsPage = () => {
             className={`${styles.tab} ${activeTab === 'general' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('general')}
           >
-            <Settings size={20} /> بيانات العيادة الأساسية
+            <Settings size={20} /> البيانات الأساسية
           </button>
           <button 
             className={`${styles.tab} ${activeTab === 'quick_setup' ? styles.activeTab : ''}`}
@@ -185,7 +188,7 @@ const SettingsPage = () => {
               <h2 className={styles.sectionTitle}><Settings size={24} color="var(--accent-primary)"/> البيانات الأساسية</h2>
               
               <div className={styles.formGroup}>
-                <label>اسم العيادة / المركز الرئيسي</label>
+                <label>اسم النشاط / المركز الرئيسي</label>
                 <input type="text" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="مثال: عيادات د. أحمد" required />
               </div>
 
@@ -232,21 +235,21 @@ const SettingsPage = () => {
                 </div>
               </form>
 
-              {/* Quick Add Doctor */}
+              {/* Quick Add Provider */}
               <form className={styles.quickAddCard} onSubmit={handleQuickAddDoctor}>
-                <h4><Stethoscope size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> إضافة طبيب / تخصص</h4>
+                <h4><Stethoscope size={20} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }}/> إضافة {dict.provider} / تخصص</h4>
                 <div className={styles.grid2}>
                   <div className={styles.formGroup}>
-                    <label>اسم الطبيب</label>
-                    <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={styles.input} placeholder="مثال: د. محمد علي" required />
+                    <label>اسم {dict.provider}</label>
+                    <input type="text" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} className={styles.input} placeholder={`مثال: ${dict.provider} محمد`} required />
                   </div>
                   <div className={styles.formGroup}>
-                    <label>التخصص</label>
-                    <input type="text" value={doctorSpecialty} onChange={(e) => setDoctorSpecialty(e.target.value)} className={styles.input} placeholder="مثال: طب أسنان أطفال" required />
+                    <label>التخصص أو الدور</label>
+                    <input type="text" value={doctorSpecialty} onChange={(e) => setDoctorSpecialty(e.target.value)} className={styles.input} placeholder="مثال: تخصص أو وظيفة" required />
                   </div>
                 </div>
                 <button type="submit" className={styles.saveBtn} disabled={saving} style={{ padding: '0.8rem', marginTop: '0.5rem' }}>
-                  <Plus size={20} /> إضافة الطبيب
+                  <Plus size={20} /> إضافة {dict.provider}
                 </button>
               </form>
             </div>
@@ -324,7 +327,7 @@ const SettingsPage = () => {
               <div className={styles.quickAddCard} style={{ borderColor: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }}>
                 <h4 style={{ color: '#6366f1' }}>الدومين الخاص (White-Label)</h4>
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  يمكنك استخدام نطاق خاص بعيادتك أو وكالتك (مثال: myclinic.com). 
+                  يمكنك استخدام نطاق خاص بنشاطك أو وكالتك (مثال: myclinic.com). 
                   قم بتوجيه إعدادات الـ DNS (A Record) إلى سيرفراتنا قبل الحفظ.
                 </p>
                 {subscriptionTier === 'trial' || subscriptionTier === 'basic' ? (

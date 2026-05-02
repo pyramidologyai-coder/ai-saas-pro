@@ -26,9 +26,18 @@ const Header = () => {
 
   return (
     <header className={styles.header}>
-      <div className={styles.searchBar}>
-        <Search size={18} />
-        <input type="text" placeholder={t.search} />
+      <div 
+        className={styles.searchBar} 
+        style={{ cursor: 'pointer', border: '1px solid var(--accent-primary)' }}
+        onClick={() => window.dispatchEvent(new Event('open-neural-cmd'))}
+      >
+        <Search size={18} className="text-[var(--accent-primary)]" />
+        <input 
+          type="text" 
+          placeholder="إسأل الذكاء الاصطناعي (أو اضغط Ctrl+K)" 
+          style={{ cursor: 'pointer', pointerEvents: 'none' }}
+          readOnly 
+        />
       </div>
 
       <div className={styles.actions}>

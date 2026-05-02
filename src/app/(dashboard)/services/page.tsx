@@ -115,7 +115,7 @@ const ServicesPage = () => {
           <h3 style={{ marginBottom: '1.5rem' }}>إضافة خدمة جديدة</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
             <input 
-              placeholder="اسم الخدمة (مثلاً: كشف رمد)" 
+              placeholder={`اسم ${dict.item} (مثلاً: استشارة / منتج)`} 
               value={newItem.name} 
               onChange={e => setNewItem({...newItem, name: e.target.value})}
               style={{ background: 'var(--bg-color)', border: '1px solid var(--glass-border)', padding: '0.8rem', borderRadius: '10px', color: 'var(--text-main)', outline: 'none' }}

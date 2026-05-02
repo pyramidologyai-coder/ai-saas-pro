@@ -130,7 +130,7 @@ export default function UsersPage() {
     <div className={styles.container}>
       <div className={styles.header}>
         <h1>إدارة صلاحيات المستخدمين (RBAC)</h1>
-        <p>أضف موظفين أو أطباء لحساب العيادة وحدد صلاحية كل شخص بدقة.</p>
+        <p>أضف أعضاء فريق العمل لحساب نشاطك وحدد صلاحية كل شخص بدقة.</p>
       </div>
 
       <div className={styles.card}>

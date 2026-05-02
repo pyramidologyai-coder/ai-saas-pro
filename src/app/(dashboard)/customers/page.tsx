@@ -73,7 +73,7 @@ const CustomersPage = () => {
     <div style={{ padding: '2rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>العملاء والمرضى</h1>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800' }}>العملاء</h1>
           <p style={{ color: 'var(--text-dim)' }}>جميع الأشخاص الذين تفاعلوا مع الـ AI عبر المنصات المختلفة.</p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>

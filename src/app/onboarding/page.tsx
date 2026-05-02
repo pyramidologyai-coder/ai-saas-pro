@@ -115,11 +115,11 @@ export default function OnboardingWizard() {
         {step === 1 && (
           <div className={styles.stepContent}>
             <h2 className={styles.label} style={{ fontSize: '1.4rem', marginBottom: '1.5rem', color: 'var(--accent-primary)' }}>
-              الخطوة الأولى: بيانات العيادة
+              الخطوة الأولى: بيانات النشاط
             </h2>
             <div className={styles.inputGroup}>
               <label className={styles.label}>اسم النشاط التجاري</label>
-              <input type="text" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="مثال: عيادة د. أحمد / شركة الأمل للعقارات" />
+              <input type="text" name="name" value={formData.name} onChange={handleChange} className={styles.input} placeholder="مثال: عيادة الأمل / مطعم كرم / معرض سيارات" />
             </div>
             <div className={styles.inputGroup}>
               <label className={styles.label}>مجال النشاط (الصناعة)</label>

@@ -33,9 +33,9 @@ export async function GET(req: Request) {
         const bookingDate = new Date(booking.booking_time);
         const timeString = bookingDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         const dateString = bookingDate.toLocaleDateString('ar-EG');
-        const clinicName = booking.tenants?.name || 'العيادة';
+        const clinicName = booking.tenants?.name || 'النشاط';
 
-        const messageText = `أهلاً يا ${booking.customer_name} 👋\nبنفكرك بميعاد الكشف بتاعك في ${clinicName} بكره ${dateString} الساعة ${timeString}.\nفي انتظارك! نتمنى لك دوام الصحة.`;
+        const messageText = `أهلاً يا ${booking.customer_name} 👋\nبنفكرك بميعادك في ${clinicName} بكره ${dateString} الساعة ${timeString}.\nفي انتظارك!`;
 
         await sendWhatsAppMessage(booking.customer_phone, messageText);
         
@@ -66,7 +66,7 @@ export async function GET(req: Request) {
       for (const booking of pastBookings) {
         if (!booking.customer_phone) continue;
         
-        const clinicName = booking.tenants?.name || 'العيادة';
+        const clinicName = booking.tenants?.name || 'النشاط';
         const reviewLink = booking.tenants?.google_review_link || '';
 
         const messageText = `أهلاً يا ${booking.customer_name} 🌟\nنتمنى تكون بخير بعد زيارتك لـ ${clinicName}!\nرأيك يهمنا جداً وبيساعدنا نطور من نفسنا، ياريت تشاركنا تجربتك وتقييمك على جوجل من اللينك ده:\n${reviewLink}\n\nلو في أي مشكلة أو استفسار، إحنا دايماً موجودين عشان نساعدك!`;

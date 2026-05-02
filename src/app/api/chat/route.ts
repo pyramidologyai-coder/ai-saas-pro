@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     if (tenant.status === 'suspended') {
-      return NextResponse.json({ replyMessage: 'عذراً يا فندم، يتم الآن الصيانة الدورية للنظام. برجاء التواصل مع العيادة هاتفياً أو ترك رسالتك.' }, { status: 403 });
+      return NextResponse.json({ replyMessage: 'عذراً يا فندم، يتم الآن الصيانة الدورية للنظام. برجاء التواصل معنا هاتفياً أو ترك رسالتك.' }, { status: 403 });
     }
 
     // 1000-Year Hacker Defense: Strict Origin Validation (Prevent Quota Drain via Botnets)

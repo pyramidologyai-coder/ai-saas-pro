@@ -2,6 +2,7 @@ import React from 'react';
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import TrialBlocker from "@/components/TrialBlocker";
+import NeuralCommandBar from "@/components/NeuralCommandBar";
 
 export default function DashboardLayout({
   children,
@@ -19,6 +20,7 @@ export default function DashboardLayout({
           </TrialBlocker>
         </main>
       </div>
+      <NeuralCommandBar />
     </div>
   );
 }
