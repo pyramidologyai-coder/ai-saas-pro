@@ -109,7 +109,7 @@ export default function FinancialDashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value))} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -143,7 +143,7 @@ export default function FinancialDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: 'var(--text-dim)', fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--text-dim)', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                <Tooltip formatter={(value: any) => formatCurrency(Number(value))} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
                 <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
