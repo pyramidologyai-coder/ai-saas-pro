@@ -1,7 +1,6 @@
 export const maxDuration = 60; // Allow Vercel to run up to 60s
 import { NextResponse } from 'next/server';
 import { processIncomingMessage } from '@/lib/ai-agent';
-import { createBooking } from '@/lib/bookings';
 import { WhatsAppQueue } from '@/lib/whatsapp-queue';
 import { TemplateEngine } from '@/lib/templates';
 import { createCalendarEvent } from '@/lib/googleCalendar';
@@ -10,13 +9,19 @@ import { GhostDefender } from '@/lib/ghost-defender';
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-// Webhooks must use Admin Client to bypass RLS since Meta doesn't send a Bearer token
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
 
-const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || 'my_secure_token_123';
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
+}
+if (!VERIFY_TOKEN) {
+  throw new Error('META_VERIFY_TOKEN environment variable is not set.');
+}
+
+// Webhooks use Admin Client to bypass RLS — Meta sends no Bearer token
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 // Webhook Verification (GET)
 export async function GET(req: Request) {
@@ -172,7 +177,7 @@ export async function POST(req: Request) {
         const aiResponse = await processIncomingMessage(text, tenant.id, history, from);
 
         // 4. Send Message back to WhatsApp FIRST so the user doesn't wait
-        console.log(`Enqueuing to ${from}: ${aiResponse.replyMessage}`);
+        console.log(`[Webhook] Enqueuing reply to ***${String(from).slice(-4)}`);
         await WhatsAppQueue.enqueue(from, aiResponse.replyMessage, businessPhoneNumberId, tenant.meta_token, tenant.id);
 
         // 5. Save AI outgoing message

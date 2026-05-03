@@ -90,9 +90,6 @@ export const processIncomingMessage = async (message: string, tenantId: string, 
       busySlotsText = `المواعيد التالية محجوزة بالفعل (مشغولة) ولا يمكن الحجز فيها نهائياً: [${busyTimes}]. إذا طلب العميل وقتاً يطابق هذه المواعيد أو يتعارض معها، اعتذر منه بلطف واقترح وقتاً آخر متاحاً بدلاً منها.`;
     }
     
-    console.log('--- DEBUG: upcomingBookingsText ---');
-    console.log(upcomingBookingsText);
-    console.log('------------------------------------');
 
     // 3. Prepare Dynamic System Prompt
     const model = genAI.getGenerativeModel({ 

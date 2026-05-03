@@ -25,7 +25,7 @@ import {
   saveAgencyPricingAction 
 } from './actions';
 
-const SUPER_ADMIN_EMAILS = ['ashsameh1@gmail.com', 'pyramidology.ai@gmail.com']; 
+const SUPER_ADMIN_EMAILS = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
 const SuperAdminDashboard = () => {
   const [tenants, setTenants] = useState<any[]>([]);

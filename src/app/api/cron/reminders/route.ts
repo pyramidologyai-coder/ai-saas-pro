@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { getDictionary } from '@/lib/dictionary';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
+}
+
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 // Important: This endpoint should be triggered by a Cron Job (e.g., Vercel Cron) every hour.
 export async function GET(request: Request) {
@@ -60,7 +63,7 @@ export async function GET(request: Request) {
 
       // Mark as sent
       await supabaseAdmin.from('bookings').update({ reminder_sent: true }).eq('id', booking.id);
-      console.log(`Reminder sent to ${booking.customer_phone}`);
+      console.log(`[CRON] Reminder sent to ***${String(booking.customer_phone).slice(-4)} (booking: ${booking.id})`);
     }
 
     // 2. Process Post-Visit Review Requests (2 hours after booking)
@@ -81,7 +84,6 @@ export async function GET(request: Request) {
       if (!tenant || !tenant.meta_token || !tenant.whatsapp_number_id || tenant.enable_reviews === false) continue;
 
       const reviewLink = tenant.google_review_link || 'https://google.com';
-      const dict = getDictionary(tenant.type);
 
       const messageText = `أهلاً ${booking.customer_name}،\nنتمنى أن تكون تجربتك في ${tenant.name} قد نالت إعجابك.\nيسعدنا جداً تقييمك لنا بخمس نجوم عبر الرابط التالي: ⭐⭐⭐⭐⭐\n${reviewLink}\n\nشكراً لثقتك بنا!`;
 
@@ -102,7 +104,7 @@ export async function GET(request: Request) {
 
       // Mark as sent
       await supabaseAdmin.from('bookings').update({ followup_sent: true }).eq('id', booking.id);
-      console.log(`Follow-up review request sent to ${booking.customer_phone}`);
+      console.log(`[CRON] Follow-up sent to ***${String(booking.customer_phone).slice(-4)} (booking: ${booking.id})`);
     }
 
     return NextResponse.json({ success: true, processedReminders: upcomingBookings?.length || 0, processedFollowups: pastBookings?.length || 0 });

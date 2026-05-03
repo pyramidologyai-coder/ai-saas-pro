@@ -2,29 +2,35 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPER_ADMIN_EMAILS = ['ashsameh1@gmail.com', 'pyramidology.ai@gmail.com'];
+const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
 
 /**
  * 10000-YEAR HACKER DEFENSE: Server-Side ONLY Admin Client
  * Validates the user's token securely on the server before granting any Service Role access.
  */
 const getAdminClient = async (token: string) => {
-    // 1. Verify User Token
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+        throw new Error('Missing required Supabase environment variables.');
+    }
+
+    if (SUPER_ADMIN_EMAILS.length === 0) {
+        throw new Error('SUPER_ADMIN_EMAILS environment variable is not configured.');
+    }
+
+    // 1. Verify user token using anon key (no elevated privileges)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    
+
     if (error || !user || !SUPER_ADMIN_EMAILS.includes(user.email || '')) {
         throw new Error('Security Violation: Unauthorized Super Admin Access');
     }
 
-    // 2. Return Service Role Client safely (never exposed to browser)
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    );
+    // 2. Return Service Role Client (server-side only, never sent to browser)
+    return createClient(supabaseUrl, serviceRoleKey);
 };
 
 export async function fetchSuperAdminData(token: string) {

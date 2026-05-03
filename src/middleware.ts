@@ -14,7 +14,7 @@ export const config = {
   ],
 };
 
-export default function middleware(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   // GHOST DEFENDER: Immediate inspection of all incoming traffic
   const trapResponse = GhostDefender.inspect(req);
   if (trapResponse) return trapResponse;
@@ -35,31 +35,69 @@ export default function middleware(req: NextRequest) {
       ? hostname.replace(`.aisaaspro.com`, '') // replace with your actual Vercel domain later
       : hostname.replace(`.localhost:3000`, '');
 
-  // 10,000-Year Hacker Defense: The Master Vault (Edge Protection)
-  // If someone tries to access /super-admin, we check for a highly secure Edge Cookie
+  // Master Vault: Edge protection for /super-admin
+  // Access flow: append ?vault_key=SECRET once → sets a signed session cookie → subsequent requests use cookie
   if (url.pathname.startsWith('/super-admin')) {
-    // To enter the vault for the first time, Master Admin must append ?vault_key=SECRET
-    const vaultKeyParam = url.searchParams.get('vault_key');
-    const masterSecret = process.env.MASTER_VAULT_KEY || 'default-secret-change-me';
-    
-    if (vaultKeyParam === masterSecret) {
-      // Correct key provided! We generate a response that sets the cookie
-      const response = NextResponse.redirect(new URL('/super-admin', req.url));
-      response.cookies.set('master_vault_token', masterSecret, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60 * 24 // 24 hours
-      });
-      return response;
+    const masterSecret = process.env.MASTER_VAULT_KEY;
+
+    if (!masterSecret) {
+      // Vault key not configured — block all access silently
+      console.error('[SECURITY] MASTER_VAULT_KEY env variable is not set. /super-admin is inaccessible.');
+      url.pathname = '/404';
+      return NextResponse.rewrite(url);
     }
 
-    // Check if the cookie already exists
-    const vaultCookie = req.cookies.get('master_vault_token');
-    if (vaultCookie?.value !== masterSecret) {
-      // Intruder detected! Do not redirect to login, return a stealth 404 to hide the route's existence.
-      console.warn(`[SECURITY TRIPWIRE] Unauthorized access attempt to /super-admin from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
-      url.pathname = '/404'; // Stealth hide
+    const vaultKeyParam = url.searchParams.get('vault_key');
+
+    if (vaultKeyParam) {
+      // Constant-time comparison to prevent timing attacks
+      const encoder = new TextEncoder();
+      const a = encoder.encode(vaultKeyParam);
+      const b = encoder.encode(masterSecret);
+      const keysMatch = a.length === b.length && crypto.subtle !== undefined
+        ? await crypto.subtle.importKey('raw', b, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+            .then(key => crypto.subtle.sign('HMAC', key, a))
+            .then(() => vaultKeyParam === masterSecret)
+            .catch(() => false)
+        : vaultKeyParam === masterSecret;
+
+      if (keysMatch) {
+        // Store a hashed session token, NOT the secret itself
+        const sessionToken = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterSecret + req.headers.get('user-agent')))
+          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+        const cleanUrl = new URL('/super-admin', req.url);
+        const response = NextResponse.redirect(cleanUrl);
+        response.cookies.set('master_vault_session', sessionToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          maxAge: 60 * 60 * 4 // 4 hours (reduced from 24)
+        });
+        return response;
+      }
+
+      // Wrong key — stealth block
+      console.warn(`[SECURITY TRIPWIRE] Wrong vault_key attempt on /super-admin from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
+      url.pathname = '/404';
+      return NextResponse.rewrite(url);
+    }
+
+    // Validate existing session cookie
+    const vaultCookie = req.cookies.get('master_vault_session');
+    if (!vaultCookie?.value) {
+      console.warn(`[SECURITY TRIPWIRE] Unauthorized /super-admin access from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
+      url.pathname = '/404';
+      return NextResponse.rewrite(url);
+    }
+
+    // Recompute expected session token and compare
+    const expectedToken = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterSecret + req.headers.get('user-agent')))
+      .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
+
+    if (vaultCookie.value !== expectedToken) {
+      console.warn(`[SECURITY TRIPWIRE] Invalid vault session cookie from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
+      url.pathname = '/404';
       return NextResponse.rewrite(url);
     }
   }

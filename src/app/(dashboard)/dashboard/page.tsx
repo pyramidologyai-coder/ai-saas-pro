@@ -56,7 +56,8 @@ export default function Home() {
         }
         
         const userEmail = session.user.email;
-        const isMasterUser = userEmail === 'ashsameh1@gmail.com' || userEmail === 'pyramidology.ai@gmail.com';
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+        const isMasterUser = !!userEmail && superAdminEmails.includes(userEmail);
         setIsMaster(isMasterUser);
 
         const tenant = await getActiveTenant(session.user);

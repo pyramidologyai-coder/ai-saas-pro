@@ -3,11 +3,15 @@ import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { KMS } from '@/lib/kms';
 
-// Create a Supabase client with the SERVICE ROLE KEY to bypass RLS for background webhooks
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !serviceRoleKey) {
+  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
+}
+
+// Service Role Client — bypasses RLS intentionally (Stripe webhooks carry no user token)
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +27,7 @@ export async function POST(req: Request) {
     let webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
     if (!webhookSecret) {
-      const { data: platformSettings } = await supabaseAdmin.from('platform_settings').select('stripe_webhook_secret').limit(1).single();
+      const { data: platformSettings } = await supabaseAdmin.from('platform_settings').select('stripe_webhook_secret').limit(1).maybeSingle();
       if (platformSettings?.stripe_webhook_secret) {
         webhookSecret = platformSettings.stripe_webhook_secret;
       }
@@ -64,7 +68,7 @@ export async function POST(req: Request) {
       .from('tenants')
       .select('*, agency:agencies(*)')
       .eq('id', tenantId)
-      .single();
+      .maybeSingle();
 
     if (!tenant) {
       console.error(`[FINANCE ERROR] Tenant not found for webhook: ${tenantId}`);
@@ -81,7 +85,7 @@ export async function POST(req: Request) {
         .from('invoices')
         .select('id')
         .eq('stripe_invoice_id', stripeInvoiceId)
-        .single();
+        .maybeSingle();
         
       if (existingInvoice) {
         console.log(`[FINANCE] Webhook ignored: Invoice ${stripeInvoiceId} already processed (Idempotency).`);

@@ -1,6 +1,11 @@
-export async function sendWhatsAppMessage(to: string, text: string, phoneNumberId: string = '1046139101921254', tenantToken?: string) {
-  // Use the tenant token, or fallback to environment/hardcoded
-  const token = tenantToken || process.env.META_ACCESS_TOKEN || 'EAAXuONOAqWwBRcZAZC5gZCoXfVmhFuPq1SO03aOKsFAsmMuIl7RIut0ITN63KeTd1qlv7DYqHKztv0Bqx7NU9mEDeDdqbTZBuZAQvZBuKqkCgLo0UZCzzBWKbZCuXveCrImI8GSoYOa0Dus6CM80ZAllO3IXPZChuj0NEZCIVhZAMlesRZBNJpGV3GBvYmJPoX6pIDmyGKXtUMgdwCpNJvGKzaySKMcbjmtzqM5gZAjZAyZAW05d8SXE0Us1S8vxbkCPsDYU3OJ49Ij9vyZCaDR294DbRjrtUMt7VAFIAF71tFZBMZD';
+export async function sendWhatsAppMessage(to: string, text: string, phoneNumberId: string, tenantToken?: string) {
+  const token = tenantToken || process.env.META_ACCESS_TOKEN;
+  if (!token) {
+    throw new Error('No WhatsApp access token provided. Set META_ACCESS_TOKEN or pass tenantToken.');
+  }
+  if (!phoneNumberId) {
+    throw new Error('phoneNumberId is required to send a WhatsApp message.');
+  }
   
   const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
