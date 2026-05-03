@@ -55,7 +55,21 @@ export default function FinancialDashboard() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div style={{ padding: '5rem', textAlign: 'center', color: 'var(--text-main)' }}>
+        <AlertTriangle size={64} color="#f59e0b" style={{ margin: '0 auto 1rem auto' }} />
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>لم نتمكن من جلب البيانات</h1>
+        <p style={{ color: 'var(--text-dim)' }}>يرجى التأكد من أن جداول قاعدة البيانات (agencies, tenants, bookings) موجودة بشكل صحيح.</p>
+        <button 
+          onClick={() => window.location.reload()}
+          style={{ marginTop: '2rem', background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.8rem 2rem', borderRadius: '12px', cursor: 'pointer' }}
+        >
+          إعادة المحاولة
+        </button>
+      </div>
+    );
+  }
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'];
 
