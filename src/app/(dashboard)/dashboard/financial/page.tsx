@@ -9,18 +9,21 @@ import { ShieldAlert, AlertTriangle, CheckCircle, Wallet, CreditCard } from 'luc
 
 export default function FinancialDashboard() {
   const [data, setData] = useState<any>(null);
+  const [loadingStep, setLoadingStep] = useState('جاري بدء التحميل...');
   const [loading, setLoading] = useState(true);
   const [isMaster, setIsMaster] = useState(false);
 
   useEffect(() => {
     async function init() {
       try {
+        setLoadingStep('جاري التحقق من الجلسة...');
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           window.location.href = '/auth';
           return;
         }
 
+        setLoadingStep('جاري التحقق من الصلاحيات...');
         const userEmail = session.user.email;
         const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
         const isMasterUser = !!userEmail && superAdminEmails.includes(userEmail);
@@ -28,11 +31,18 @@ export default function FinancialDashboard() {
         setIsMaster(isMasterUser);
 
         if (isMasterUser) {
-          const financialData = await getFinancialDashboardData();
+          setLoadingStep('جاري جلب البيانات المالية (قد يستغرق 10 ثوان)...');
+          // Add a timeout race to prevent infinite hanging
+          const financialData = await Promise.race([
+            getFinancialDashboardData(),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout after 15 seconds')), 15000))
+          ]);
           setData(financialData);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load financial data', err);
+        setLoadingStep(`حدث خطأ: ${err?.message || 'خطأ غير معروف'}`);
+        return; // Don't set loading to false so the error message stays visible
       } finally {
         setLoading(false);
       }
@@ -41,8 +51,12 @@ export default function FinancialDashboard() {
     init();
   }, []);
 
+  if (loadingStep.startsWith('حدث خطأ')) {
+    return <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444', fontSize: '1.2rem', fontWeight: 'bold' }}>{loadingStep}</div>;
+  }
+
   if (loading) {
-    return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-main)' }}>جاري تحميل البيانات المالية...</div>;
+    return <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-main)', fontSize: '1.2rem' }}>{loadingStep}</div>;
   }
 
   if (!isMaster) {
