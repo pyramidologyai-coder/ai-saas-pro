@@ -100,7 +100,7 @@ const CustomersPage = () => {
         {filteredCustomers.map((c, i) => (
           <div key={i} style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '24px', border: '1px solid var(--glass-border)', display: 'flex', gap: '1.2rem', alignItems: 'center' }}>
             <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-primary), var(--accent-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: '800' }}>
-              {c.customer_name[0]}
+              {(c.customer_name || '؟')[0]}
             </div>
             <div style={{ flex: 1 }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '0.3rem' }}>{c.customer_name}</h3>
