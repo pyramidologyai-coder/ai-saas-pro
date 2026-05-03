@@ -37,7 +37,7 @@ export default async function middleware(req: NextRequest) {
 
   // Master Vault: Edge protection for /super-admin
   // Access flow: append ?vault_key=SECRET once → sets a signed session cookie → subsequent requests use cookie
-  if (url.pathname.startsWith('/super-admin')) {
+  if (url.pathname.startsWith('/super-admin') || url.pathname.startsWith('/dashboard/financial')) {
     const masterSecret = process.env.MASTER_VAULT_KEY;
 
     if (!masterSecret) {
@@ -66,7 +66,7 @@ export default async function middleware(req: NextRequest) {
         const sessionToken = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterSecret + req.headers.get('user-agent')))
           .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
 
-        const cleanUrl = new URL('/super-admin', req.url);
+        const cleanUrl = new URL(url.pathname, req.url);
         const response = NextResponse.redirect(cleanUrl);
         response.cookies.set('master_vault_session', sessionToken, {
           httpOnly: true,
