@@ -84,7 +84,7 @@ const ServicesPage = () => {
         <div style={{ display: 'flex', gap: '1rem' }}>
           <button 
             onClick={() => setIsBulkUploading(true)}
-            style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.8rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '600' }}
+            style={{ background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', padding: '0.8rem 1.5rem', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)', cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center', fontWeight: '600' }}
           >
             <FileSpreadsheet size={20} /> رفع ملف إكسيل (Bulk)
           </button>
@@ -98,12 +98,12 @@ const ServicesPage = () => {
       </div>
 
       {isBulkUploading && (
-        <div style={{ background: 'rgba(16, 185, 129, 0.05)', padding: '2rem', borderRadius: '24px', border: '1px dashed #10b981', marginBottom: '2rem', textAlign: 'center' }}>
-          <Upload size={40} color="#10b981" style={{ margin: '0 auto 1rem auto' }} />
-          <h3 style={{ marginBottom: '0.5rem', color: '#10b981' }}>رفع المنيو أو الخدمات دفعة واحدة</h3>
+        <div style={{ background: 'rgba(99, 102, 241, 0.05)', padding: '2rem', borderRadius: '24px', border: '1px dashed var(--accent-primary)', marginBottom: '2rem', textAlign: 'center' }}>
+          <Upload size={40} color="var(--accent-primary)" style={{ margin: '0 auto 1rem auto' }} />
+          <h3 style={{ marginBottom: '0.5rem', color: 'var(--accent-primary)' }}>رفع المنيو أو الخدمات دفعة واحدة</h3>
           <p style={{ color: 'var(--text-dim)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>يمكنك رفع ملف CSV أو Excel يحتوي على (الاسم، السعر، رابط الصورة). سيتم قراءته وإضافته للذكاء الاصطناعي فوراً.</p>
           <input type="file" accept=".csv, .xlsx" style={{ display: 'none' }} id="file-upload" />
-          <label htmlFor="file-upload" style={{ background: '#10b981', color: 'white', padding: '0.6rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
+          <label htmlFor="file-upload" style={{ background: 'var(--accent-primary)', color: 'white', padding: '0.6rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>
             اختر ملف
           </label>
           <button onClick={() => setIsBulkUploading(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', marginLeft: '1rem', cursor: 'pointer' }}>إلغاء</button>

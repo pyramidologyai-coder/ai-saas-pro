@@ -23,11 +23,13 @@ import {
   ChevronDown,
   CreditCard,
   Network,
-  Plus
+  Plus,
+  TrendingUp
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getDictionary, BusinessType } from '@/lib/dictionary';
 import { getActiveTenant, getAllTenants } from '@/lib/tenant';
+import { useBusinessConfig } from '@/hooks/useBusinessConfig';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -103,18 +105,20 @@ const Sidebar = () => {
   // Real user role fetched from DB, defaults to empty until loaded
   const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
 
+  const { sidebarLabels } = useBusinessConfig(tenantType || undefined);
   const dict = getDictionary(tenantType);
 
   const adminNavItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
+    { id: 'financial', icon: TrendingUp, label: 'التحليل المالي', href: '/dashboard/financial' },
     ...(isAgencyOwner ? [{ id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' }] : []),
-    { id: 'services', icon: Briefcase, label: dict.services, href: '/services' },
-    { id: 'bookings', icon: Calendar, label: dict.bookings, href: '/bookings' },
+    { id: 'services', icon: Briefcase, label: sidebarLabels.services, href: '/services' },
+    { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
     { id: 'automations', icon: Bot, label: 'الرسائل التلقائية', href: '/automations' },
-    { id: 'customers', icon: Users, label: dict.customers, href: '/customers' },
+    { id: 'customers', icon: Users, label: sidebarLabels.customers, href: '/customers' },
     { id: 'marketing', icon: Megaphone, label: 'التسويق', href: '/marketing' },
-    { id: 'team', icon: UserCog, label: dict.team, href: '/team' },
+    { id: 'team', icon: UserCog, label: sidebarLabels.team, href: '/team' },
     { id: 'users', icon: Shield, label: 'صلاحيات المستخدمين', href: '/users' },
     { id: 'branches', icon: Building2, label: 'إدارة الفروع', href: '/branches' },
     { id: 'billing', icon: CreditCard, label: 'الفواتير والاشتراكات', href: '/billing' },
@@ -122,9 +126,9 @@ const Sidebar = () => {
 
   const staffNavItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
-    { id: 'bookings', icon: Calendar, label: dict.bookings, href: '/bookings' },
+    { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
-    { id: 'customers', icon: Users, label: dict.customers, href: '/customers' },
+    { id: 'customers', icon: Users, label: sidebarLabels.customers, href: '/customers' },
   ];
 
   // Feature Toggling Logic (Chameleon UI)

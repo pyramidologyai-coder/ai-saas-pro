@@ -37,7 +37,7 @@ export default async function middleware(req: NextRequest) {
 
   // Master Vault: Edge protection for /super-admin
   // Access flow: append ?vault_key=SECRET once → sets a signed session cookie → subsequent requests use cookie
-  if (url.pathname.startsWith('/super-admin') || url.pathname.startsWith('/dashboard/financial')) {
+  if (url.pathname.startsWith('/super-admin')) {
     const masterSecret = process.env.MASTER_VAULT_KEY;
 
     if (!masterSecret) {
