@@ -111,7 +111,11 @@ const Sidebar = () => {
   const adminNavItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
     { id: 'financial', icon: TrendingUp, label: 'التحليل المالي', href: '/dashboard/financial' },
-    ...(isAgencyOwner ? [{ id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' }] : []),
+    ...(isAgencyOwner ? [
+      { id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' },
+      { id: 'agency_plans', icon: CreditCard, label: 'إدارة الباقات والأسعار', href: '/dashboard/agency-plans' }
+    ] : []),
+    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/super-admin/plans' },
     { id: 'services', icon: Briefcase, label: sidebarLabels.services, href: '/services' },
     { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
