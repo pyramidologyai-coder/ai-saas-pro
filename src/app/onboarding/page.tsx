@@ -20,10 +20,9 @@ export default function OnboardingWizard() {
         .from('tenants')
         .select('id')
         .eq('user_id', session.user.id)
-        .limit(1)
-        .single();
+        .limit(1);
       
-      if (existingTenant) {
+      if (existingTenant && existingTenant.length > 0) {
         router.replace('/dashboard');
       }
     };
@@ -75,20 +74,19 @@ export default function OnboardingWizard() {
           }
         }
 
-        // تحقق إضافي قبل الـ Upsert
+        // تحقق إضافي بطريقة تتجنب الـ 406
         const { data: existingTenant } = await supabase
           .from('tenants')
           .select('id')
           .eq('user_id', session.user.id)
-          .limit(1)
-          .single();
+          .limit(1);
 
-        if (existingTenant) {
+        if (existingTenant && existingTenant.length > 0) {
           router.replace('/dashboard');
           return;
         }
 
-        const { data: newTenant, error } = await supabase.from('tenants').upsert({
+        const { data: newTenant, error } = await supabase.from('tenants').insert({
           user_id: session.user.id,
           agency_id: validAgencyId,
           name: formData.name || 'نشاط تجاري جديد',
@@ -98,17 +96,11 @@ export default function OnboardingWizard() {
           working_hours: `يومياً من ${formData.start_time} إلى ${formData.end_time}`,
           trial_ends_at: trialEndsAt.toISOString(),
           slug: 'b-' + Math.floor(Math.random() * 100000)
-        }, {
-          onConflict: 'user_id',
-          ignoreDuplicates: false
         }).select().single();
 
         if (error) {
-          if (error.code === '23505') {
-            // لو duplicate، يروح للداشبورد مباشرة
-            router.replace('/dashboard');
-            return;
-          }
+          console.error("INSERT ERROR DETAILS:", error);
+          alert('حدث خطأ أثناء الحفظ. افتح الـ Console وشوف الخطأ.');
           throw error;
         }
         
@@ -118,8 +110,8 @@ export default function OnboardingWizard() {
         
         router.push('/dashboard');
       } catch (e) {
-        console.error(e);
-        alert('حدث خطأ أثناء الحفظ.');
+        console.error("GENERAL ERROR:", e);
+        alert('حدث خطأ. يرجى مراجعة الـ Console للتفاصيل.');
       } finally {
         setLoading(false);
       }
