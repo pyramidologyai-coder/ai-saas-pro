@@ -81,12 +81,10 @@ export default function OnboardingWizard() {
           .eq('user_id', session.user.id)
           .limit(1);
 
-        if (existingTenant && existingTenant.length > 0) {
-          router.replace('/dashboard');
-          return;
-        }
+        let newTenant = null;
+        let insertError = null;
 
-        const { data: newTenant, error } = await supabase.from('tenants').insert({
+        const tenantData = {
           user_id: session.user.id,
           agency_id: validAgencyId,
           name: formData.name || 'نشاط تجاري جديد',
@@ -96,12 +94,22 @@ export default function OnboardingWizard() {
           working_hours: `يومياً من ${formData.start_time} إلى ${formData.end_time}`,
           trial_ends_at: trialEndsAt.toISOString(),
           slug: 'b-' + Math.floor(Math.random() * 100000)
-        }).select().single();
+        };
 
-        if (error) {
-          console.error("INSERT ERROR DETAILS:", error);
+        if (existingTenant && existingTenant.length > 0) {
+          const res = await supabase.from('tenants').update(tenantData).eq('id', existingTenant[0].id).select().single();
+          newTenant = res.data;
+          insertError = res.error;
+        } else {
+          const res = await supabase.from('tenants').insert(tenantData).select().single();
+          newTenant = res.data;
+          insertError = res.error;
+        }
+
+        if (insertError) {
+          console.error("INSERT ERROR DETAILS:", insertError);
           alert('حدث خطأ أثناء الحفظ. افتح الـ Console وشوف الخطأ.');
-          throw error;
+          throw insertError;
         }
         
         if (newTenant) {

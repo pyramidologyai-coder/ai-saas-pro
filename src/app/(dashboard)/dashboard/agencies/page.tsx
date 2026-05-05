@@ -14,6 +14,7 @@ export default function AgenciesPage() {
   const [newAgency, setNewAgency] = useState({
     name: '',
     email: '',
+    whatsapp: '',
     commission_rate: 20,
     plan_slug: 'starter'
   });
@@ -53,13 +54,21 @@ export default function AgenciesPage() {
   const handleAddAgency = async () => {
     if (!newAgency.name || !newAgency.email) return;
     
+    setLoading(true);
     try {
-      // In a real scenario, we'd create the auth user here via edge function or server action
-      // For now, we mock the agency creation display
-      alert('تم استلام الطلب. يجب إنشاء حساب المستخدم عبر لوحة الـ Auth أولاً في الإنتاج.');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
+      const { createAgencyAction } = await import('./actions');
+      await createAgencyAction(newAgency, session.user.id);
+      
+      alert('تم إنشاء الوكالة بنجاح وإرسال بيانات الدخول.');
       setShowAddForm(false);
-    } catch (e) {
+      fetchAgencies(); // Reload
+    } catch (e: any) {
       console.error(e);
+      alert('حدث خطأ: ' + e.message);
+      setLoading(false);
     }
   };
 
@@ -102,7 +111,8 @@ export default function AgenciesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
             <input placeholder="اسم الوكالة" value={newAgency.name} onChange={e => setNewAgency({...newAgency, name: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
             <input placeholder="إيميل المسؤول" type="email" value={newAgency.email} onChange={e => setNewAgency({...newAgency, email: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
-            <input placeholder="نسبة العمولة %" type="number" value={newAgency.commission_rate} onChange={e => setNewAgency({...newAgency, commission_rate: parseInt(e.target.value)})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+            <input placeholder="رقم الواتساب" type="tel" value={newAgency.whatsapp} onChange={e => setNewAgency({...newAgency, whatsapp: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+            <input placeholder="نسبة العمولة %" type="number" min="0" max="50" value={newAgency.commission_rate} onChange={e => setNewAgency({...newAgency, commission_rate: parseInt(e.target.value)})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
             <select value={newAgency.plan_slug} onChange={e => setNewAgency({...newAgency, plan_slug: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }}>
               <option value="starter">Starter</option>
               <option value="growth">Growth</option>
