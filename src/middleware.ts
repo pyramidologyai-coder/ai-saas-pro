@@ -38,7 +38,8 @@ export default async function middleware(req: NextRequest) {
   // Master Vault: Edge protection for /super-admin
   // Access flow: append ?vault_key=SECRET once → sets a signed session cookie → subsequent requests use cookie
   if (url.pathname.startsWith('/super-admin')) {
-    const masterSecret = process.env.MASTER_VAULT_KEY;
+    // Strip any invisible chars (NULL bytes, BOM) that PowerShell pipe may inject into env vars
+    const masterSecret = (process.env.MASTER_VAULT_KEY ?? '').replace(/[^\x20-\x7E]/g, '').trim();
 
     if (!masterSecret) {
       // Vault key not configured — block all access silently
@@ -50,16 +51,9 @@ export default async function middleware(req: NextRequest) {
     const vaultKeyParam = url.searchParams.get('vault_key');
 
     if (vaultKeyParam) {
-      // Constant-time comparison to prevent timing attacks
-      const encoder = new TextEncoder();
-      const a = encoder.encode(vaultKeyParam);
-      const b = encoder.encode(masterSecret);
-      const keysMatch = a.length === b.length && crypto.subtle !== undefined
-        ? await crypto.subtle.importKey('raw', b, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
-            .then(key => crypto.subtle.sign('HMAC', key, a))
-            .then(() => vaultKeyParam === masterSecret)
-            .catch(() => false)
-        : vaultKeyParam === masterSecret;
+      // Sanitize input and compare
+      const cleanParam = vaultKeyParam.replace(/[^\x20-\x7E]/g, '').trim();
+      const keysMatch = cleanParam.length > 0 && cleanParam === masterSecret;
 
       if (keysMatch) {
         // Store a hashed session token, NOT the secret itself
