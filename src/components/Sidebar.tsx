@@ -38,7 +38,8 @@ import {
   Tag,
   Car,
   Users2,
-  MessageCircle
+  MessageCircle,
+  ShieldAlert
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getDictionary, BusinessType } from '@/lib/dictionary';
@@ -164,6 +165,7 @@ const Sidebar = () => {
     { icon: Building2,     label: 'الوكالات',           href: '/dashboard/agencies' },
     { icon: Users,         label: 'العملاء الكلي',      href: '/customers' },
     { icon: Package,       label: 'إدارة الباقات',      href: '/dashboard/plans' },
+    { icon: ShieldAlert,   label: 'سجلات المراقبة',     href: '/dashboard/audit-logs' },
     { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
     { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
     { icon: Settings,      label: 'الإعدادات',          href: '/settings' },

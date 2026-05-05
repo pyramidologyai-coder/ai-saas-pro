@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Plus, Search, ExternalLink, Briefcase } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { TableSkeleton } from '@/components/ui/Skeleton';
 
 export default function AgenciesPage() {
   const router = useRouter();
@@ -76,8 +77,6 @@ export default function AgenciesPage() {
     a.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}><Loader2 className="animate-spin" color="var(--accent-primary)" size={40} /></div>;
-
   return (
     <div style={{ padding: '2rem', color: 'var(--text-main)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -141,7 +140,9 @@ export default function AgenciesPage() {
             </tr>
           </thead>
           <tbody>
-            {filteredAgencies.map((a, i) => {
+            {loading ? (
+              <tr><td colSpan={7} style={{ padding: 0 }}><TableSkeleton columns={7} rows={5} /></td></tr>
+            ) : filteredAgencies.map((a, i) => {
               const revenue = a.revenue || 0;
               const rate = a.commission_rate || 20;
               const commission = (revenue * rate) / 100;
@@ -196,7 +197,7 @@ export default function AgenciesPage() {
             })}
           </tbody>
         </table>
-        {filteredAgencies.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)' }}>لا توجد وكالات</div>}
+        {!loading && filteredAgencies.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)' }}>لا توجد وكالات</div>}
       </div>
     </div>
   );

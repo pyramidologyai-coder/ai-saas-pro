@@ -6,6 +6,7 @@ import {
   CalendarCheck, 
   MessageCircle 
 } from 'lucide-react';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
@@ -192,34 +193,43 @@ export default function Home() {
       )}
 
       <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        {stats.map((stat, i) => (
-          <div key={i} style={{
-            background: 'var(--card-bg)',
-            padding: '1.5rem',
-            borderRadius: '24px',
-            border: '1px solid var(--glass-border)',
-            backdropFilter: 'blur(10px)',
-            transition: '0.3s'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <div style={{ 
-                width: '48px', 
-                height: '48px', 
-                borderRadius: '14px', 
-                background: `${stat.color}15`, 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                color: stat.color
-              }}>
-                <stat.icon size={24} />
+        {loading ? (
+          <>
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+            <CardSkeleton />
+          </>
+        ) : (
+          stats.map((stat, i) => (
+            <div key={i} style={{
+              background: 'var(--card-bg)',
+              padding: '1.5rem',
+              borderRadius: '24px',
+              border: '1px solid var(--glass-border)',
+              backdropFilter: 'blur(10px)',
+              transition: '0.3s'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  borderRadius: '14px', 
+                  background: `${stat.color}15`, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  color: stat.color
+                }}>
+                  <stat.icon size={24} />
+                </div>
+                <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>{stat.trend}</span>
               </div>
-              <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>{stat.trend}</span>
+              <h3 style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{stat.label}</h3>
+              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stat.value}</div>
             </div>
-            <h3 style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{stat.label}</h3>
-            <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stat.value}</div>
-          </div>
-        ))}
+          ))
+        )}
       </section>
 
       {/* AI Performance Visual Section */}

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Phone, Calendar, MessageSquare, Loader2, Search, Download, Building2 } from 'lucide-react';
 import UsageProgressBar from '@/components/financial/UsageProgressBar';
+import { TableSkeleton, CardSkeleton } from '@/components/ui/Skeleton';
 
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -123,7 +124,7 @@ const CustomersPage = () => {
     return nameMatch || phoneMatch;
   });
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}><Loader2 className="animate-spin" /></div>;
+  // Removed full-page loader
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -203,7 +204,9 @@ const CustomersPage = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredCustomers.map((t, i) => {
+              {loading ? (
+                <tr><td colSpan={7} style={{ padding: 0 }}><TableSkeleton columns={7} rows={5} /></td></tr>
+              ) : filteredCustomers.map((t, i) => {
                 const isUnlimited = t.plan_type === 'vip' || t.messages_limit === -1;
                 return (
                   <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -241,13 +244,20 @@ const CustomersPage = () => {
               })}
             </tbody>
           </table>
-          {filteredCustomers.length === 0 && (
+          {!loading && filteredCustomers.length === 0 && (
             <div style={{ textAlign: 'center', padding: '5rem', color: 'var(--text-dim)' }}>لا يوجد أنشطة مطابقة للبحث.</div>
           )}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '1.5rem' }}>
-          {filteredCustomers.map((c, i) => (
+          {loading ? (
+            <>
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </>
+          ) : filteredCustomers.map((c, i) => (
             <div key={i} style={{ background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '24px', border: '1px solid var(--glass-border)', display: 'flex', gap: '1.2rem', alignItems: 'center' }}>
               <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--accent-primary), var(--accent-secondary))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: '800' }}>
                 {(c.customer_name || '؟')[0]}
@@ -280,7 +290,7 @@ const CustomersPage = () => {
               </div>
             </div>
           ))}
-          {filteredCustomers.length === 0 && (
+          {!loading && filteredCustomers.length === 0 && (
             <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '5rem', color: 'var(--text-dim)' }}>
                لا يوجد عملاء مطابقين للبحث.
             </div>
