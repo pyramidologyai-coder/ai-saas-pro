@@ -35,9 +35,13 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
 
   // 3. Log to audit_logs
   await supabaseAdmin.from('audit_logs').insert({
-    user_id: adminId,
-    action: 'CREATE_AGENCY',
-    details: { agency_name: agencyData.name, agency_id: agency.id }
+    actor_id: adminId,
+    action_type: 'CREATE_AGENCY',
+    entity_type: 'agency',
+    changes: { 
+      agency_name: agencyData.name, 
+      agency_id: agency.id 
+    }
   });
 
   return agency;
@@ -51,8 +55,9 @@ export async function updateAgencyCommissionAction(agencyId: string, newRate: nu
   if (error) throw new Error(error.message);
 
   await supabaseAdmin.from('audit_logs').insert({
-    user_id: adminId,
-    action: 'UPDATE_AGENCY_COMMISSION',
-    details: { agency_id: agencyId, new_rate: newRate }
+    actor_id: adminId,
+    action_type: 'UPDATE_AGENCY_COMMISSION',
+    entity_type: 'agency',
+    changes: { agency_id: agencyId, new_rate: newRate }
   });
 }
