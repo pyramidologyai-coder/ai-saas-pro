@@ -2,10 +2,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Sanitize keys to remove invisible BOM characters injected by copy-paste
+const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
+const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
+
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
 export async function createAgencyAction(agencyData: any, adminId: string) {
   // 1. Create user in auth.users
