@@ -59,20 +59,19 @@ export default function Home() {
         let session = (await supabase.auth.getSession()).data.session;
 
         if (!session && hasOAuthCallback) {
-          // Wait for Supabase to exchange the code for a session
+          // Wait for Supabase to exchange the PKCE code for a session (up to 4s)
           session = await new Promise(resolve => {
-            const timeout = setTimeout(() => {
-              sub.subscription.unsubscribe();
-              resolve(null);
-            }, 4000);
-
-            const sub = supabase.auth.onAuthStateChange((event, s) => {
+            const { data } = supabase.auth.onAuthStateChange((event, s) => {
               if (event === 'SIGNED_IN' && s) {
                 clearTimeout(timeout);
-                sub.subscription.unsubscribe();
+                data.subscription.unsubscribe();
                 resolve(s);
               }
             });
+            const timeout = setTimeout(() => {
+              data.subscription.unsubscribe();
+              resolve(null);
+            }, 4000);
           });
         }
 
