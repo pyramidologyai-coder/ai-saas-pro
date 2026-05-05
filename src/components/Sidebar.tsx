@@ -75,25 +75,25 @@ const Sidebar = () => {
         }
 
         // 2. Fetch User Role from profiles table
-        const { data: profile } = await supabase
+        const { data: profileData } = await supabase
           .from('profiles')
           .select('role')
           .eq('id', session.user.id)
-          .single();
+          .limit(1);
 
-        if (profile && profile.role) {
-          setUserRole(profile.role as 'admin' | 'staff');
+        if (profileData && profileData.length > 0 && profileData[0].role) {
+          setUserRole(profileData[0].role as 'admin' | 'staff');
         } else {
           setUserRole('admin');
         }
 
         // 3. Check if Agency Owner
-        const { data: agency } = await supabase
+        const { data: agencyData } = await supabase
           .from('agencies')
           .select('id')
           .eq('user_id', session.user.id)
-          .single();
-        if (agency) {
+          .limit(1);
+        if (agencyData && agencyData.length > 0) {
           setIsAgencyOwner(true);
         }
       }
