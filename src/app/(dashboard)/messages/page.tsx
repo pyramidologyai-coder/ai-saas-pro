@@ -24,19 +24,41 @@ const MessagesPage = () => {
   const [selectedBranchFilter, setSelectedBranchFilter] = useState('all');
   const [branches, setBranches] = useState<any[]>([]);
 
+  // Master Admin State
+  const [role, setRole] = useState('admin');
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [allTenants, setAllTenants] = useState<any[]>([]);
+  const [selectedAgency, setSelectedAgency] = useState('all');
+  const [selectedTenant, setSelectedTenant] = useState('all');
+  const [totalMessagesToday, setTotalMessagesToday] = useState(0);
+
   useEffect(() => {
-    async function fetchBranches() {
+    async function fetchInitialData() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
-      const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
-      if (!tenant) return;
       
-      const { data: branchData } = await supabase.from('branches').select('id, name').eq('tenant_id', tenant.id);
-      if (branchData) {
-        setBranches(branchData);
+      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
+      const isMasterAdmin = superAdminEmails.includes(session.user.email || '') || session.user.user_metadata?.role === 'master_admin';
+      
+      if (isMasterAdmin) {
+        setRole('master_admin');
+        const { data: agData } = await supabase.from('agencies').select('id, name');
+        if (agData) setAgencies(agData);
+        
+        const { data: tnData } = await supabase.from('tenants').select('id, name, agency_id');
+        if (tnData) setAllTenants(tnData);
+        
+        // Mock total messages today for Master Admin view
+        setTotalMessagesToday(Math.floor(Math.random() * 500) + 120);
+      } else {
+        const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+        if (!tenant) return;
+        
+        const { data: branchData } = await supabase.from('branches').select('id, name').eq('tenant_id', tenant.id);
+        if (branchData) setBranches(branchData);
       }
     }
-    fetchBranches();
+    fetchInitialData();
   }, []);
 
   // Using real tenant id for chat if needed, but for now we keep the UI logic
@@ -122,27 +144,54 @@ const MessagesPage = () => {
     <div className={styles.container}>
       <div className={styles.sidebar}>
         <div className={styles.sidebarHeader}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-            <h2>المحادثات</h2>
-            <select 
-              value={selectedBranchFilter} 
-              onChange={e => setSelectedBranchFilter(e.target.value)}
-              style={{
-                background: 'var(--bg-input)',
-                border: '1px solid var(--border-color)',
-                color: 'var(--text-main)',
-                padding: '0.4rem',
-                borderRadius: '8px',
-                fontSize: '0.8rem',
-                maxWidth: '120px'
-              }}
-            >
-              <option value="all">كل الفروع</option>
-              <option value="unassigned">فرع غير محدد</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>فرع {b.name}</option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2>المحادثات</h2>
+              {role === 'master_admin' ? (
+                <div style={{ fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', padding: '0.3rem 0.6rem', borderRadius: '6px', fontWeight: 'bold' }}>
+                  إجمالي اليوم: {totalMessagesToday}
+                </div>
+              ) : (
+                <select 
+                  value={selectedBranchFilter} 
+                  onChange={e => setSelectedBranchFilter(e.target.value)}
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.4rem', borderRadius: '8px', fontSize: '0.8rem', maxWidth: '120px' }}
+                >
+                  <option value="all">كل الفروع</option>
+                  <option value="unassigned">فرع غير محدد</option>
+                  {branches.map(b => (
+                    <option key={b.id} value={b.id}>فرع {b.name}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            
+            {role === 'master_admin' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <select 
+                  value={selectedAgency} 
+                  onChange={e => { setSelectedAgency(e.target.value); setSelectedTenant('all'); }}
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.4rem', borderRadius: '8px', fontSize: '0.8rem', width: '100%' }}
+                >
+                  <option value="all">كل الوكالات</option>
+                  {agencies.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+                <select 
+                  value={selectedTenant} 
+                  onChange={e => setSelectedTenant(e.target.value)}
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.4rem', borderRadius: '8px', fontSize: '0.8rem', width: '100%' }}
+                >
+                  <option value="all">كل الأنشطة (العملاء)</option>
+                  {allTenants
+                    .filter(t => selectedAgency === 'all' ? true : t.agency_id === selectedAgency)
+                    .map(t => (
+                      <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <div className={styles.searchBox}>
             <Search size={18} />

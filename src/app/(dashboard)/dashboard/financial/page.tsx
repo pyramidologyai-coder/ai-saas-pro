@@ -10,6 +10,7 @@ import AgencyTable from '@/components/financial/AgencyTable';
 import ClientsTable from '@/components/financial/ClientsTable';
 import AdminUsageView from '@/components/financial/AdminUsageView';
 import UsageAlerts from '@/components/financial/UsageAlerts';
+import RevenueSourcesTable from '@/components/financial/RevenueSourcesTable';
 
 export default function FinancialPage() {
   const router = useRouter();
@@ -61,7 +62,7 @@ export default function FinancialPage() {
     try {
       if (userRole === 'master_admin') {
         const { data: agencies } = await supabase.from('agencies').select('*');
-        const { data: tenants } = await supabase.from('tenants').select('id, name, status, revenue');
+        const { data: tenants } = await supabase.from('tenants').select('id, name, status, revenue, agency_id, plan_type');
         setData({ agencies: agencies || [], tenants: tenants || [] });
       } else if (userRole === 'super_admin') {
         // Safe query for Super Admin - no commission_rate requested
@@ -97,7 +98,12 @@ export default function FinancialPage() {
       <UsageAlerts role={role!} data={data} />
       <FinancialKPIs role={role!} data={data} />
 
-      {role === 'master_admin' && <AgencyTable data={data} />}
+      {role === 'master_admin' && (
+        <>
+          <RevenueSourcesTable data={data} />
+          <AgencyTable data={data} />
+        </>
+      )}
       {role === 'super_admin' && <ClientsTable data={data} />}
       {role === 'admin' && <AdminUsageView data={data} />}
     </div>

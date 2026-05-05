@@ -1,0 +1,177 @@
+'use client';
+import React, { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Loader2, Plus, Search, ExternalLink, Briefcase } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+export default function AgenciesPage() {
+  const router = useRouter();
+  const [agencies, setAgencies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  
+  const [newAgency, setNewAgency] = useState({
+    name: '',
+    email: '',
+    commission_rate: 20,
+    plan_slug: 'starter'
+  });
+
+  useEffect(() => {
+    fetchAgencies();
+  }, []);
+
+  const fetchAgencies = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      router.replace('/auth');
+      return;
+    }
+    
+    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
+    const isMasterAdmin = superAdminEmails.includes(session.user.email || '') || session.user.user_metadata?.role === 'master_admin';
+    
+    if (!isMasterAdmin) {
+      router.replace('/dashboard');
+      return;
+    }
+
+    // Fetch agencies and their tenants count
+    const { data: agenciesData } = await supabase
+      .from('agencies')
+      .select(`
+        *,
+        tenants (id)
+      `)
+      .order('created_at', { ascending: false });
+
+    setAgencies(agenciesData || []);
+    setLoading(false);
+  };
+
+  const handleAddAgency = async () => {
+    if (!newAgency.name || !newAgency.email) return;
+    
+    try {
+      // In a real scenario, we'd create the auth user here via edge function or server action
+      // For now, we mock the agency creation display
+      alert('تم استلام الطلب. يجب إنشاء حساب المستخدم عبر لوحة الـ Auth أولاً في الإنتاج.');
+      setShowAddForm(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const filteredAgencies = agencies.filter(a => 
+    a.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}><Loader2 className="animate-spin" color="var(--accent-primary)" size={40} /></div>;
+
+  return (
+    <div style={{ padding: '2rem', color: 'var(--text-main)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <div>
+          <h1 style={{ fontSize: '2rem', fontWeight: 900 }}>الوكالات (Agencies)</h1>
+          <p style={{ color: 'var(--text-dim)' }}>إدارة شركاء المنصة (Resellers) وعمولاتهم.</p>
+        </div>
+        <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--card-bg)', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+            <Search size={18} color="var(--text-dim)" />
+            <input 
+              type="text" 
+              placeholder="بحث عن وكالة..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }} 
+            />
+          </div>
+          <button 
+            onClick={() => setShowAddForm(true)}
+            style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.6rem 1.5rem', borderRadius: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+          >
+            <Plus size={18} /> إضافة وكالة
+          </button>
+        </div>
+      </div>
+
+      {showAddForm && (
+        <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '24px', border: '1px solid var(--glass-border)', marginBottom: '2rem' }}>
+          <h3 style={{ marginBottom: '1.5rem' }}>إضافة وكالة جديدة</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            <input placeholder="اسم الوكالة" value={newAgency.name} onChange={e => setNewAgency({...newAgency, name: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+            <input placeholder="إيميل المسؤول" type="email" value={newAgency.email} onChange={e => setNewAgency({...newAgency, email: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+            <input placeholder="نسبة العمولة %" type="number" value={newAgency.commission_rate} onChange={e => setNewAgency({...newAgency, commission_rate: parseInt(e.target.value)})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+            <select value={newAgency.plan_slug} onChange={e => setNewAgency({...newAgency, plan_slug: e.target.value})} style={{ padding: '0.8rem', borderRadius: '10px', background: 'var(--bg-color)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }}>
+              <option value="starter">Starter</option>
+              <option value="growth">Growth</option>
+              <option value="pro">Pro</option>
+              <option value="vip">VIP</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+            <button onClick={handleAddAgency} style={{ background: 'var(--accent-primary)', color: 'white', border: 'none', padding: '0.6rem 2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>حفظ</button>
+            <button onClick={() => setShowAddForm(false)} style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.6rem 2rem', borderRadius: '8px', cursor: 'pointer' }}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{ background: 'var(--card-bg)', borderRadius: '24px', border: '1px solid var(--glass-border)', padding: '1rem', overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'right' }}>
+          <thead>
+            <tr style={{ color: 'var(--text-dim)', borderBottom: '1px solid var(--glass-border)' }}>
+              <th style={{ padding: '1rem' }}>اسم الوكالة</th>
+              <th style={{ padding: '1rem' }}>العملاء</th>
+              <th style={{ padding: '1rem' }}>إيرادها الشهري</th>
+              <th style={{ padding: '1rem' }}>نسبة العمولة</th>
+              <th style={{ padding: '1rem' }}>العمولة المستحقة</th>
+              <th style={{ padding: '1rem' }}>الحالة</th>
+              <th style={{ padding: '1rem' }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredAgencies.map((a, i) => {
+              const revenue = a.revenue || 0;
+              const rate = a.commission_rate || 20;
+              const commission = (revenue * rate) / 100;
+              
+              let statusColor = '#10b981';
+              let statusText = 'نشطة';
+              if (a.subscription_status === 'suspended') {
+                statusColor = '#ef4444';
+                statusText = 'خطر (موقوفة)';
+              } else if (a.subscription_status === 'past_due') {
+                statusColor = '#f59e0b';
+                statusText = 'متأخرة';
+              }
+
+              return (
+                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <td style={{ padding: '1.2rem', fontWeight: 600, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <Briefcase size={18} color="var(--accent-primary)" /> {a.name}
+                  </td>
+                  <td style={{ padding: '1.2rem', fontWeight: 700 }}>{a.tenants?.length || 0}</td>
+                  <td style={{ padding: '1.2rem', fontWeight: 700 }}>${revenue.toLocaleString()}</td>
+                  <td style={{ padding: '1.2rem', color: '#10b981', fontWeight: 700 }}>{rate}%</td>
+                  <td style={{ padding: '1.2rem', color: 'var(--accent-primary)', fontWeight: 800 }}>${commission.toLocaleString()}</td>
+                  <td style={{ padding: '1.2rem' }}>
+                    <span style={{ background: `${statusColor}20`, color: statusColor, padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                      {statusText}
+                    </span>
+                  </td>
+                  <td style={{ padding: '1.2rem', textAlign: 'center' }}>
+                    <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto' }}>
+                      <ExternalLink size={14} /> تفاصيل
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        {filteredAgencies.length === 0 && <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-dim)' }}>لا توجد وكالات</div>}
+      </div>
+    </div>
+  );
+}

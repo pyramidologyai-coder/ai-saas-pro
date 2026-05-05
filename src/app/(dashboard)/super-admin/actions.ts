@@ -86,3 +86,36 @@ export async function saveAgencyPricingAction(token: string, baseFee: number, pe
     }
     return { success: true };
 }
+
+export async function savePlanAction(token: string, plan: any, userId: string) {
+    const supabaseAdmin = await getAdminClient(token);
+    
+    // Fetch old values for audit
+    const { data: oldPlan } = await supabaseAdmin.from('plans').select('*').eq('id', plan.id).single();
+
+    const payload = {
+        price_monthly: parseFloat(plan.price_monthly),
+        price_yearly: parseFloat(plan.price_yearly),
+        messages_limit: parseInt(plan.messages_limit),
+        voice_minutes_limit: parseFloat(plan.voice_minutes_limit),
+        reminder_credits: parseInt(plan.reminder_credits),
+        extra_500_price: parseFloat(plan.extra_500_price || 0),
+        extra_1000_price: parseFloat(plan.extra_1000_price || 0),
+        extra_5000_price: parseFloat(plan.extra_5000_price || 0),
+        updated_at: new Date().toISOString(),
+        updated_by: userId
+    };
+
+    const { error } = await supabaseAdmin.from('plans').update(payload).eq('id', plan.id);
+    if (error) throw new Error('Database error: ' + error.message);
+
+    // Stealth Audit Logging
+    await supabaseAdmin.from('audit_logs').insert([{
+        actor_id: userId,
+        action_type: 'plan_updated',
+        entity_id: plan.id,
+        new_data: { plan_slug: plan.slug, old_values: oldPlan, new_values: payload }
+    }]);
+
+    return { success: true };
+}

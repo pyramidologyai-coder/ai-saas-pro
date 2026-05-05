@@ -13,8 +13,8 @@ export default function UsageProgressBar({ used, limit, label, isUnlimited }: Pr
   let color = '#10b981'; // Green
   
   if (!isUnlimited) {
-    if (percentage >= 95) color = '#ef4444';
-    else if (percentage >= 80) color = '#f59e0b';
+    if (percentage >= 80) color = '#ef4444'; // Red
+    else if (percentage >= 60) color = '#f59e0b'; // Orange
   }
 
   return (
