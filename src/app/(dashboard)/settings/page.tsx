@@ -14,7 +14,11 @@ const SettingsPage = () => {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('trial');
   const [dict, setDict] = useState(() => getDictionary('clinic'));
-  const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api' | 'account'>('general');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState({ text: '', type: '' });
   
   // General Settings State
   const [formData, setFormData] = useState({
@@ -166,11 +170,17 @@ const SettingsPage = () => {
           >
             <LinkIcon size={20} /> مركز الربط والتكامل (Integrations)
           </button>
-          <button 
+          <button
             className={`${styles.tab} ${activeTab === 'api' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('api')}
           >
             <Database size={20} /> الدومين الخاص والـ API
+          </button>
+          <button
+            className={`${styles.tab} ${activeTab === 'account' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('account')}
+          >
+            <Lock size={20} /> الحساب والأمان
           </button>
         </div>
 
@@ -375,6 +385,87 @@ const SettingsPage = () => {
                 حفظ الإعدادات
               </button>
             </form>
+          )}
+
+          {/* TAB 5: Account & Security */}
+          {activeTab === 'account' && (
+            <div>
+              <h2 className={styles.sectionTitle}><Lock size={24} color="var(--accent-primary)"/> الحساب والأمان</h2>
+
+              <div className={styles.quickAddCard} style={{ borderColor: '#6366f1', background: 'rgba(99,102,241,0.05)' }}>
+                <h4 style={{ color: '#6366f1', marginBottom: '1.5rem' }}>تغيير كلمة المرور</h4>
+
+                {passwordMsg.text && (
+                  <div style={{
+                    padding: '0.8rem 1rem',
+                    borderRadius: '10px',
+                    marginBottom: '1.5rem',
+                    background: passwordMsg.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: passwordMsg.type === 'success' ? '#10b981' : '#ef4444',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    {passwordMsg.type === 'success' ? <CheckCircle2 size={18}/> : <Lock size={18}/>}
+                    {passwordMsg.text}
+                  </div>
+                )}
+
+                <div className={styles.formGroup}>
+                  <label>كلمة المرور الجديدة</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className={styles.input}
+                    placeholder="على الأقل 8 أحرف"
+                    minLength={8}
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>تأكيد كلمة المرور الجديدة</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className={styles.input}
+                    placeholder="أعد كتابة كلمة المرور"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.saveBtn}
+                  disabled={saving}
+                  style={{ marginTop: '0.5rem' }}
+                  onClick={async () => {
+                    if (!newPassword || newPassword.length < 8) {
+                      setPasswordMsg({ text: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل', type: 'error' });
+                      return;
+                    }
+                    if (newPassword !== confirmPassword) {
+                      setPasswordMsg({ text: 'كلمة المرور وتأكيدها غير متطابقين', type: 'error' });
+                      return;
+                    }
+                    setSaving(true);
+                    const { error } = await supabase.auth.updateUser({ password: newPassword });
+                    setSaving(false);
+                    if (error) {
+                      setPasswordMsg({ text: 'حدث خطأ: ' + error.message, type: 'error' });
+                    } else {
+                      setPasswordMsg({ text: 'تم تغيير كلمة المرور بنجاح ✓', type: 'success' });
+                      setNewPassword('');
+                      setConfirmPassword('');
+                      setTimeout(() => setPasswordMsg({ text: '', type: '' }), 4000);
+                    }
+                  }}
+                >
+                  {saving ? 'جاري الحفظ...' : 'تغيير كلمة المرور'}
+                </button>
+              </div>
+            </div>
           )}
 
         </div>
