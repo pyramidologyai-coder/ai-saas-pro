@@ -4,6 +4,7 @@ import React from 'react';
 import styles from './Header.module.css';
 import { Search, Bell, Moon, Sun, Languages } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 const Header = () => {
   const { toggleLanguage, t, lang } = useLanguage();
@@ -50,10 +51,7 @@ const Header = () => {
           {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
         </button>
         
-        <button className={styles.iconBtn}>
-          <Bell size={20} />
-          <span className={styles.badge}></span>
-        </button>
+        <NotificationBell />
       </div>
     </header>
   );

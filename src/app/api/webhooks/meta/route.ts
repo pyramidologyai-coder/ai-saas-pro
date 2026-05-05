@@ -191,6 +191,65 @@ export async function POST(req: Request) {
           throw new Error('Insert Error: ' + JSON.stringify(insertRes.error));
         }
 
+        // === 🚀 10000-YEAR AI SAAS ARCHITECTURE: Usage Tracking & Notifications ===
+        const usageResult = await supabaseAdmin.rpc('increment_message_usage', { p_tenant_id: tenant.id });
+        const usageStatus = usageResult.data;
+
+        if (usageStatus === 'limit_reached') {
+          // If we just hit the limit, we'll notify them but block future queries.
+          return NextResponse.json({ stopped: true });
+        }
+
+        if (usageStatus !== 'ok') {
+          const messagesMap: Record<string, string> = {
+            warning_80: 'تحذير: وصلت 80% من رصيد رسائلك',
+            warning_95: 'تحذير عاجل: وصلت 95% من رصيد رسائلك',
+            limit_reached: 'انتهى رصيد رسائلك'
+          };
+
+          const notificationMsg = messagesMap[usageStatus];
+          
+          if (notificationMsg) {
+            const { data: saved } = await supabaseAdmin.rpc('send_usage_notification', {
+              p_tenant_id: tenant.id,
+              p_agency_id: tenant.agency_id || null,
+              p_type: usageStatus,
+              p_message: notificationMsg
+            });
+
+            if (saved) {
+              const { data: notif } = await supabaseAdmin
+                .from('notifications')
+                .select('id')
+                .eq('tenant_id', tenant.id)
+                .eq('type', usageStatus)
+                .eq('target_role', 'admin')
+                .eq('email_sent', false)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+
+              if (notif?.id) {
+                await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-notification-email`, {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ notification_id: notif.id })
+                }).catch(e => console.error('Edge function email trigger error:', e));
+              }
+            }
+          }
+        }
+
+        await supabaseAdmin.from('audit_logs').insert({
+          entity_id: tenant.id,
+          action_type: 'message_processed',
+          new_data: { channel: 'whatsapp', usage_status: usageStatus }
+        });
+        // =========================================================================
+
         // 6. If Booking or Order detected, insert into DB
         if ((aiResponse.intent === 'book' || aiResponse.intent === 'order') && aiResponse.bookings && aiResponse.bookings.length > 0) {
           for (const bookingData of (aiResponse.bookings || [])) {
