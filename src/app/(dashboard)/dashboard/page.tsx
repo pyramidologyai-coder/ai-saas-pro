@@ -49,6 +49,11 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fix OAuth hash fragment race condition
+        if (window.location.hash && window.location.hash.includes('access_token')) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           window.location.href = '/auth';
