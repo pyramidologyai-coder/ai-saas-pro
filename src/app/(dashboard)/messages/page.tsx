@@ -17,7 +17,8 @@ import {
   User,
   Instagram,
   Facebook,
-  Power
+  Power,
+  Layers
 } from 'lucide-react';
 
 type Channel = 'whatsapp' | 'messenger' | 'instagram';
@@ -32,7 +33,9 @@ type ChatData = {
 
 const MOCK_CHATS: ChatData[] = [
   { id: '1', name: 'أحمد محمود', channel: 'whatsapp', lastMsg: 'نشط الآن', isAiPaused: false },
+  { id: '4', name: 'ياسر محمد', channel: 'whatsapp', lastMsg: 'هل يوجد حجز غداً؟', isAiPaused: false },
   { id: '2', name: 'سارة خالد', channel: 'instagram', lastMsg: 'شكراً جداً!', isAiPaused: false },
+  { id: '5', name: 'نورهان علي', channel: 'instagram', lastMsg: 'بكام الكشف؟', isAiPaused: true },
   { id: '3', name: 'كريم مصطفى', channel: 'messenger', lastMsg: 'ممكن تفاصيل الحجز؟', isAiPaused: true },
 ];
 
@@ -43,6 +46,9 @@ const MessagesPage = () => {
   // Chat list state
   const [chats, setChats] = useState<ChatData[]>(MOCK_CHATS);
   const [activeChatId, setActiveChatId] = useState<string>('1');
+  
+  // Filter state
+  const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'messenger' | 'instagram'>('all');
 
   // Messages state for the active chat
   const [messages, setMessages] = useState([
@@ -62,6 +68,8 @@ const MessagesPage = () => {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Derived state
+  const filteredChats = chats.filter(chat => channelFilter === 'all' || chat.channel === channelFilter);
   const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
 
   useEffect(() => {
@@ -99,7 +107,6 @@ const MessagesPage = () => {
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
 
-    // 1. Immediately pause AI (Human Handover) if admin types manually
     if (!activeChat.isAiPaused) {
       toggleAiPause(activeChat.id, true);
     }
@@ -126,7 +133,6 @@ const MessagesPage = () => {
     }
   };
 
-  // 1000-Year Hacker Defense: Advanced Phishing & Link Scanner
   const renderMessageWithLinkScanner = (text: string, sender: string) => {
     if (sender === 'outgoing') return <span>{text}</span>;
 
@@ -169,9 +175,9 @@ const MessagesPage = () => {
     <div className={styles.container} style={{ height: 'calc(100vh - 4rem)', display: 'flex' }}>
       
       {/* --- SIDEBAR (CHATS LIST) --- */}
-      <div className={styles.sidebar} style={{ width: '350px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', background: 'var(--card-bg)' }}>
+      <div className={styles.sidebar} style={{ width: '380px', borderRight: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', background: 'var(--card-bg)' }}>
         <div className={styles.sidebarHeader} style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>المحادثات</h2>
               {role === 'master_admin' ? (
@@ -191,47 +197,83 @@ const MessagesPage = () => {
             </div>
           </div>
           
-          <div className={styles.searchBox} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+          <div className={styles.searchBox} style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-input)', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)', marginBottom: '1rem' }}>
             <Search size={18} color="var(--text-dim)" style={{ marginLeft: '0.5rem' }} />
-            <input type="text" placeholder="بحث في المحادثات..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
+            <input type="text" placeholder="بحث باسم العميل..." style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
+          </div>
+
+          {/* CHANNEL TABS FILTER */}
+          <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(0,0,0,0.15)', padding: '0.4rem', borderRadius: '12px' }}>
+            <button 
+              onClick={() => setChannelFilter('all')}
+              style={{ ...tabStyle, background: channelFilter === 'all' ? 'var(--card-bg)' : 'transparent', color: channelFilter === 'all' ? 'var(--text-main)' : 'var(--text-dim)', flex: 1, boxShadow: channelFilter === 'all' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none' }}
+            >
+              <Layers size={16} /> الكل
+            </button>
+            <button 
+              onClick={() => setChannelFilter('whatsapp')}
+              style={{ ...tabStyle, background: channelFilter === 'whatsapp' ? '#25D36620' : 'transparent', color: channelFilter === 'whatsapp' ? '#25D366' : 'var(--text-dim)', flex: 1 }}
+            >
+              <MessageCircle size={16} />
+            </button>
+            <button 
+              onClick={() => setChannelFilter('messenger')}
+              style={{ ...tabStyle, background: channelFilter === 'messenger' ? '#0084FF20' : 'transparent', color: channelFilter === 'messenger' ? '#0084FF' : 'var(--text-dim)', flex: 1 }}
+            >
+              <Facebook size={16} />
+            </button>
+            <button 
+              onClick={() => setChannelFilter('instagram')}
+              style={{ ...tabStyle, background: channelFilter === 'instagram' ? '#E1306C20' : 'transparent', color: channelFilter === 'instagram' ? '#E1306C' : 'var(--text-dim)', flex: 1 }}
+            >
+              <Instagram size={16} />
+            </button>
           </div>
         </div>
 
         <div className={styles.chatList} style={{ flex: 1, overflowY: 'auto' }}>
-          {chats.map(chat => (
-            <div 
-              key={chat.id} 
-              onClick={() => setActiveChatId(chat.id)}
-              style={{ 
-                padding: '1.25rem 1.5rem', 
-                display: 'flex', 
-                gap: '1rem', 
-                cursor: 'pointer',
-                borderBottom: '1px solid rgba(255,255,255,0.02)',
-                background: activeChatId === chat.id ? 'var(--accent-primary-transparent)' : 'transparent',
-                transition: 'background 0.2s'
-              }}
-            >
-              <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--bg-input), var(--border-color))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                {chat.name.charAt(0)}
-                <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', background: 'var(--card-bg)', borderRadius: '50%', padding: '2px' }}>
-                  {getChannelIcon(chat.channel, 18)}
-                </div>
-              </div>
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>{chat.name}</span>
-                  {chat.isAiPaused ? 
-                    <span style={{ fontSize: '0.7rem', background: '#ef444420', color: '#ef4444', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>إيقاف الـ AI</span> :
-                    <span style={{ fontSize: '0.7rem', background: '#10b98120', color: '#10b981', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>AI نشط</span>
-                  }
-                </div>
-                <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {chat.lastMsg}
-                </div>
-              </div>
+          {filteredChats.length === 0 ? (
+            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>
+              لا توجد محادثات في هذه المنصة حالياً.
             </div>
-          ))}
+          ) : (
+            filteredChats.map(chat => (
+              <div 
+                key={chat.id} 
+                onClick={() => setActiveChatId(chat.id)}
+                style={{ 
+                  padding: '1.25rem 1.5rem', 
+                  display: 'flex', 
+                  gap: '1rem', 
+                  cursor: 'pointer',
+                  borderBottom: '1px solid rgba(255,255,255,0.02)',
+                  background: activeChatId === chat.id ? 'var(--accent-primary-transparent)' : 'transparent',
+                  transition: 'background 0.2s',
+                  position: 'relative'
+                }}
+              >
+                {activeChatId === chat.id && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', background: 'var(--accent-primary)' }} />}
+                <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(45deg, var(--bg-input), var(--border-color))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  {chat.name.charAt(0)}
+                  <div style={{ position: 'absolute', bottom: '-2px', right: '-2px', background: 'var(--card-bg)', borderRadius: '50%', padding: '2px' }}>
+                    {getChannelIcon(chat.channel, 18)}
+                  </div>
+                </div>
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>{chat.name}</span>
+                    {chat.isAiPaused ? 
+                      <span style={{ fontSize: '0.7rem', background: '#ef444420', color: '#ef4444', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>إيقاف الـ AI</span> :
+                      <span style={{ fontSize: '0.7rem', background: '#10b98120', color: '#10b981', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>AI نشط</span>
+                    }
+                  </div>
+                  <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {chat.lastMsg}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -356,6 +398,20 @@ const MessagesPage = () => {
       </div>
     </div>
   );
+};
+
+const tabStyle: React.CSSProperties = {
+  display: 'flex', 
+  alignItems: 'center', 
+  justifyContent: 'center',
+  gap: '0.4rem',
+  border: 'none',
+  padding: '0.5rem',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  transition: 'all 0.2s',
+  fontWeight: 700,
+  fontSize: '0.9rem'
 };
 
 export default MessagesPage;
