@@ -36,27 +36,20 @@ export default function AuthPage() {
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              business_name: businessName || 'My Business',
+              business_type: businessType
+            }
+          }
         });
         if (authError) throw authError;
 
-        if (authData.user) {
-          // Calculate 7 days from now for the trial period
-          const trialEndsAt = new Date();
-          trialEndsAt.setDate(trialEndsAt.getDate() + 7);
-
-          // Create tenant record linked to this user
-          const { error: tenantError } = await supabase.from('tenants').insert({
-            user_id: authData.user.id,
-            name: businessName || 'My Business',
-            type: businessType,
-            trial_ends_at: trialEndsAt.toISOString(),
-            slug: businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Math.floor(Math.random() * 1000)
-          });
-          if (tenantError) throw tenantError;
-          
+        if (authData.user && authData.session) {
           router.push('/dashboard');
+        } else if (authData.user && !authData.session) {
+          alert('تم إنشاء الحساب بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.');
         }
-      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'حدث خطأ أثناء تسجيل الدخول');
