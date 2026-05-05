@@ -45,6 +45,11 @@ const TeamPage = () => {
       // 1. Get Tenant ID
       const tenantData = await getActiveTenant(session.user);
 
+      if (!tenantData) {
+        window.location.href = '/onboarding';
+        return;
+      }
+
       if (tenantData) {
         setTenantId(tenantData.id);
         setDict(getDictionary(tenantData.type));

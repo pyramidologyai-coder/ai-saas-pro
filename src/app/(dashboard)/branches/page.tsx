@@ -29,7 +29,10 @@ export default function BranchesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = '/auth'; return; }
       const tenantData = await getActiveTenant(session.user);
-      if (!tenantData) return;
+      if (!tenantData) {
+        window.location.href = '/onboarding';
+        return;
+      }
       setTenantId(tenantData.id);
 
       // 2. Fetch branches

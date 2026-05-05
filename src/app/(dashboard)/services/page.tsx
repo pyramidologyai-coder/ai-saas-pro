@@ -26,7 +26,10 @@ const ServicesPage = () => {
         return;
       }
       const tenantData = await getActiveTenant(session.user);
-      if (!tenantData) throw new Error('No active tenant found');
+      if (!tenantData) {
+        window.location.href = '/onboarding';
+        return;
+      }
       setTenant(tenantData);
       setDict(getDictionary(tenantData.type));
 

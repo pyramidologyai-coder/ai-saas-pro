@@ -96,7 +96,10 @@ export default function Home() {
            return;
         }
         
-        if (!tenant) return;
+        if (!tenant) {
+          window.location.href = '/onboarding';
+          return;
+        }
 
         // Store tenant info for later update
         setTenantId(tenant.id);
