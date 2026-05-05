@@ -5,13 +5,13 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  MessageSquare, 
-  Users, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Calendar,
+  MessageSquare,
+  Users,
+  BarChart3,
+  Settings,
   LogOut,
   Briefcase,
   Megaphone,
@@ -24,7 +24,21 @@ import {
   CreditCard,
   Network,
   Plus,
-  TrendingUp
+  TrendingUp,
+  Home,
+  Heart,
+  UserCheck,
+  Zap,
+  GitBranch,
+  Receipt,
+  BookOpen,
+  ShoppingBag,
+  Sparkles,
+  Package,
+  Tag,
+  Car,
+  Users2,
+  MessageCircle
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { getDictionary, BusinessType } from '@/lib/dictionary';
@@ -47,7 +61,7 @@ const Sidebar = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         setUserEmail(session.user.email || '');
-        
+
         // 1. Fetch Active Tenant and All Tenants
         const activeTenant = await getActiveTenant(session.user);
         const allTenantsList = await getAllTenants(session.user);
@@ -66,11 +80,11 @@ const Sidebar = () => {
           .select('role')
           .eq('id', session.user.id)
           .single();
-        
+
         if (profile && profile.role) {
           setUserRole(profile.role as 'admin' | 'staff');
         } else {
-          setUserRole('admin'); 
+          setUserRole('admin');
         }
 
         // 3. Check if Agency Owner
@@ -137,17 +151,152 @@ const Sidebar = () => {
 
   // Feature Toggling Logic (Chameleon UI)
   const hiddenFeatures: Record<string, string[]> = {
-    ecommerce: ['team', 'branches'], // E-commerce usually doesn't need bookable staff or physical branches
-    restaurant: ['team'], // Restaurants primarily use the delivery logic or simple table booking
+    ecommerce: ['team', 'branches'],
+    restaurant: ['team'],
     clinic: [],
     real_estate: [],
     salon: [],
-    car_rental: ['team'], // Cars are items, not team members usually
+    car_rental: ['team'],
   };
 
   const hiddenForCurrentType = tenantType ? (hiddenFeatures[tenantType] || []) : [];
-  const baseNavItems = userRole === 'admin' ? adminNavItems : staffNavItems;
-  const navItems = baseNavItems.filter(item => !hiddenForCurrentType.includes(item.id));
+
+  // ─── Master Admin detection ───────────────────────────────────────────────
+  const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+    .replace(/[^\x20-\x7E]/g, '').trim()
+    .split(',').map(e => e.trim()).filter(Boolean);
+  const isMasterAdmin = !!userEmail && superAdminEmails.includes(userEmail);
+
+  // ─── Master Admin menu ────────────────────────────────────────────────────
+  const masterNavItems = [
+    { icon: Home,          label: 'الرئيسية',          href: '/dashboard' },
+    { icon: TrendingUp,    label: 'التحليل المالي',     href: '/dashboard/financial' },
+    { icon: Building2,     label: 'الوكالات',           href: '/super-admin' },
+    { icon: Users,         label: 'العملاء الكلي',      href: '/customers' },
+    { icon: Package,       label: 'إدارة الباقات',      href: '/super-admin/plans' },
+    { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
+    { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
+    { icon: Settings,      label: 'الإعدادات',          href: '/settings' },
+  ];
+
+  // ─── Super Admin (Agency Owner) menu ─────────────────────────────────────
+  const agencyNavItems = [
+    { icon: Home,          label: 'الرئيسية',           href: '/dashboard' },
+    { icon: TrendingUp,    label: 'التحليل المالي',      href: '/dashboard/financial' },
+    { icon: Users,         label: 'عملاءه',             href: '/customers' },
+    { icon: Tag,           label: 'إدارة أسعاره',       href: '/dashboard/agency-plans' },
+    { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
+    { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
+    { icon: Settings,      label: 'الإعدادات',          href: '/settings' },
+  ];
+
+  // ─── Admin menus by business type ─────────────────────────────────────────
+  const adminMenuByType: Record<string, Array<{ icon: React.ElementType; label: string; href: string }>> = {
+    clinic: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Heart,         label: 'الخدمات الطبية',          href: '/services' },
+      { icon: Calendar,      label: 'الحجوزات والكشوفات',      href: '/bookings' },
+      { icon: Users,         label: 'المرضى',                  href: '/customers' },
+      { icon: UserCheck,     label: 'الأطباء والتخصصات',       href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',               href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',       href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                 href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',      href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',            href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',    href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',               href: '/settings' },
+    ],
+    restaurant: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: BookOpen,      label: 'قائمة الطعام',           href: '/services' },
+      { icon: ShoppingBag,   label: 'الطلبات',                href: '/bookings' },
+      { icon: Users,         label: 'الزبائن',                href: '/customers' },
+      { icon: Users2,        label: 'طاقم العمل',             href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',              href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',      href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',     href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',           href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',   href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
+    ],
+    salon: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Sparkles,      label: 'الخدمات',                href: '/services' },
+      { icon: Calendar,      label: 'المواعيد',               href: '/bookings' },
+      { icon: Users,         label: 'العميلات',               href: '/customers' },
+      { icon: Users2,        label: 'فريق الصالون',           href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',              href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',      href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',     href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',           href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',   href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
+    ],
+    realestate: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Building2,     label: 'العقارات المتاحة',        href: '/services' },
+      { icon: Calendar,      label: 'مواعيد المعاينات',       href: '/bookings' },
+      { icon: Users,         label: 'العملاء المستثمرين',     href: '/customers' },
+      { icon: UserCheck,     label: 'الوكلاء العقاريين',      href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',              href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',      href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',     href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',           href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',   href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
+    ],
+    store: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Tag,           label: 'المنتجات',               href: '/services' },
+      { icon: Package,       label: 'الطلبات',                href: '/bookings' },
+      { icon: Users,         label: 'المشترين',               href: '/customers' },
+      { icon: Users2,        label: 'فريق المتجر',            href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',              href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',      href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',     href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',           href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',   href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
+    ],
+    cars: [
+      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Car,           label: 'السيارات المتاحة',        href: '/services' },
+      { icon: Calendar,      label: 'مواعيد التجربة',         href: '/bookings' },
+      { icon: Users,         label: 'المشترين',               href: '/customers' },
+      { icon: Users2,        label: 'فريق المبيعات',          href: '/team' },
+      { icon: MessageCircle, label: 'المحادثات',              href: '/messages' },
+      { icon: Zap,           label: 'الرسائل التلقائية',      href: '/automations' },
+      { icon: Megaphone,     label: 'التسويق',                href: '/marketing' },
+      { icon: Shield,        label: 'صلاحيات المستخدمين',     href: '/users' },
+      { icon: GitBranch,     label: 'إدارة الفروع',           href: '/branches' },
+      { icon: Receipt,       label: 'الفواتير والاشتراكات',   href: '/billing' },
+      { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
+    ],
+  };
+
+  // ─── Compute final navItems ───────────────────────────────────────────────
+  let navItems: Array<{ icon: React.ElementType; label: string; href: string }>;
+
+  if (userRole === 'staff') {
+    navItems = staffNavItems;
+  } else if (isMasterAdmin) {
+    navItems = masterNavItems;
+  } else if (isAgencyOwner) {
+    navItems = agencyNavItems;
+  } else {
+    const type = tenantType || 'realestate';
+    navItems = adminMenuByType[type] || adminMenuByType['realestate'];
+  }
 
   return (
     <aside className={styles.sidebar}>
@@ -174,9 +323,9 @@ const Sidebar = () => {
             <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>مساحات العمل الخاصة بك</div>
               {tenants.map((t) => (
-                <div 
-                  key={t.id} 
-                  className={styles.dropdownItem} 
+                <div
+                  key={t.id}
+                  className={styles.dropdownItem}
                   onClick={() => {
                     localStorage.setItem('active_tenant_id', t.id);
                     window.location.reload();
@@ -216,8 +365,8 @@ const Sidebar = () => {
         {navItems.map((item, index) => {
           const isActive = pathname === item.href;
           return (
-            <Link 
-              key={index} 
+            <Link
+              key={index}
               href={item.href}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
             >
