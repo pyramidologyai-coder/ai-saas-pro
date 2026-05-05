@@ -80,8 +80,6 @@ export default function MessagesPage() {
   const [humanMessagesSent, setHumanMessagesSent] = useState(0);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const filteredChats = chats.filter(chat => channelFilter === 'all' || chat.channel === channelFilter);
-  const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
 
   useEffect(() => {
     async function fetchInitialData() {
