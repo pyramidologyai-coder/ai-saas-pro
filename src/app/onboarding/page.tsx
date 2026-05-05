@@ -11,6 +11,25 @@ export default function OnboardingWizard() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // أول ما يفتح الـ Onboarding: تحقق لو الـ tenant موجود فعلاً
+  React.useEffect(() => {
+    const checkExisting = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: existingTenant } = await supabase
+        .from('tenants')
+        .select('id')
+        .eq('user_id', session.user.id)
+        .limit(1)
+        .single();
+      
+      if (existingTenant) {
+        router.replace('/dashboard');
+      }
+    };
+    checkExisting();
+  }, [router]);
+
   const [formData, setFormData] = useState({
     name: '',
     type: 'clinic',
@@ -56,7 +75,20 @@ export default function OnboardingWizard() {
           }
         }
 
-        const { data: newTenant, error } = await supabase.from('tenants').insert({
+        // تحقق إضافي قبل الـ Upsert
+        const { data: existingTenant } = await supabase
+          .from('tenants')
+          .select('id')
+          .eq('user_id', session.user.id)
+          .limit(1)
+          .single();
+
+        if (existingTenant) {
+          router.replace('/dashboard');
+          return;
+        }
+
+        const { data: newTenant, error } = await supabase.from('tenants').upsert({
           user_id: session.user.id,
           agency_id: validAgencyId,
           name: formData.name || 'نشاط تجاري جديد',
@@ -66,9 +98,19 @@ export default function OnboardingWizard() {
           working_hours: `يومياً من ${formData.start_time} إلى ${formData.end_time}`,
           trial_ends_at: trialEndsAt.toISOString(),
           slug: 'b-' + Math.floor(Math.random() * 100000)
+        }, {
+          onConflict: 'user_id',
+          ignoreDuplicates: false
         }).select().single();
 
-        if (error) throw error;
+        if (error) {
+          if (error.code === '23505') {
+            // لو duplicate، يروح للداشبورد مباشرة
+            router.replace('/dashboard');
+            return;
+          }
+          throw error;
+        }
         
         if (newTenant) {
           localStorage.setItem('active_tenant_id', newTenant.id);

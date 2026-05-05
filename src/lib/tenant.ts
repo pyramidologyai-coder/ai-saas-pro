@@ -2,7 +2,21 @@ import { supabase } from '@/lib/supabase';
 
 export async function getActiveTenant(sessionUser: any) {
     if (!sessionUser) return null;
-    const { data: tenants } = await supabase.from('tenants').select('*');
+    
+    let tenants = null;
+    // حاول تجيب الـ tenant، لو مش موجود استنى وحاول تاني (max 5 محاولات كل 500ms)
+    // نعتمد على الـ RLS لجلب الأنشطة المسموحة للمستخدم الحالي
+    for (let attempt = 0; attempt < 5; attempt++) {
+        const { data } = await supabase.from('tenants').select('*');
+        if (data && data.length > 0) {
+            tenants = data;
+            break;
+        }
+        if (attempt < 4) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+    }
+
     if (!tenants || tenants.length === 0) return null;
     
     let storedId = null;
@@ -10,7 +24,7 @@ export async function getActiveTenant(sessionUser: any) {
         storedId = localStorage.getItem('active_tenant_id');
     }
     
-    const activeTenant = tenants.find(t => t.id === storedId) || tenants[0];
+    const activeTenant = tenants.find((t: any) => t.id === storedId) || tenants[0];
     
     if (typeof window !== 'undefined' && activeTenant.id !== storedId) {
         localStorage.setItem('active_tenant_id', activeTenant.id);
