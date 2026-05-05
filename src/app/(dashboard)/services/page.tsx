@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getDictionary } from '@/lib/dictionary';
+import { getActiveTenant } from '@/lib/tenant';
 import { Plus, Trash2, Edit2, Loader2, Upload, FileSpreadsheet, Stethoscope, Utensils } from 'lucide-react';
 
 const ServicesPage = () => {
@@ -24,7 +25,8 @@ const ServicesPage = () => {
         window.location.href = '/auth';
         return;
       }
-      const { data: tenantData } = await supabase.from('tenants').select('*').eq('user_id', session.user.id).single();
+      const tenantData = await getActiveTenant(session.user);
+      if (!tenantData) throw new Error('No active tenant found');
       setTenant(tenantData);
       setDict(getDictionary(tenantData.type));
 
@@ -43,6 +45,7 @@ const ServicesPage = () => {
 
   const handleAddItem = async () => {
     if (!newItem.name || !newItem.price) return;
+    if (!tenant?.id) { alert('لم يتم تحميل بيانات النشاط — يرجى تحديث الصفحة'); return; }
     try {
       const { data, error } = await supabase.from('items').insert({
         tenant_id: tenant.id,
@@ -51,13 +54,15 @@ const ServicesPage = () => {
         duration_minutes: parseInt(newItem.duration),
       }).select().single();
 
+      if (error) throw error;
       if (data) {
         setItems([...items, data]);
         setIsAdding(false);
         setNewItem({ name: '', price: '', duration: '30', image_url: '' });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert('حدث خطأ أثناء الحفظ: ' + (err.message || 'خطأ غير معروف'));
     }
   };
 

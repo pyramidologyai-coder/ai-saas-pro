@@ -5,6 +5,7 @@ import styles from './Team.module.css';
 import { supabase } from '@/lib/supabase';
 import { Copy, Check } from 'lucide-react';
 import { getDictionary } from '@/lib/dictionary';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface TeamMember {
   id: string;
@@ -42,12 +43,8 @@ const TeamPage = () => {
       if (!session) return;
 
       // 1. Get Tenant ID
-      const { data: tenantData } = await supabase
-        .from('tenants')
-        .select('id, type')
-        .eq('user_id', session.user.id)
-        .single();
-        
+      const tenantData = await getActiveTenant(session.user);
+
       if (tenantData) {
         setTenantId(tenantData.id);
         setDict(getDictionary(tenantData.type));

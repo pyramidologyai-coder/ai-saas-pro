@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Building2, Plus, MapPin, Activity, DollarSign, Users, ChevronRight, ExternalLink, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { getActiveTenant } from '@/lib/tenant';
 
 export default function BranchesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -14,6 +15,7 @@ export default function BranchesPage() {
   const [newBranchReviewUrl, setNewBranchReviewUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingBranch, setEditingBranch] = useState<any>(null);
+  const [tenantId, setTenantId] = useState<string | null>(null);
   const [stats, setStats] = useState({ totalRevenue: 0, totalBookings: 0, onlineBranches: 0 });
 
   useEffect(() => {
@@ -23,10 +25,12 @@ export default function BranchesPage() {
   const fetchBranches = async () => {
     setLoading(true);
     try {
-      // 1. Get current tenant
-      const { data: tenantData, error: tenantError } = await supabase.from('tenants').select('id').limit(1).single();
-      if (tenantError) console.error("Error fetching tenant:", tenantError);
+      // 1. Get current tenant (respects active workspace selection)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { window.location.href = '/auth'; return; }
+      const tenantData = await getActiveTenant(session.user);
       if (!tenantData) return;
+      setTenantId(tenantData.id);
 
       // 2. Fetch branches
       const { data: branchesData, error } = await supabase
@@ -64,8 +68,7 @@ export default function BranchesPage() {
     
     setIsSubmitting(true);
     try {
-      const { data: tenantData } = await supabase.from('tenants').select('id').limit(1).single();
-      if (!tenantData) throw new Error("No tenant found");
+      if (!tenantId) throw new Error('لم يتم تحميل بيانات النشاط — يرجى تحديث الصفحة');
 
       if (editingBranch) {
         const { error } = await supabase.from('branches').update({
@@ -78,7 +81,7 @@ export default function BranchesPage() {
       } else {
         const { error } = await supabase.from('branches').insert([
           {
-            tenant_id: tenantData.id,
+            tenant_id: tenantId,
             name: newBranchName,
             location: newBranchLocation,
             google_maps_url: newBranchMapUrl,
