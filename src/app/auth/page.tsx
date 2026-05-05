@@ -53,7 +53,14 @@ export default function AuthPage() {
       }
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'حدث خطأ أثناء تسجيل الدخول');
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('invalid login credentials') || msg.toLowerCase().includes('invalid credentials')) {
+        setErrorMsg('بيانات الدخول غير صحيحة. تأكد من الإيميل وكلمة المرور، أو تحقق من بريدك الإلكتروني لتأكيد الحساب أولاً.');
+      } else if (msg.toLowerCase().includes('email not confirmed')) {
+        setErrorMsg('يرجى تأكيد بريدك الإلكتروني أولاً — تحقق من رسالة التأكيد في إيميلك.');
+      } else {
+        setErrorMsg(msg || 'حدث خطأ أثناء تسجيل الدخول');
+      }
     } finally {
       setLoading(false);
     }

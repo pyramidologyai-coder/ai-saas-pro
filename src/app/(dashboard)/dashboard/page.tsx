@@ -49,12 +49,33 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fix OAuth hash fragment race condition
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+        // Supabase v2 PKCE flow: after Google OAuth, tokens arrive as ?code= query param.
+        // getSession() processes the code automatically, but needs a moment.
+        // Also handle legacy hash-based flow.
+        const hasOAuthCallback =
+          window.location.search.includes('code=') ||
+          window.location.hash.includes('access_token');
+
+        let session = (await supabase.auth.getSession()).data.session;
+
+        if (!session && hasOAuthCallback) {
+          // Wait for Supabase to exchange the code for a session
+          session = await new Promise(resolve => {
+            const timeout = setTimeout(() => {
+              sub.subscription.unsubscribe();
+              resolve(null);
+            }, 4000);
+
+            const sub = supabase.auth.onAuthStateChange((event, s) => {
+              if (event === 'SIGNED_IN' && s) {
+                clearTimeout(timeout);
+                sub.subscription.unsubscribe();
+                resolve(s);
+              }
+            });
+          });
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           window.location.href = '/auth';
           return;
