@@ -12,8 +12,10 @@ export default function UsageAlerts({ role, data }: { role: string, data: any })
       const msgPct = (t.messages_used / (t.messages_limit || 1)) * 100;
       const voicePct = (t.voice_minutes_used / (t.voice_minutes_limit || 1)) * 100;
 
-      if (msgPct >= 95 || voicePct >= 95) {
-        alerts.push({ type: 'danger', msg: 'لقد استهلكت أكثر من 95% من باقتك. يرجى الترقية لتجنب توقف الخدمة!', upgrade: true });
+      if (msgPct >= 100 || voicePct >= 100) {
+        alerts.push({ type: 'critical', msg: 'لقد استنفذت رصيدك بالكامل (Limit Reached). الذكاء الاصطناعي متوقف الآن، يرجى رفع الباقة فوراً!', upgrade: true });
+      } else if (msgPct >= 95 || voicePct >= 95) {
+        alerts.push({ type: 'danger', msg: 'تحذير: استهلكت 95% من باقتك. يرجى الاستعداد للترقية لتجنب توقف الخدمة!', upgrade: false });
       } else if (msgPct >= 80 || voicePct >= 80) {
         alerts.push({ type: 'warning', msg: 'لقد قاربت على استهلاك باقتك (تجاوزت 80%).' });
       }
@@ -41,9 +43,9 @@ export default function UsageAlerts({ role, data }: { role: string, data: any })
           alignItems: 'center', 
           padding: '1.2rem', 
           borderRadius: '16px', 
-          background: alert.type === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
-          border: `1px solid ${alert.type === 'danger' ? '#ef4444' : '#f59e0b'}`,
-          color: alert.type === 'danger' ? '#fca5a5' : '#fcd34d'
+          background: alert.type === 'critical' ? 'rgba(153, 27, 27, 0.2)' : alert.type === 'danger' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+          border: `1px solid ${alert.type === 'critical' ? '#991b1b' : alert.type === 'danger' ? '#ef4444' : '#f59e0b'}`,
+          color: alert.type === 'critical' ? '#fca5a5' : alert.type === 'danger' ? '#fca5a5' : '#fcd34d'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <AlertCircle size={20} />
