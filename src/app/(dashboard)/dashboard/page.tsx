@@ -49,31 +49,17 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Supabase v2 PKCE flow: after Google OAuth, tokens arrive as ?code= query param.
-        // getSession() processes the code automatically, but needs a moment.
-        // Also handle legacy hash-based flow.
-        const hasOAuthCallback =
-          window.location.search.includes('code=') ||
-          window.location.hash.includes('access_token');
+        // Supabase v2 PKCE: after Google OAuth the URL has ?code=...
+        // We must exchange it explicitly, then clean the URL.
+        const params = new URLSearchParams(window.location.search);
+        const oauthCode = params.get('code');
+        if (oauthCode) {
+          await supabase.auth.exchangeCodeForSession(oauthCode);
+          // Remove ?code= from URL so next visit doesn't re-trigger
+          window.history.replaceState({}, '', window.location.pathname);
+        }
 
         let session = (await supabase.auth.getSession()).data.session;
-
-        if (!session && hasOAuthCallback) {
-          // Wait for Supabase to exchange the PKCE code for a session (up to 4s)
-          session = await new Promise(resolve => {
-            const { data } = supabase.auth.onAuthStateChange((event, s) => {
-              if (event === 'SIGNED_IN' && s) {
-                clearTimeout(timeout);
-                data.subscription.unsubscribe();
-                resolve(s);
-              }
-            });
-            const timeout = setTimeout(() => {
-              data.subscription.unsubscribe();
-              resolve(null);
-            }, 4000);
-          });
-        }
 
         if (!session) {
           window.location.href = '/auth';
