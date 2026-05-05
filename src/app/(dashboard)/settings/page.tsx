@@ -14,7 +14,9 @@ const SettingsPage = () => {
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('trial');
   const [dict, setDict] = useState(() => getDictionary('clinic'));
-  const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api' | 'account'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'quick_setup' | 'integrations' | 'api' | 'account' | 'whitelabel'>('general');
+  const [role, setRole] = useState<'admin' | 'agency' | 'master_admin'>('admin');
+  const [agencyData, setAgencyData] = useState<any>(null);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,6 +35,14 @@ const SettingsPage = () => {
     zapier_webhook: '',
     custom_domain: '',
     api_key: ''
+  });
+
+  // White Label Settings State
+  const [whiteLabelData, setWhiteLabelData] = useState({
+    brand_name: '',
+    logo_url: '',
+    primary_color: '#6366f1',
+    custom_domain: ''
   });
 
   // Quick Setup States
@@ -69,6 +79,24 @@ const SettingsPage = () => {
           api_key: data.api_key || ''
         });
       }
+
+      // Check Role
+      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
+      if (superAdminEmails.includes(session.user.email || '')) {
+        setRole('master_admin');
+      } else {
+        const { data: agencyRes } = await supabase.from('agencies').select('*').eq('user_id', session.user.id).limit(1);
+        if (agencyRes && agencyRes.length > 0) {
+          setRole('agency');
+          setAgencyData(agencyRes[0]);
+          setWhiteLabelData({
+            brand_name: agencyRes[0].name || '',
+            logo_url: agencyRes[0].logo_url || '',
+            primary_color: agencyRes[0].primary_color || '#6366f1',
+            custom_domain: agencyRes[0].custom_domain || ''
+          });
+        }
+      }
       setLoading(false);
     }
     loadSettings();
@@ -100,6 +128,28 @@ const SettingsPage = () => {
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (error) {
       alert('حدث خطأ أثناء الحفظ.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveWhiteLabel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!agencyData) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('agencies').update({
+        name: whiteLabelData.brand_name,
+        logo_url: whiteLabelData.logo_url,
+        primary_color: whiteLabelData.primary_color,
+        custom_domain: whiteLabelData.custom_domain
+      }).eq('id', agencyData.id);
+      
+      if (error) throw error;
+      setSuccessMsg('تم حفظ إعدادات هويتك البصرية (White Label) بنجاح!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      alert('حدث خطأ أثناء حفظ الـ White Label.');
     } finally {
       setSaving(false);
     }
@@ -182,6 +232,15 @@ const SettingsPage = () => {
           >
             <Lock size={20} /> الحساب والأمان
           </button>
+          {role === 'agency' && (
+            <button
+              className={`${styles.tab} ${activeTab === 'whitelabel' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('whitelabel')}
+              style={{ color: activeTab === 'whitelabel' ? 'var(--accent-primary)' : '#8b5cf6' }}
+            >
+              <Database size={20} /> إعدادات الـ White Label
+            </button>
+          )}
         </div>
 
         {/* Content Area */}
@@ -466,6 +525,44 @@ const SettingsPage = () => {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* TAB 6: White Label */}
+          {activeTab === 'whitelabel' && role === 'agency' && (
+            <form onSubmit={handleSaveWhiteLabel}>
+              <h2 className={styles.sectionTitle}><Database size={24} color="#8b5cf6"/> إعدادات هويتك البصرية (White Label)</h2>
+              <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>قم بتخصيص المنصة لتظهر لعملائك وكأنها منصتك الخاصة بالكامل.</p>
+
+              <div className={styles.quickAddCard} style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.05)' }}>
+                <div className={styles.formGroup}>
+                  <label>اسم البراند (Brand Name)</label>
+                  <input type="text" value={whiteLabelData.brand_name} onChange={e => setWhiteLabelData({...whiteLabelData, brand_name: e.target.value})} className={styles.input} placeholder="مثال: Tech Clinic AI" />
+                </div>
+                
+                <div className={styles.formGroup}>
+                  <label>رابط اللوجو (Logo URL)</label>
+                  <input type="url" value={whiteLabelData.logo_url} onChange={e => setWhiteLabelData({...whiteLabelData, logo_url: e.target.value})} className={styles.input} placeholder="https://yourdomain.com/logo.png" />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>اللون الأساسي (Primary Color)</label>
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <input type="color" value={whiteLabelData.primary_color} onChange={e => setWhiteLabelData({...whiteLabelData, primary_color: e.target.value})} style={{ width: '50px', height: '50px', padding: 0, border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }} />
+                    <input type="text" value={whiteLabelData.primary_color} onChange={e => setWhiteLabelData({...whiteLabelData, primary_color: e.target.value})} className={styles.input} style={{ flex: 1 }} />
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>الدومين المخصص (Custom Domain)</label>
+                  <input type="text" value={whiteLabelData.custom_domain} onChange={e => setWhiteLabelData({...whiteLabelData, custom_domain: e.target.value})} className={styles.input} placeholder="app.yourdomain.com" />
+                  <small style={{ display: 'block', marginTop: '0.5rem', color: 'var(--text-dim)' }}>تأكد من توجيه الـ DNS (CNAME) إلى cname.vercel-dns.com</small>
+                </div>
+              </div>
+
+              <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '2rem', background: '#8b5cf6' }}>
+                {saving ? 'جاري الحفظ...' : 'حفظ هوية المنصة'}
+              </button>
+            </form>
           )}
 
         </div>

@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CreditCard, Check, Zap, AlertTriangle, Wallet } from 'lucide-react';
+import { CreditCard, Check, Zap, AlertTriangle, Wallet, Calendar, Activity, Star } from 'lucide-react';
+import UsageProgressBar from '@/components/financial/UsageProgressBar';
 
 export default function BillingPage() {
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,57 @@ export default function BillingPage() {
           </div>
         </div>
       )}
+
+      {/* Current Plan Overview */}
+      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '2rem', marginBottom: '3rem', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, right: 0, width: '150px', height: '150px', background: 'radial-gradient(circle, var(--accent-primary-transparent) 0%, transparent 70%)', transform: 'translate(50%, -50%)' }}></div>
+        
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Star color="var(--accent-primary)" /> باقتك الحالية
+        </h2>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem' }}>
+          <div>
+            <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '0.3rem' }}>نوع الباقة</div>
+            <div style={{ fontSize: '1.5rem', fontWeight: 900, textTransform: 'capitalize', color: 'var(--accent-primary)' }}>
+              {tenant?.plan_type || 'Trial'}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Calendar size={14} /> تاريخ التجديد
+            </div>
+            <div style={{ fontSize: '1.2rem', fontWeight: 700 }}>
+              {tenant?.subscription_end_date ? new Date(tenant.subscription_end_date).toLocaleDateString('ar-EG') : 'غير محدد'}
+            </div>
+          </div>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <Activity size={14} /> الاستهلاك الشهري (Usage)
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <UsageProgressBar 
+                  used={tenant?.messages_used || 0} 
+                  limit={tenant?.messages_limit || 1000} 
+                  label="رسائل الـ AI" 
+                  isUnlimited={tenant?.plan_type === 'vip'} 
+                />
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <UsageProgressBar 
+                  used={tenant?.voice_minutes_used || 0} 
+                  limit={tenant?.voice_minutes_limit || 60} 
+                  label="المكالمات الصوتية (دقائق)" 
+                  isUnlimited={tenant?.plan_type === 'vip'} 
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '0.5rem' }}>الباقات والاشتراكات</h1>

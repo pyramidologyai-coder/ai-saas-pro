@@ -119,7 +119,7 @@ const Sidebar = () => {
       { id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' },
       { id: 'agency_plans', icon: CreditCard, label: 'إدارة الباقات والأسعار', href: '/dashboard/agency-plans' }
     ] : []),
-    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/super-admin/plans' },
+    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/dashboard/plans' },
     { id: 'services', icon: Briefcase, label: sidebarLabels.services, href: '/services' },
     { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
@@ -163,7 +163,7 @@ const Sidebar = () => {
     { icon: TrendingUp,    label: 'التحليل المالي',     href: '/dashboard/financial' },
     { icon: Building2,     label: 'الوكالات',           href: '/dashboard/agencies' },
     { icon: Users,         label: 'العملاء الكلي',      href: '/customers' },
-    { icon: Package,       label: 'إدارة الباقات',      href: '/super-admin/plans' },
+    { icon: Package,       label: 'إدارة الباقات',      href: '/dashboard/plans' },
     { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
     { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
     { icon: Settings,      label: 'الإعدادات',          href: '/settings' },
