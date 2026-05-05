@@ -146,14 +146,30 @@ export default function AgenciesPage() {
               const rate = a.commission_rate || 20;
               const commission = (revenue * rate) / 100;
               
+              const now = new Date();
+              const end = a.subscription_end_date ? new Date(a.subscription_end_date) : null;
+              
               let statusColor = '#10b981';
-              let statusText = 'نشطة';
-              if (a.subscription_status === 'suspended') {
+              let statusText = 'نشطة 🟢';
+              
+              if (!end) {
+                statusText = 'غير محدد';
+                statusColor = '#9ca3af';
+              } else if (end < now) {
                 statusColor = '#ef4444';
-                statusText = 'خطر (موقوفة)';
-              } else if (a.subscription_status === 'past_due') {
-                statusColor = '#f59e0b';
-                statusText = 'متأخرة';
+                statusText = 'خطر (منتهية) 🔴';
+              } else {
+                const diffTime = Math.abs(end.getTime() - now.getTime());
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                if (diffDays <= 7) {
+                  statusColor = '#f59e0b';
+                  statusText = 'تحذير (قريباً) 🟡';
+                }
+              }
+
+              if (a.subscription_status === 'suspended') {
+                 statusColor = '#ef4444';
+                 statusText = 'موقوفة 🔴';
               }
 
               return (

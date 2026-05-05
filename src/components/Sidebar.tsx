@@ -161,7 +161,7 @@ const Sidebar = () => {
   const masterNavItems = [
     { icon: Home,          label: 'الرئيسية',          href: '/dashboard' },
     { icon: TrendingUp,    label: 'التحليل المالي',     href: '/dashboard/financial' },
-    { icon: Building2,     label: 'الوكالات',           href: '/super-admin' },
+    { icon: Building2,     label: 'الوكالات',           href: '/dashboard/agencies' },
     { icon: Users,         label: 'العملاء الكلي',      href: '/customers' },
     { icon: Package,       label: 'إدارة الباقات',      href: '/super-admin/plans' },
     { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },

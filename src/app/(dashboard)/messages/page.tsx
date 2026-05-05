@@ -31,6 +31,8 @@ type ChatData = {
   channel: Channel;
   lastMsg: string;
   isAiPaused: boolean;
+  tenant_id?: string;
+  agency_id?: string;
 };
 
 const MOCK_CHATS: ChatData[] = [
@@ -60,8 +62,20 @@ export default function MessagesPage() {
   });
 
   // Derived state
-  const filteredChats = chats.filter(chat => channelFilter === 'all' || chat.channel === channelFilter);
-  const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+  const filteredChats = chats.filter(chat => {
+    if (channelFilter !== 'all' && chat.channel !== channelFilter) return false;
+    if (role === 'master_admin') {
+      if (selectedAgency !== 'all' && chat.agency_id && chat.agency_id !== selectedAgency) return false;
+      if (selectedTenant !== 'all' && chat.tenant_id && chat.tenant_id !== selectedTenant) return false;
+    }
+    if (role === 'agency') {
+      if (selectedTenant !== 'all' && chat.tenant_id && chat.tenant_id !== selectedTenant) return false;
+    }
+    // Search
+    // if (searchQuery && !chat.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+  const activeChat = filteredChats.find(c => c.id === activeChatId) || filteredChats[0] || chats[0];
   const currentMessages = messagesMap[activeChat.id] || [];
   const [role, setRole] = useState<'admin' | 'agency' | 'master_admin'>('admin');
   

@@ -9,6 +9,7 @@ export const PlanEditor = () => {
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean, plan: any | null }>({ isOpen: false, plan: null });
 
   useEffect(() => {
     supabase.from('plans').select('*').order('price_monthly', { ascending: true }).then(({ data }) => {
@@ -21,7 +22,15 @@ export const PlanEditor = () => {
     setPlans(plans.map(p => p.id === id ? { ...p, [field]: value } : p));
   };
 
-  const savePlan = async (plan: any) => {
+  const requestSave = (plan: any) => {
+    setConfirmModal({ isOpen: true, plan });
+  };
+
+  const confirmAndSave = async () => {
+    if (!confirmModal.plan) return;
+    const plan = confirmModal.plan;
+    setConfirmModal({ isOpen: false, plan: null });
+    
     try {
       setSavingId(plan.id);
       
@@ -56,7 +65,7 @@ export const PlanEditor = () => {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
               <h3 style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent-primary)' }}>{p.name}</h3>
               <button 
-                onClick={() => savePlan(p)}
+                onClick={() => requestSave(p)}
                 disabled={savingId === p.id}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.5rem',
@@ -153,6 +162,31 @@ export const PlanEditor = () => {
           </div>
         ))}
       </div>
+
+      {confirmModal.isOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ background: 'var(--card-bg)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--glass-border)', width: '400px', maxWidth: '90%', textAlign: 'center' }}>
+            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#ef4444' }}>هل أنت متأكد؟</h3>
+            <p style={{ color: 'var(--text-dim)', marginBottom: '2rem' }}>
+              تعديل أسعار الباقات سيتم تطبيقه فوراً على المشتركين الجدد. هل تريد الاستمرار في حفظ التعديلات لـ ({confirmModal.plan?.name})؟
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+              <button 
+                onClick={confirmAndSave}
+                style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.6rem 2rem', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                نعم، احفظ التعديلات
+              </button>
+              <button 
+                onClick={() => setConfirmModal({ isOpen: false, plan: null })}
+                style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.6rem 2rem', borderRadius: '8px', cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

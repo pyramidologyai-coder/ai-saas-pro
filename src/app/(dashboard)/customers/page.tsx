@@ -7,6 +7,8 @@ import UsageProgressBar from '@/components/financial/UsageProgressBar';
 const CustomersPage = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [planFilter, setPlanFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState('');
 
@@ -108,9 +110,14 @@ const CustomersPage = () => {
 
   const filteredCustomers = customers.filter(c => {
     const term = searchQuery.toLowerCase();
+    
     if (role === 'master_admin') {
-      return c.name?.toLowerCase().includes(term) || c.agencies?.name?.toLowerCase().includes(term);
+      const matchName = c.name?.toLowerCase().includes(term) || c.agencies?.name?.toLowerCase().includes(term);
+      const matchPlan = planFilter === 'all' || c.plan_type === planFilter;
+      const matchType = typeFilter === 'all' || c.type === typeFilter;
+      return matchName && matchPlan && matchType;
     }
+    
     const nameMatch = c.customer_name?.toLowerCase().includes(term);
     const phoneMatch = c.customer_phone?.toLowerCase().includes(term);
     return nameMatch || phoneMatch;
@@ -130,15 +137,47 @@ const CustomersPage = () => {
           </p>
         </div>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '1rem', background: 'var(--card-bg)', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-            <Search size={18} color="var(--text-dim)" />
-            <input 
-              type="text" 
-              placeholder={role === 'master_admin' ? "بحث بالاسم أو الوكالة..." : "بحث بالاسم أو الرقم..."}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }} 
-            />
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '1rem', background: 'var(--card-bg)', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+              <Search size={18} color="var(--text-dim)" />
+              <input 
+                type="text" 
+                placeholder={role === 'master_admin' ? "بحث بالاسم أو الوكالة..." : "بحث بالاسم أو الرقم..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', outline: 'none' }} 
+              />
+            </div>
+            
+            {role === 'master_admin' && (
+              <>
+                <select 
+                  value={planFilter} 
+                  onChange={(e) => setPlanFilter(e.target.value)}
+                  style={{ background: 'var(--card-bg)', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', outline: 'none' }}
+                >
+                  <option value="all">كل الباقات</option>
+                  <option value="starter">Starter</option>
+                  <option value="growth">Growth</option>
+                  <option value="pro">Pro</option>
+                  <option value="vip">VIP</option>
+                </select>
+                
+                <select 
+                  value={typeFilter} 
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  style={{ background: 'var(--card-bg)', padding: '0.6rem 1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', outline: 'none' }}
+                >
+                  <option value="all">كل الأنشطة</option>
+                  <option value="clinic">عيادات ومراكز</option>
+                  <option value="real_estate">شركات عقارية</option>
+                  <option value="salon">مراكز تجميل</option>
+                  <option value="car_rental">سيارات</option>
+                  <option value="ecommerce">متاجر إلكترونية</option>
+                  <option value="restaurant">مطاعم وكافيهات</option>
+                </select>
+              </>
+            )}
           </div>
           <button 
             onClick={exportToCSV}
