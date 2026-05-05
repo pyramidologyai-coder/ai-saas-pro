@@ -50,6 +50,7 @@ export default function AuthPage() {
         } else if (authData.user && !authData.session) {
           alert('تم إنشاء الحساب بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.');
         }
+      }
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'حدث خطأ أثناء تسجيل الدخول');
