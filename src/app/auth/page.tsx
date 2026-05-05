@@ -168,7 +168,26 @@ export default function AuthPage() {
           </div>
 
           <div className={styles.inputGroup}>
-            <label>كلمة المرور</label>
+            <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              كلمة المرور
+              {isLogin && (
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
+                  onClick={async () => {
+                    if (!email) { setErrorMsg('أدخل الإيميل أولاً'); return; }
+                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                      redirectTo: `${window.location.origin}/auth/reset-password`
+                    });
+                    if (error) { setErrorMsg(error.message); return; }
+                    setErrorMsg('');
+                    alert('تم إرسال رابط إعادة تعيين كلمة المرور على بريدك الإلكتروني');
+                  }}
+                >
+                  نسيت كلمة المرور؟
+                </button>
+              )}
+            </label>
             <div className={styles.inputWrapper}>
               <Lock size={18} className={styles.inputIcon} />
               <input 
