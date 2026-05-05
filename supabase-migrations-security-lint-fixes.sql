@@ -58,3 +58,12 @@ USING (auth.jwt() ->> 'email' IN ('ashsameh1@gmail.com', 'pyramidology.ai@gmail.
 DROP POLICY IF EXISTS "agency_read_own_tenants" ON public.tenants;
 CREATE POLICY "agency_read_own_tenants" ON public.tenants FOR SELECT 
 USING (agency_id IN (SELECT id FROM agencies WHERE user_id = auth.uid()));
+
+DROP POLICY IF EXISTS "admin_read_own" ON public.tenants;
+CREATE POLICY "admin_read_own" ON public.tenants FOR SELECT 
+USING (user_id = auth.uid());
+
+-- Fix notifications table
+DROP POLICY IF EXISTS "master_all_notifications" ON public.notifications;
+CREATE POLICY "master_all_notifications" ON public.notifications FOR ALL 
+USING (auth.jwt() ->> 'email' IN ('ashsameh1@gmail.com', 'pyramidology.ai@gmail.com'));
