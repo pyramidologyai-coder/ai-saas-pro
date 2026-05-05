@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 
 export async function getActiveTenant(sessionUser: any) {
     if (!sessionUser) return null;
-    const { data: tenants } = await supabase.from('tenants').select('*').eq('user_id', sessionUser.id);
+    const { data: tenants } = await supabase.from('tenants').select('*');
     if (!tenants || tenants.length === 0) return null;
     
     let storedId = null;
@@ -20,6 +20,6 @@ export async function getActiveTenant(sessionUser: any) {
 
 export async function getAllTenants(sessionUser: any) {
     if (!sessionUser) return [];
-    const { data: tenants } = await supabase.from('tenants').select('id, name, type').eq('user_id', sessionUser.id);
+    const { data: tenants } = await supabase.from('tenants').select('id, name, type');
     return tenants || [];
 }
