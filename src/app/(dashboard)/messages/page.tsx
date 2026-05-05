@@ -50,12 +50,19 @@ export default function MessagesPage() {
   const [activeChatId, setActiveChatId] = useState<string>('1');
   const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'messenger' | 'instagram'>('all');
 
-  // Messages state for active chat
-  const [messages, setMessages] = useState([
-    { id: 1, text: 'أهلاً بك يا فندم! منورنا. أقدر أساعد حضرتك إزاي النهاردة؟', sender: 'outgoing', time: '10:00 ص' },
-  ]);
+  // Messages state for active chat (Mock Data)
+  const [messagesMap, setMessagesMap] = useState<Record<string, any[]>>({
+    '1': [{ id: 1, text: 'أهلاً بك يا فندم! منورنا. أقدر أساعد حضرتك إزاي النهاردة؟', sender: 'outgoing', time: '10:00 ص' }],
+    '2': [{ id: 2, text: 'شكراً جداً على المساعدة!', sender: 'incoming', time: '11:15 ص' }],
+    '3': [{ id: 3, text: 'ممكن تفاصيل الحجز لو سمحت؟', sender: 'incoming', time: '09:30 ص' }],
+    '4': [{ id: 4, text: 'هل يوجد حجز غداً؟', sender: 'incoming', time: '08:00 ص' }],
+    '5': [{ id: 5, text: 'بكام الكشف عندكم؟', sender: 'incoming', time: '01:20 م' }],
+  });
 
-  // Roles & Hierarchy State
+  // Derived state
+  const filteredChats = chats.filter(chat => channelFilter === 'all' || chat.channel === channelFilter);
+  const activeChat = chats.find(c => c.id === activeChatId) || chats[0];
+  const currentMessages = messagesMap[activeChat.id] || [];
   const [role, setRole] = useState<'admin' | 'agency' | 'master_admin'>('admin');
   
   // Master Admin / Agency Dropdowns
@@ -125,7 +132,7 @@ export default function MessagesPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [currentMessages, isTyping]);
 
   const handleSendMessage = async () => {
     if (!inputText.trim()) return;
@@ -135,7 +142,10 @@ export default function MessagesPage() {
     }
 
     const userMsg = { id: Date.now(), text: inputText, sender: 'outgoing', time: 'الآن' };
-    setMessages(prev => [...prev, userMsg]);
+    setMessagesMap(prev => ({
+      ...prev,
+      [activeChat.id]: [...(prev[activeChat.id] || []), userMsg]
+    }));
     setInputText('');
     
     // Simulate incrementing FREE human messages
@@ -351,7 +361,7 @@ export default function MessagesPage() {
 
         {/* Messages List */}
         <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {messages.map((msg) => (
+          {currentMessages.map((msg) => (
             <div key={msg.id} style={{ 
               maxWidth: '70%', alignSelf: msg.sender === 'incoming' ? 'flex-start' : 'flex-end',
               background: msg.sender === 'incoming' ? 'var(--card-bg)' : 'linear-gradient(135deg, var(--accent-primary), #8b5cf6)',
