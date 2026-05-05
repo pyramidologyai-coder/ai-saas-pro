@@ -26,10 +26,7 @@ const ServicesPage = () => {
         return;
       }
       const tenantData = await getActiveTenant(session.user);
-      if (!tenantData) {
-        window.location.href = '/onboarding';
-        return;
-      }
+      if (!tenantData) return;
       setTenant(tenantData);
       setDict(getDictionary(tenantData.type));
 
