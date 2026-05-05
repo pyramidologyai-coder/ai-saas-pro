@@ -74,18 +74,8 @@ const Sidebar = () => {
           setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
         }
 
-        // 2. Fetch User Role from profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .limit(1);
-
-        if (profileData && profileData.length > 0 && profileData[0].role) {
-          setUserRole(profileData[0].role as 'admin' | 'staff');
-        } else {
-          setUserRole('admin');
-        }
+        // 2. Default User Role
+        setUserRole('admin');
 
         // 3. Check if Agency Owner
         const { data: agencyData } = await supabase
