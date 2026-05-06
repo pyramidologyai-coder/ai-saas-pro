@@ -158,14 +158,14 @@ export default function DashboardPage() {
           withTimeout(supabase.rpc('count_today_messages')),
           withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
           withTimeout(supabase.rpc('count_high_usage_tenants')),
-          withTimeout(supabase.from('agencies').select(\`
+          withTimeout(supabase.from('agencies').select(`
             id,
             name,
             plan_type,
             status,
             created_at,
             tenants_count:tenants(count)
-          \`).order('created_at', { ascending: false }).limit(5)),
+          `).order('created_at', { ascending: false }).limit(5)),
           withTimeout(supabase.rpc('calculate_master_revenue')),
           withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
           withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', lastMonthStart.toISOString()).lt('created_at', thisMonthStart.toISOString())),
