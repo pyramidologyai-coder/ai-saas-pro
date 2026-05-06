@@ -1,343 +1,212 @@
-'use client';
-import React, { useEffect, useState } from 'react';
-import { 
-  TrendingUp, 
-  Users, 
-  CalendarCheck, 
-  MessageCircle 
-} from 'lucide-react';
-import { CardSkeleton } from '@/components/ui/Skeleton';
-import { supabase } from '@/lib/supabase';
-import { getDictionary } from '@/lib/dictionary';
-import { getActiveTenant } from '@/lib/tenant';
-import CognitiveDashboard from './cognitive-view';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { MasterDashboardUI } from '@/components/dashboard/MasterDashboardUI';
+import ClientDashboard from '@/components/dashboard/ClientDashboard';
 
-export default function Home() {
-  const [dict, setDict] = useState(() => getDictionary('clinic'));
-  const [aiStats, setAiStats] = useState({ ai: 0, human: 0 });
-  const [stats, setStats] = useState([
-    { label: 'إجمالي الحجوزات', value: '...', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
-    { label: 'مرضى جدد', value: '...', trend: '+5%', icon: Users, color: '#a855f7' },
-    { label: 'استقلالية الذكاء الاصطناعي', value: '...', trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
-    { label: 'الإيرادات المتوقعة', value: '...', trend: '+20%', icon: TrendingUp, color: '#10b981' },
-  ]);
-  const [tenantId, setTenantId] = useState<string | null>(null);
-  const [currentType, setCurrentType] = useState<string>('clinic');
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isMaster, setIsMaster] = useState(false);
+export const dynamic = 'force-dynamic';
 
-  const handleTypeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newType = e.target.value;
-    setCurrentType(newType);
-    setDict(getDictionary(newType));
-    
-    // Update labels instantly
-    const newDict = getDictionary(newType);
-    setStats(prev => [
-      { ...prev[0], label: newDict.totalBookings },
-      { ...prev[1], label: newDict.newCustomers },
-      { ...prev[2] },
-      { ...prev[3], label: newDict.revenue }
-    ]);
+interface RecentAgency {
+  readonly id: string;
+  readonly name: string;
+  readonly plan_type: 'starter' | 'growth' | 'pro' | 'vip';
+  readonly status: 'active' | 'inactive' | 'suspended';
+  readonly created_at: string;
+  readonly tenants_count: number;
+}
 
-    if (tenantId) {
-      await supabase.from('tenants').update({ type: newType }).eq('id', tenantId);
-    }
-    localStorage.setItem('demo_tenant_type', newType);
-    window.location.reload();
+interface MasterDashboardData {
+  readonly agenciesCount: number;
+  readonly tenantsCount: number;
+  readonly totalMessagesToday: number;
+  readonly expiringCount: number;
+  readonly highUsageCount: number;
+  readonly recentAgencies: RecentAgency[];
+  readonly totalRevenue: number;
+  readonly agenciesGrowth: number;
+  readonly usageRate: number;
+}
+
+const DASHBOARD_DEFAULTS: Readonly<MasterDashboardData> = {
+  agenciesCount: 0,
+  tenantsCount: 0,
+  totalMessagesToday: 0,
+  expiringCount: 0,
+  highUsageCount: 0,
+  recentAgencies: [],
+  totalRevenue: 0,
+  agenciesGrowth: 0,
+  usageRate: 0
+};
+
+function logError(context: string): void {
+  console.error(`[ERROR] ${context} | ${new Date().toISOString()}`);
+}
+
+function safeNumber(value: unknown, fallback = 0): number {
+  if (typeof value === 'number' && !isNaN(value) && isFinite(value) && value >= 0) return value;
+  return fallback;
+}
+
+function isValidISODate(value: unknown): boolean {
+  if (typeof value !== 'string') return false;
+  const date = new Date(value);
+  return !isNaN(date.getTime()) && value.includes('T');
+}
+
+function validateAgency(agency: unknown): RecentAgency | null {
+  if (!agency || typeof agency !== 'object') {
+    return null;
+  }
+  const a = agency as Record<string, unknown>;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (typeof a.id !== 'string' || !uuidRegex.test(a.id)) return null;
+
+  const validPlanTypes = ['starter', 'growth', 'pro', 'vip'] as const;
+  const validStatuses = ['active', 'inactive', 'suspended'] as const;
+
+  return {
+    id: a.id,
+    name: typeof a.name === 'string' && a.name.trim().length > 0 && a.name.trim().length <= 200 ? a.name.trim() : 'غير معروف',
+    plan_type: validPlanTypes.includes(a.plan_type as typeof validPlanTypes[number]) ? a.plan_type as RecentAgency['plan_type'] : 'starter',
+    status: validStatuses.includes(a.status as typeof validStatuses[number]) ? a.status as RecentAgency['status'] : 'inactive',
+    created_at: isValidISODate(a.created_at) ? a.created_at as string : new Date().toISOString(),
+    tenants_count: safeNumber(a.tenants_count)
   };
+}
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Supabase v2 PKCE: after Google OAuth the URL has ?code=...
-        // We must exchange it explicitly, then clean the URL.
-        const params = new URLSearchParams(window.location.search);
-        const oauthCode = params.get('code');
-        if (oauthCode) {
-          await supabase.auth.exchangeCodeForSession(oauthCode);
-          // Remove ?code= from URL so next visit doesn't re-trigger
-          window.history.replaceState({}, '', window.location.pathname);
-        }
+async function withTimeout<T>(promise: any, ms = 5000): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
+  try {
+    const result = await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('timeout')), ms);
+      })
+    ]);
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    return result;
+  } catch (error) {
+    if (timeoutId !== undefined) clearTimeout(timeoutId);
+    throw error;
+  }
+}
 
-        let session = (await supabase.auth.getSession()).data.session;
+async function checkAuth(supabase: any): Promise<boolean> {
+  try {
+    const { data, error } = (await withTimeout(supabase.auth.getUser(), 3000)) as any;
+    return !error && !!data?.user;
+  } catch { return false; }
+}
 
-        if (!session) {
-          window.location.href = '/auth';
-          return;
-        }
-        
-        const userEmail = session.user.email;
-        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-        const isMasterUser = !!userEmail && superAdminEmails.includes(userEmail);
-        setIsMaster(isMasterUser);
+async function checkMasterRole(supabase: any): Promise<boolean> {
+  try {
+    const { data, error } = (await withTimeout(supabase.rpc('verify_master_admin_role'), 3000)) as any;
+    return !error && !!data;
+  } catch { return false; }
+}
 
-        const tenant = await getActiveTenant(session.user);
-        
-        // If master admin and has no tenant, just stop here but keep isMaster=true
-        if (!tenant && isMasterUser) {
-           const { count: agenciesCount } = await supabase.from('agencies').select('*', { count: 'exact', head: true });
-           const { count: tenantsCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
-           
-           const { data: agRev } = await supabase.from('agencies').select('revenue, commission_rate');
-           const { data: tnRev } = await supabase.from('tenants').select('revenue, agency_id, messages_used');
-           
-           let totalPlatformRevenue = 0;
-           let totalMessages = 0;
-           tnRev?.forEach(t => { 
-             if (!t.agency_id) totalPlatformRevenue += (t.revenue || 0); 
-             totalMessages += (t.messages_used || 0);
-           });
-           agRev?.forEach(a => { totalPlatformRevenue += ((a.revenue || 0) * (a.commission_rate || 20) / 100); });
+export default async function DashboardPage() {
+  const supabase = createServerComponentClient({ cookies });
 
-           setStats([
-             { label: 'إجمالي إيرادات المنصة', value: `$${totalPlatformRevenue.toLocaleString()}`, trend: totalPlatformRevenue > 0 ? '+15%' : '0%', icon: TrendingUp, color: '#10b981' },
-             { label: 'عدد الوكالات النشطة', value: agenciesCount?.toString() || '0', trend: agenciesCount ? 'نمو مستمر' : '0%', icon: Users, color: '#6366f1' },
-             { label: 'عدد العملاء الكلي', value: tenantsCount?.toString() || '0', trend: tenantsCount ? '+8%' : '0%', icon: Users, color: '#a855f7' },
-             { label: 'رسائل الكلية', value: totalMessages.toLocaleString(), trend: totalMessages > 0 ? 'ممتاز' : '0%', icon: MessageCircle, color: '#06b6d4' },
-           ]);
-           
-           setLoading(false);
-           return;
-        }
-        
-        if (!tenant) {
-          window.location.href = '/onboarding';
-          return;
-        }
+  const isAuthenticated = await checkAuth(supabase);
+  const isMasterAdmin = isAuthenticated ? await checkMasterRole(supabase) : false;
 
-        // Store tenant info for later update
-        setTenantId(tenant.id);
-        setCurrentType(tenant.type || 'clinic');
+  if (!isMasterAdmin) {
+    return <ClientDashboard />;
+  }
 
-        const currentDict = getDictionary(tenant.type);
-        setDict(currentDict);
+  const nowUTC = new Date();
+  const in7DaysUTC = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const thisMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
+  const lastMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() - 1, 1));
 
-        // 1. Fetch total bookings
-        const { count: bookingCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
-        
-        // 2. Fetch unique customers (new patients)
-        const { data: customers } = await supabase.from('bookings').select('customer_phone').eq('tenant_id', tenant.id);
-        const uniqueCustomers = new Set(customers?.map(c => c.customer_phone)).size;
+  const [
+    agenciesResult,
+    tenantsResult,
+    messagesResult,
+    expiringResult,
+    highUsageResult,
+    recentAgenciesResult,
+    revenueResult,
+    thisMonthAgenciesResult,
+    lastMonthAgenciesResult,
+    usageRateResult
+  ] = (await Promise.allSettled([
+    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).eq('status', 'active')),
+    withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'active')),
+    withTimeout(supabase.rpc('count_today_messages')),
+    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
+    withTimeout(supabase.rpc('count_high_usage_tenants')),
+    withTimeout(supabase.from('agencies').select(`
+        id,
+        name,
+        plan_type,
+        status,
+        created_at,
+        tenants_count:tenants(count)
+      `).order('created_at', { ascending: false }).limit(5)),
+    withTimeout(supabase.rpc('calculate_master_revenue')),
+    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
+    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', lastMonthStart.toISOString()).lt('created_at', thisMonthStart.toISOString())),
+    withTimeout(supabase.rpc('calculate_usage_rate'))
+  ])) as any[];
 
-        // 3. Fetch recent bookings
-        const { data: bookings } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            items (name)
-          `)
-          .eq('tenant_id', tenant.id)
-          .order('booking_time', { ascending: false })
-          .limit(5);
+  let agenciesCount = DASHBOARD_DEFAULTS.agenciesCount;
+  if (agenciesResult.status === 'fulfilled' && !agenciesResult.value.error) {
+    agenciesCount = safeNumber(agenciesResult.value.count);
+  } else { logError('agencies_failed'); }
 
-        const { count: aiMsgs } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('sender', 'model');
-        const { count: allMsgs } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
-        const aiIndep = allMsgs && allMsgs > 0 ? Math.round(((aiMsgs || 0) / allMsgs) * 100) : 0;
-        const aiHuman = allMsgs && allMsgs > 0 ? 100 - aiIndep : 0;
-        
-        setAiStats({ ai: aiIndep, human: aiHuman });
+  let tenantsCount = DASHBOARD_DEFAULTS.tenantsCount;
+  if (tenantsResult.status === 'fulfilled' && !tenantsResult.value.error) {
+    tenantsCount = safeNumber(tenantsResult.value.count);
+  } else { logError('tenants_failed'); }
 
-        setStats([
-          { label: currentDict.totalBookings, value: bookingCount?.toString() || '0', trend: bookingCount ? '+12%' : '0%', icon: CalendarCheck, color: '#6366f1' },
-          { label: currentDict.newCustomers, value: uniqueCustomers.toString(), trend: uniqueCustomers > 0 ? '+5%' : '0%', icon: Users, color: '#a855f7' },
-          { label: 'استقلالية الذكاء الاصطناعي', value: `${aiIndep}%`, trend: aiIndep > 50 ? 'ممتاز' : '0%', icon: MessageCircle, color: '#06b6d4' },
-          { label: currentDict.revenue, value: (bookingCount ? bookingCount * 300 : 0).toLocaleString() + ' ج.م', trend: bookingCount ? '+20%' : '0%', icon: TrendingUp, color: '#10b981' },
-        ]);
+  let totalMessagesToday = DASHBOARD_DEFAULTS.totalMessagesToday;
+  if (messagesResult.status === 'fulfilled' && !messagesResult.value.error) {
+    totalMessagesToday = safeNumber(messagesResult.value.data);
+  } else { logError('messages_failed'); }
 
-        setRecentBookings(bookings || []);
-      } catch (err) {
-        console.error('Fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  let expiringCount = DASHBOARD_DEFAULTS.expiringCount;
+  if (expiringResult.status === 'fulfilled' && !expiringResult.value.error) {
+    expiringCount = safeNumber(expiringResult.value.count);
+  } else { logError('expiring_failed'); }
 
-    fetchData();
-  }, []);
+  let highUsageCount = DASHBOARD_DEFAULTS.highUsageCount;
+  if (highUsageResult.status === 'fulfilled' && !highUsageResult.value.error) {
+    highUsageCount = safeNumber(highUsageResult.value.data);
+  } else { logError('high_usage_failed'); }
+
+  let recentAgencies: RecentAgency[] = [];
+  if (recentAgenciesResult.status === 'fulfilled' && !recentAgenciesResult.value.error && Array.isArray(recentAgenciesResult.value.data)) {
+    recentAgencies = recentAgenciesResult.value.data.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
+  } else { logError('recent_agencies_failed'); }
+
+  let totalRevenue = DASHBOARD_DEFAULTS.totalRevenue;
+  if (revenueResult.status === 'fulfilled' && !revenueResult.value.error) {
+    totalRevenue = safeNumber(revenueResult.value.data);
+  } else { logError('revenue_failed'); }
+
+  const thisMonthCount = safeNumber(thisMonthAgenciesResult.status === 'fulfilled' ? thisMonthAgenciesResult.value.count : 0);
+  const lastMonthCount = safeNumber(lastMonthAgenciesResult.status === 'fulfilled' ? lastMonthAgenciesResult.value.count : 0);
+
+  const agenciesGrowth = lastMonthCount > 0 ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100) : thisMonthCount > 0 ? 100 : 0;
+
+  let usageRate = DASHBOARD_DEFAULTS.usageRate;
+  if (usageRateResult.status === 'fulfilled' && !usageRateResult.value.error) {
+    usageRate = safeNumber(usageRateResult.value.data);
+  } else { logError('usage_rate_failed'); }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      
-      {isMaster && !tenantId && <CognitiveDashboard isAgency={true} tenantId="master" industryType="clinic" />}
-      {tenantId && <CognitiveDashboard tenantId={tenantId} isAgency={isMaster} industryType={currentType as any} />}
-      
-      {/* Demo Switcher (Can be removed in production) */}
-      {!isMaster && (
-        <div style={{ 
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.1))', 
-          padding: '1rem 1.5rem', 
-          borderRadius: '16px',
-          border: '1px solid rgba(16, 185, 129, 0.2)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '1rem'
-        }}>
-          <div>
-            <h3 style={{ color: '#10b981', margin: '0 0 0.2rem 0', fontSize: '1rem' }}>وضع تجربة المجالات (Demo Mode)</h3>
-            <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>غيّر المجال من هنا وشوف إزاي لوحة التحكم والمصطلحات هتتغير أوتوماتيك!</p>
-          </div>
-          <select 
-            value={currentType} 
-            onChange={handleTypeChange}
-            style={{
-              background: 'var(--card-bg)',
-              color: 'var(--text-main)',
-              border: '1px solid var(--glass-border)',
-              padding: '0.8rem 1.2rem',
-              borderRadius: '12px',
-              outline: 'none',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
-          >
-            <option value="clinic">عيادة / مركز طبي</option>
-            <option value="real_estate">شركة عقارات</option>
-            <option value="salon">مركز تجميل / سبا</option>
-            <option value="car_rental">معرض سيارات</option>
-            <option value="ecommerce">متجر إلكتروني</option>
-            <option value="restaurant">مطعم / كافيه</option>
-          </select>
-        </div>
-      )}
-
-      <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem' }}>
-        {loading ? (
-          <>
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-            <CardSkeleton />
-          </>
-        ) : (
-          stats.map((stat, i) => (
-            <div key={i} style={{
-              background: 'var(--card-bg)',
-              padding: '1.5rem',
-              borderRadius: '24px',
-              border: '1px solid var(--glass-border)',
-              backdropFilter: 'blur(10px)',
-              transition: '0.3s'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
-                  borderRadius: '14px', 
-                  background: `${stat.color}15`, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  color: stat.color
-                }}>
-                  <stat.icon size={24} />
-                </div>
-                <span style={{ color: '#10b981', fontSize: '0.85rem', fontWeight: 600 }}>{stat.trend}</span>
-              </div>
-              <h3 style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>{stat.label}</h3>
-              <div style={{ fontSize: '1.8rem', fontWeight: 800 }}>{stat.value}</div>
-            </div>
-          ))
-        )}
-      </section>
-
-      {/* AI Performance Visual Section */}
-      <section style={{ 
-        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.05))', 
-        borderRadius: '24px', 
-        padding: '2rem', 
-        border: '1px solid rgba(99, 102, 241, 0.2)' 
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <div>
-            <h2 style={{ color: 'var(--text-bright)', marginBottom: '0.5rem' }}>أداء السكرتير الذكي هذا الشهر</h2>
-            <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>كم عدد {dict.bookings} التي تعامل معها الذكاء الاصطناعي بمفرده دون تدخل بشري؟</p>
-          </div>
-          <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#a5b4fc' }}>
-            {aiStats.ai}<span style={{ fontSize: '1.5rem' }}>%</span>
-          </div>
-        </div>
-        
-        {/* CSS Progress Bar */}
-        <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
-          <div style={{ 
-            width: `${aiStats.ai}%`, 
-            height: '100%', 
-            background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
-            borderRadius: '10px',
-            boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)'
-          }}></div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-          <span>تدخل بشري ({aiStats.human}%)</span>
-          <span>إغلاق آلي بالكامل ({aiStats.ai}%)</span>
-        </div>
-      </section>
-
-      <section style={{ 
-        background: 'var(--card-bg)', 
-        borderRadius: '24px', 
-        padding: '2rem', 
-        border: '1px solid var(--glass-border)' 
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-          <h2>{dict.recentActivity}</h2>
-          <button style={{ 
-            background: 'var(--accent-primary)', 
-            color: 'var(--text-main)', 
-            border: 'none', 
-            padding: '0.6rem 1.2rem', 
-            borderRadius: '12px',
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}>تحديث البيانات</button>
-        </div>
-        
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ color: 'var(--text-dim)', borderBottom: '1px solid var(--glass-border)' }}>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>الاسم</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>{dict.item}</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>التوقيت</th>
-                <th style={{ textAlign: 'right', padding: '1rem' }}>الحالة</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentBookings.map((row, i) => (
-                <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '1.2rem' }}>{row.customer_name}</td>
-                  <td style={{ padding: '1.2rem' }}>{row.items?.name || 'خدمة عامة'}</td>
-                  <td style={{ padding: '1.2rem' }}>{new Date(row.booking_time).toLocaleString('ar-EG', { hour: 'numeric', minute: 'numeric' })}</td>
-                  <td style={{ padding: '1.2rem' }}>
-                    <span style={{ 
-                      padding: '0.4rem 0.8rem', 
-                      borderRadius: '8px', 
-                      fontSize: '0.8rem',
-                      background: row.status === 'confirmed' ? '#10b98115' : '#f59e0b15',
-                      color: row.status === 'confirmed' ? '#10b981' : '#f59e0b'
-                    }}>{row.status === 'confirmed' ? 'مؤكد' : 'قيد الانتظار'}</span>
-                  </td>
-                </tr>
-              ))}
-              {!loading && recentBookings.length === 0 && (
-                <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                      <CalendarCheck size={48} color="rgba(255,255,255,0.1)" />
-                      <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>الأرقام 0</div>
-                      <div style={{ fontSize: '0.9rem' }}>ابدأ بإضافة عملاء ومشاركة رابط الواتساب</div>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+    <MasterDashboardUI
+      agenciesCount={agenciesCount}
+      tenantsCount={tenantsCount}
+      totalMessagesToday={totalMessagesToday}
+      expiringCount={expiringCount}
+      highUsageCount={highUsageCount}
+      recentAgencies={recentAgencies}
+      totalRevenue={totalRevenue}
+      agenciesGrowth={agenciesGrowth}
+      usageRate={usageRate}
+    />
   );
 }
