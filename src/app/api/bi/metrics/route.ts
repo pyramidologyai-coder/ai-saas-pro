@@ -51,24 +51,63 @@ export async function GET(req: Request) {
       };
     } else if (agencyId) {
        // Agency Profit View (Aggregate)
-       // Mock aggregation for demonstration of Reconciler and Waterfall
+       let grossRevenue = 0;
+       let apiCosts = 0;
+       let platformFees = 0;
+       let activeClinics = 0;
+       let taxes = 0;
+
+       if (agencyId === 'master') {
+         const { data: tnData } = await supabase.from('tenants').select('revenue, messages_used');
+         const { data: agData } = await supabase.from('agencies').select('revenue, commission_rate');
+         
+         activeClinics = tnData?.length || 0;
+         tnData?.forEach(t => { 
+           grossRevenue += (t.revenue || 0);
+           apiCosts += (t.messages_used || 0) * 0.01;
+         });
+         
+         agData?.forEach(a => {
+           grossRevenue += (a.revenue || 0);
+         });
+
+         platformFees = grossRevenue * 0.05; // master platform fee approx
+         taxes = grossRevenue * 0.14;
+       } else {
+         const { data: agData } = await supabase.from('agencies').select('revenue, commission_rate').eq('id', agencyId).single();
+         const { data: tnData } = await supabase.from('tenants').select('revenue, messages_used').eq('agency_id', agencyId);
+         
+         activeClinics = tnData?.length || 0;
+         grossRevenue = agData?.revenue || 0;
+         
+         tnData?.forEach(t => { 
+           grossRevenue += (t.revenue || 0);
+           apiCosts += (t.messages_used || 0) * 0.01;
+         });
+         
+         platformFees = grossRevenue * ((agData?.commission_rate || 20) / 100);
+         taxes = grossRevenue * 0.14;
+       }
+
+       const netProfit = grossRevenue - taxes - apiCosts - platformFees;
+       const netMargin = grossRevenue > 0 ? ((netProfit / grossRevenue) * 100).toFixed(1) + '%' : '0%';
+
        metrics = {
-          grossRevenue: 1500.00,
-          taxes: 50.00,
-          deliveryFees: 120.00,
-          apiCosts: 45.00,
-          platformFees: 35.00,
-          netProfit: 1250.00,
-          netMargin: '83.3%',
-          activeClinics: 12,
+          grossRevenue,
+          taxes,
+          deliveryFees: 0,
+          apiCosts,
+          platformFees,
+          netProfit,
+          netMargin,
+          activeClinics,
           reconciliationStatus: 'Audited & Balanced',
           waterfall: [
-            { name: 'إجمالي المبيعات', value: 1500, type: 'positive' },
-            { name: 'الضرائب', value: -50, type: 'negative' },
-            { name: 'رسوم التوصيل', value: -120, type: 'negative' },
-            { name: 'تكلفة الـ APIs', value: -45, type: 'negative' },
-            { name: 'عمولة المنصة', value: -35, type: 'negative' },
-            { name: 'صافي الربح', value: 1250, type: 'total' }
+            { name: 'إجمالي المبيعات', value: grossRevenue, type: 'positive' },
+            { name: 'الضرائب', value: -taxes, type: 'negative' },
+            { name: 'تكلفة الـ APIs', value: -apiCosts, type: 'negative' },
+            { name: 'عمولة المنصة', value: -platformFees, type: 'negative' },
+            { name: 'صافي الربح', value: netProfit, type: 'total' }
           ]
        };
     }
