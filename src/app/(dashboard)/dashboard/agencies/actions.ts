@@ -35,7 +35,7 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
   if (agencyError) throw new Error(agencyError.message);
 
   // 3. Log to audit_logs
-  await supabaseAdmin.from('audit_logs').insert({
+  const { error: auditError } = await supabaseAdmin.from('audit_logs').insert({
     actor_id: adminId,
     action_type: 'CREATE_AGENCY',
     entity_type: 'agency',
@@ -44,6 +44,10 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
       agency_id: agency.id 
     }
   });
+
+  if (auditError) {
+    console.error('Audit log failed:', auditError.message);
+  }
 
   return agency;
 }
@@ -55,10 +59,14 @@ export async function updateAgencyCommissionAction(agencyId: string, newRate: nu
   
   if (error) throw new Error(error.message);
 
-  await supabaseAdmin.from('audit_logs').insert({
+  const { error: auditError } = await supabaseAdmin.from('audit_logs').insert({
     actor_id: adminId,
     action_type: 'UPDATE_AGENCY_COMMISSION',
     entity_type: 'agency',
     changes: { agency_id: agencyId, new_rate: newRate }
   });
+
+  if (auditError) {
+    console.error('Audit log failed:', auditError.message);
+  }
 }
