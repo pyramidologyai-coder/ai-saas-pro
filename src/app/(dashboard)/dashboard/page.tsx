@@ -1,9 +1,9 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+'use client';
+import React, { useEffect, useState } from 'react';
 import { MasterDashboardUI } from '@/components/dashboard/MasterDashboardUI';
 import ClientDashboard from '@/components/dashboard/ClientDashboard';
-
-export const dynamic = 'force-dynamic';
+import { supabase } from '@/lib/supabase';
+import { CardSkeleton } from '@/components/ui/Skeleton';
 
 interface RecentAgency {
   readonly id: string;
@@ -84,134 +84,172 @@ async function withTimeout<T>(promise: any, ms = 5000): Promise<T> {
       })
     ]);
     if (timeoutId !== undefined) clearTimeout(timeoutId);
-    return result;
+    return result as T;
   } catch (error) {
     if (timeoutId !== undefined) clearTimeout(timeoutId);
     throw error;
   }
 }
 
-async function checkAuth(supabase: any): Promise<boolean> {
-  try {
-    const { data, error } = (await withTimeout(supabase.auth.getUser(), 3000)) as any;
-    return !error && !!data?.user;
-  } catch { return false; }
-}
+export default function DashboardPage() {
+  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [isMasterAdmin, setIsMasterAdmin] = useState(false);
+  
+  const [loadingData, setLoadingData] = useState(true);
+  const [dashboardData, setDashboardData] = useState<MasterDashboardData>(DASHBOARD_DEFAULTS);
 
-async function checkMasterRole(supabase: any): Promise<boolean> {
-  try {
-    const { data: userData } = await supabase.auth.getUser();
-    if (userData?.user?.email) {
-      const masterEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
-      if (masterEmails.includes(userData.user.email)) return true;
+  useEffect(() => {
+    async function checkAuthAndRole() {
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !session?.user) {
+          setIsMasterAdmin(false);
+          setLoadingAuth(false);
+          return;
+        }
+
+        const userEmail = session.user.email;
+        const masterEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+        const isMasterByEmail = !!userEmail && masterEmails.includes(userEmail);
+        
+        let isMasterByRpc = false;
+        try {
+          const { data } = await withTimeout(supabase.rpc('verify_master_admin_role'), 3000) as any;
+          isMasterByRpc = !!data;
+        } catch (e) {
+          // Ignore RPC error if they match email
+        }
+
+        setIsMasterAdmin(isMasterByEmail || isMasterByRpc);
+      } catch (err) {
+        setIsMasterAdmin(false);
+      } finally {
+        setLoadingAuth(false);
+      }
     }
-    const { data, error } = (await withTimeout(supabase.rpc('verify_master_admin_role'), 3000)) as any;
-    return !error && !!data;
-  } catch { return false; }
-}
+    
+    checkAuthAndRole();
+  }, []);
 
-export default async function DashboardPage() {
-  const supabase = createServerComponentClient({ cookies });
+  useEffect(() => {
+    if (!isMasterAdmin) return;
 
-  const isAuthenticated = await checkAuth(supabase);
-  const isMasterAdmin = isAuthenticated ? await checkMasterRole(supabase) : false;
+    async function fetchMasterData() {
+      try {
+        const nowUTC = new Date();
+        const in7DaysUTC = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const thisMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
+        const lastMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() - 1, 1));
+
+        const [
+          agenciesResult,
+          tenantsResult,
+          messagesResult,
+          expiringResult,
+          highUsageResult,
+          recentAgenciesResult,
+          revenueResult,
+          thisMonthAgenciesResult,
+          lastMonthAgenciesResult,
+          usageRateResult
+        ] = (await Promise.allSettled([
+          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).eq('status', 'active')),
+          withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'active')),
+          withTimeout(supabase.rpc('count_today_messages')),
+          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
+          withTimeout(supabase.rpc('count_high_usage_tenants')),
+          withTimeout(supabase.from('agencies').select(\`
+            id,
+            name,
+            plan_type,
+            status,
+            created_at,
+            tenants_count:tenants(count)
+          \`).order('created_at', { ascending: false }).limit(5)),
+          withTimeout(supabase.rpc('calculate_master_revenue')),
+          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
+          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', lastMonthStart.toISOString()).lt('created_at', thisMonthStart.toISOString())),
+          withTimeout(supabase.rpc('calculate_usage_rate'))
+        ])) as any[];
+
+        let agenciesCount = DASHBOARD_DEFAULTS.agenciesCount;
+        if (agenciesResult.status === 'fulfilled' && !agenciesResult.value.error) {
+          agenciesCount = safeNumber(agenciesResult.value.count);
+        } else { logError('agencies_failed'); }
+
+        let tenantsCount = DASHBOARD_DEFAULTS.tenantsCount;
+        if (tenantsResult.status === 'fulfilled' && !tenantsResult.value.error) {
+          tenantsCount = safeNumber(tenantsResult.value.count);
+        } else { logError('tenants_failed'); }
+
+        let totalMessagesToday = DASHBOARD_DEFAULTS.totalMessagesToday;
+        if (messagesResult.status === 'fulfilled' && !messagesResult.value.error) {
+          totalMessagesToday = safeNumber(messagesResult.value.data);
+        } else { logError('messages_failed'); }
+
+        let expiringCount = DASHBOARD_DEFAULTS.expiringCount;
+        if (expiringResult.status === 'fulfilled' && !expiringResult.value.error) {
+          expiringCount = safeNumber(expiringResult.value.count);
+        } else { logError('expiring_failed'); }
+
+        let highUsageCount = DASHBOARD_DEFAULTS.highUsageCount;
+        if (highUsageResult.status === 'fulfilled' && !highUsageResult.value.error) {
+          highUsageCount = safeNumber(highUsageResult.value.data);
+        } else { logError('high_usage_failed'); }
+
+        let recentAgencies: RecentAgency[] = [];
+        if (recentAgenciesResult.status === 'fulfilled' && !recentAgenciesResult.value.error && Array.isArray(recentAgenciesResult.value.data)) {
+          recentAgencies = recentAgenciesResult.value.data.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
+        } else { logError('recent_agencies_failed'); }
+
+        let totalRevenue = DASHBOARD_DEFAULTS.totalRevenue;
+        if (revenueResult.status === 'fulfilled' && !revenueResult.value.error) {
+          totalRevenue = safeNumber(revenueResult.value.data);
+        } else { logError('revenue_failed'); }
+
+        const thisMonthCount = safeNumber(thisMonthAgenciesResult.status === 'fulfilled' ? thisMonthAgenciesResult.value.count : 0);
+        const lastMonthCount = safeNumber(lastMonthAgenciesResult.status === 'fulfilled' ? lastMonthAgenciesResult.value.count : 0);
+
+        const agenciesGrowth = lastMonthCount > 0 ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100) : thisMonthCount > 0 ? 100 : 0;
+
+        let usageRate = DASHBOARD_DEFAULTS.usageRate;
+        if (usageRateResult.status === 'fulfilled' && !usageRateResult.value.error) {
+          usageRate = safeNumber(usageRateResult.value.data);
+        } else { logError('usage_rate_failed'); }
+
+        setDashboardData({
+          agenciesCount,
+          tenantsCount,
+          totalMessagesToday,
+          expiringCount,
+          highUsageCount,
+          recentAgencies,
+          totalRevenue,
+          agenciesGrowth,
+          usageRate
+        });
+
+      } catch (err) {
+        console.error('Failed to fetch master data', err);
+      } finally {
+        setLoadingData(false);
+      }
+    }
+
+    fetchMasterData();
+  }, [isMasterAdmin]);
+
+  if (loadingAuth) {
+    return <div style={{ padding: '2rem' }}><CardSkeleton /><CardSkeleton /></div>;
+  }
 
   if (!isMasterAdmin) {
     return <ClientDashboard />;
   }
 
-  const nowUTC = new Date();
-  const in7DaysUTC = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
-  const thisMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
-  const lastMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() - 1, 1));
+  if (loadingData) {
+    return <div style={{ padding: '2rem' }}><CardSkeleton /><CardSkeleton /><CardSkeleton /></div>;
+  }
 
-  const [
-    agenciesResult,
-    tenantsResult,
-    messagesResult,
-    expiringResult,
-    highUsageResult,
-    recentAgenciesResult,
-    revenueResult,
-    thisMonthAgenciesResult,
-    lastMonthAgenciesResult,
-    usageRateResult
-  ] = (await Promise.allSettled([
-    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).eq('status', 'active')),
-    withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'active')),
-    withTimeout(supabase.rpc('count_today_messages')),
-    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
-    withTimeout(supabase.rpc('count_high_usage_tenants')),
-    withTimeout(supabase.from('agencies').select(`
-        id,
-        name,
-        plan_type,
-        status,
-        created_at,
-        tenants_count:tenants(count)
-      `).order('created_at', { ascending: false }).limit(5)),
-    withTimeout(supabase.rpc('calculate_master_revenue')),
-    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
-    withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', lastMonthStart.toISOString()).lt('created_at', thisMonthStart.toISOString())),
-    withTimeout(supabase.rpc('calculate_usage_rate'))
-  ])) as any[];
-
-  let agenciesCount = DASHBOARD_DEFAULTS.agenciesCount;
-  if (agenciesResult.status === 'fulfilled' && !agenciesResult.value.error) {
-    agenciesCount = safeNumber(agenciesResult.value.count);
-  } else { logError('agencies_failed'); }
-
-  let tenantsCount = DASHBOARD_DEFAULTS.tenantsCount;
-  if (tenantsResult.status === 'fulfilled' && !tenantsResult.value.error) {
-    tenantsCount = safeNumber(tenantsResult.value.count);
-  } else { logError('tenants_failed'); }
-
-  let totalMessagesToday = DASHBOARD_DEFAULTS.totalMessagesToday;
-  if (messagesResult.status === 'fulfilled' && !messagesResult.value.error) {
-    totalMessagesToday = safeNumber(messagesResult.value.data);
-  } else { logError('messages_failed'); }
-
-  let expiringCount = DASHBOARD_DEFAULTS.expiringCount;
-  if (expiringResult.status === 'fulfilled' && !expiringResult.value.error) {
-    expiringCount = safeNumber(expiringResult.value.count);
-  } else { logError('expiring_failed'); }
-
-  let highUsageCount = DASHBOARD_DEFAULTS.highUsageCount;
-  if (highUsageResult.status === 'fulfilled' && !highUsageResult.value.error) {
-    highUsageCount = safeNumber(highUsageResult.value.data);
-  } else { logError('high_usage_failed'); }
-
-  let recentAgencies: RecentAgency[] = [];
-  if (recentAgenciesResult.status === 'fulfilled' && !recentAgenciesResult.value.error && Array.isArray(recentAgenciesResult.value.data)) {
-    recentAgencies = recentAgenciesResult.value.data.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
-  } else { logError('recent_agencies_failed'); }
-
-  let totalRevenue = DASHBOARD_DEFAULTS.totalRevenue;
-  if (revenueResult.status === 'fulfilled' && !revenueResult.value.error) {
-    totalRevenue = safeNumber(revenueResult.value.data);
-  } else { logError('revenue_failed'); }
-
-  const thisMonthCount = safeNumber(thisMonthAgenciesResult.status === 'fulfilled' ? thisMonthAgenciesResult.value.count : 0);
-  const lastMonthCount = safeNumber(lastMonthAgenciesResult.status === 'fulfilled' ? lastMonthAgenciesResult.value.count : 0);
-
-  const agenciesGrowth = lastMonthCount > 0 ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100) : thisMonthCount > 0 ? 100 : 0;
-
-  let usageRate = DASHBOARD_DEFAULTS.usageRate;
-  if (usageRateResult.status === 'fulfilled' && !usageRateResult.value.error) {
-    usageRate = safeNumber(usageRateResult.value.data);
-  } else { logError('usage_rate_failed'); }
-
-  return (
-    <MasterDashboardUI
-      agenciesCount={agenciesCount}
-      tenantsCount={tenantsCount}
-      totalMessagesToday={totalMessagesToday}
-      expiringCount={expiringCount}
-      highUsageCount={highUsageCount}
-      recentAgencies={recentAgencies}
-      totalRevenue={totalRevenue}
-      agenciesGrowth={agenciesGrowth}
-      usageRate={usageRate}
-    />
-  );
+  return <MasterDashboardUI {...dashboardData} />;
 }
