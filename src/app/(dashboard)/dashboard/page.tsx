@@ -136,107 +136,27 @@ export default function DashboardPage() {
 
     async function fetchMasterData() {
       try {
-        const nowUTC = new Date();
-        const in7DaysUTC = new Date(nowUTC.getTime() + 7 * 24 * 60 * 60 * 1000);
-        const thisMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth(), 1));
-        const lastMonthStart = new Date(Date.UTC(nowUTC.getUTCFullYear(), nowUTC.getUTCMonth() - 1, 1));
-
-        const [
-          agenciesResult,
-          tenantsResult,
-          messagesResult,
-          expiringResult,
-          highUsageResult,
-          recentAgenciesResult,
-          revenueResult,
-          thisMonthAgenciesResult,
-          lastMonthAgenciesResult,
-          usageRateResult
-        ] = (await Promise.allSettled([
-          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true })),
-          withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true })),
-          withTimeout(supabase.rpc('count_today_messages')),
-          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
-          withTimeout(supabase.rpc('count_high_usage_tenants')),
-          withTimeout(supabase.from('agencies').select(`
-            id,
-            name,
-            plan_type,
-            status,
-            created_at
-          `).order('created_at', { ascending: false }).limit(5)),
-          withTimeout(supabase.rpc('calculate_master_revenue')),
-          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
-          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', lastMonthStart.toISOString()).lt('created_at', thisMonthStart.toISOString())),
-          withTimeout(supabase.rpc('calculate_usage_rate'))
-        ])) as any[];
-
-        let agenciesCount = DASHBOARD_DEFAULTS.agenciesCount;
-        if (agenciesResult.status === 'fulfilled' && !agenciesResult.value.error) {
-          agenciesCount = safeNumber(agenciesResult.value.count);
-        } else { logError('agencies_failed'); }
-
-        let tenantsCount = DASHBOARD_DEFAULTS.tenantsCount;
-        if (tenantsResult.status === 'fulfilled' && !tenantsResult.value.error) {
-          tenantsCount = safeNumber(tenantsResult.value.count);
-        } else { logError('tenants_failed'); }
-
-        let totalMessagesToday = DASHBOARD_DEFAULTS.totalMessagesToday;
-        if (messagesResult.status === 'fulfilled' && !messagesResult.value.error) {
-          totalMessagesToday = safeNumber(messagesResult.value.data);
-        } else { logError('messages_failed'); }
-
-        let expiringCount = DASHBOARD_DEFAULTS.expiringCount;
-        if (expiringResult.status === 'fulfilled' && !expiringResult.value.error) {
-          expiringCount = safeNumber(expiringResult.value.count);
-        } else { logError('expiring_failed'); }
-
-        let highUsageCount = DASHBOARD_DEFAULTS.highUsageCount;
-        if (highUsageResult.status === 'fulfilled' && !highUsageResult.value.error) {
-          highUsageCount = safeNumber(highUsageResult.value.data);
-        } else { logError('high_usage_failed'); }
-
+        const { data: rpcData, error } = await supabase.rpc('get_master_dashboard_data');
+        if (error || !rpcData) {
+           logError('master_rpc_failed');
+           return;
+        }
+        
         let recentAgencies: RecentAgency[] = [];
-        if (recentAgenciesResult.status === 'fulfilled' && !recentAgenciesResult.value.error && Array.isArray(recentAgenciesResult.value.data)) {
-          recentAgencies = recentAgenciesResult.value.data.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
-          
-          if (recentAgencies.length > 0) {
-            const agencyIds = recentAgencies.map(a => a.id);
-            const { data: tCounts } = await supabase.from('tenants').select('agency_id').in('agency_id', agencyIds);
-            if (tCounts) {
-               recentAgencies = recentAgencies.map(a => {
-                  const count = tCounts.filter((t: any) => t.agency_id === a.id).length;
-                  return { ...a, tenants_count: count };
-               });
-            }
-          }
-        } else { logError('recent_agencies_failed'); }
-
-        let totalRevenue = DASHBOARD_DEFAULTS.totalRevenue;
-        if (revenueResult.status === 'fulfilled' && !revenueResult.value.error) {
-          totalRevenue = safeNumber(revenueResult.value.data);
-        } else { logError('revenue_failed'); }
-
-        const thisMonthCount = safeNumber(thisMonthAgenciesResult.status === 'fulfilled' ? thisMonthAgenciesResult.value.count : 0);
-        const lastMonthCount = safeNumber(lastMonthAgenciesResult.status === 'fulfilled' ? lastMonthAgenciesResult.value.count : 0);
-
-        const agenciesGrowth = lastMonthCount > 0 ? Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100) : thisMonthCount > 0 ? 100 : 0;
-
-        let usageRate = DASHBOARD_DEFAULTS.usageRate;
-        if (usageRateResult.status === 'fulfilled' && !usageRateResult.value.error) {
-          usageRate = safeNumber(usageRateResult.value.data);
-        } else { logError('usage_rate_failed'); }
+        if (Array.isArray(rpcData.recentAgencies)) {
+          recentAgencies = rpcData.recentAgencies.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
+        }
 
         setDashboardData({
-          agenciesCount,
-          tenantsCount,
-          totalMessagesToday,
-          expiringCount,
-          highUsageCount,
+          agenciesCount: safeNumber(rpcData.agenciesCount),
+          tenantsCount: safeNumber(rpcData.tenantsCount),
+          totalMessagesToday: safeNumber(rpcData.totalMessagesToday),
+          expiringCount: safeNumber(rpcData.expiringCount),
+          highUsageCount: safeNumber(rpcData.highUsageCount),
           recentAgencies,
-          totalRevenue,
-          agenciesGrowth,
-          usageRate
+          totalRevenue: safeNumber(rpcData.totalRevenue),
+          agenciesGrowth: safeNumber(rpcData.agenciesGrowth),
+          usageRate: safeNumber(rpcData.usageRate)
         });
 
       } catch (err) {
