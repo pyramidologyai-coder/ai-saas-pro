@@ -153,8 +153,8 @@ export default function DashboardPage() {
           lastMonthAgenciesResult,
           usageRateResult
         ] = (await Promise.allSettled([
-          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).eq('status', 'active')),
-          withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'active')),
+          withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true })),
+          withTimeout(supabase.from('tenants').select('id', { count: 'exact', head: true })),
           withTimeout(supabase.rpc('count_today_messages')),
           withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).not('subscription_end_date', 'is', null).gte('subscription_end_date', nowUTC.toISOString()).lte('subscription_end_date', in7DaysUTC.toISOString())),
           withTimeout(supabase.rpc('count_high_usage_tenants')),
