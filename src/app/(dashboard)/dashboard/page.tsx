@@ -100,6 +100,11 @@ async function checkAuth(supabase: any): Promise<boolean> {
 
 async function checkMasterRole(supabase: any): Promise<boolean> {
   try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData?.user?.email) {
+      const masterEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map((e: string) => e.trim()).filter(Boolean);
+      if (masterEmails.includes(userData.user.email)) return true;
+    }
     const { data, error } = (await withTimeout(supabase.rpc('verify_master_admin_role'), 3000)) as any;
     return !error && !!data;
   } catch { return false; }
