@@ -15,7 +15,7 @@ interface RecentAgency {
   readonly id: string;
   readonly name: string;
   readonly plan_type: 'starter' | 'growth' | 'pro' | 'vip';
-  readonly status: 'active' | 'inactive' | 'suspended';
+  readonly status: 'active' | 'inactive' | 'suspended' | 'pending' | 'unpaid';
   readonly created_at: string;
   readonly tenants_count: number;
 }
@@ -206,10 +206,10 @@ export function MasterDashboardUI({
                         padding: '0.3rem 0.8rem',
                         borderRadius: '8px',
                         fontSize: '0.8rem',
-                        background: agency.status === 'active' ? '#10b98120' : agency.status === 'suspended' ? '#ef444420' : '#6b728020',
-                        color: agency.status === 'active' ? '#10b981' : agency.status === 'suspended' ? '#ef4444' : '#9ca3af'
+                        background: agency.status === 'active' ? '#10b98120' : agency.status === 'suspended' ? '#ef444420' : (agency.status === 'pending' || agency.status === 'unpaid') ? '#f59e0b20' : '#6b728020',
+                        color: agency.status === 'active' ? '#10b981' : agency.status === 'suspended' ? '#ef4444' : (agency.status === 'pending' || agency.status === 'unpaid') ? '#f59e0b' : '#9ca3af'
                       }}>
-                        {agency.status === 'active' ? 'نشط' : agency.status === 'suspended' ? 'موقوف' : 'غير نشط'}
+                        {agency.status === 'active' ? 'نشط' : agency.status === 'suspended' ? 'موقوف' : (agency.status === 'pending' || agency.status === 'unpaid') ? 'بانتظار الدفع' : 'غير محدد'}
                       </span>
                     </td>
                     <td style={{ padding: '1.2rem', fontSize: '0.9rem', color: 'var(--text-dim)' }}>

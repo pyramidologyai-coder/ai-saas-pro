@@ -9,7 +9,7 @@ interface RecentAgency {
   readonly id: string;
   readonly name: string;
   readonly plan_type: 'starter' | 'growth' | 'pro' | 'vip';
-  readonly status: 'active' | 'inactive' | 'suspended';
+  readonly status: 'active' | 'inactive' | 'suspended' | 'pending' | 'unpaid';
   readonly created_at: string;
   readonly tenants_count: number;
 }
@@ -62,7 +62,7 @@ function validateAgency(agency: unknown): RecentAgency | null {
   if (typeof a.id !== 'string' || !uuidRegex.test(a.id)) return null;
 
   const validPlanTypes = ['starter', 'growth', 'pro', 'vip'] as const;
-  const validStatuses = ['active', 'inactive', 'suspended'] as const;
+  const validStatuses = ['active', 'inactive', 'suspended', 'pending', 'unpaid'] as const;
 
   return {
     id: a.id,
@@ -163,8 +163,7 @@ export default function DashboardPage() {
             name,
             plan_type,
             status,
-            created_at,
-            tenants_count:tenants(count)
+            created_at
           `).order('created_at', { ascending: false }).limit(5)),
           withTimeout(supabase.rpc('calculate_master_revenue')),
           withTimeout(supabase.from('agencies').select('id', { count: 'exact', head: true }).gte('created_at', thisMonthStart.toISOString())),
@@ -200,6 +199,17 @@ export default function DashboardPage() {
         let recentAgencies: RecentAgency[] = [];
         if (recentAgenciesResult.status === 'fulfilled' && !recentAgenciesResult.value.error && Array.isArray(recentAgenciesResult.value.data)) {
           recentAgencies = recentAgenciesResult.value.data.map(validateAgency).filter((a: any): a is RecentAgency => a !== null);
+          
+          if (recentAgencies.length > 0) {
+            const agencyIds = recentAgencies.map(a => a.id);
+            const { data: tCounts } = await supabase.from('tenants').select('agency_id').in('agency_id', agencyIds);
+            if (tCounts) {
+               recentAgencies = recentAgencies.map(a => {
+                  const count = tCounts.filter((t: any) => t.agency_id === a.id).length;
+                  return { ...a, tenants_count: count };
+               });
+            }
+          }
         } else { logError('recent_agencies_failed'); }
 
         let totalRevenue = DASHBOARD_DEFAULTS.totalRevenue;
