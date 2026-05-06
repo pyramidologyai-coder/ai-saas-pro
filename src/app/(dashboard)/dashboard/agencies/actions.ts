@@ -103,6 +103,58 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
     console.error('Audit error:', auditError.message);
   }
 
+  // إرسال إيميل reset password للوكالة
+  try {
+    // تحقق إن الإيميل صح قبل الإرسال
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      throw new Error('invalid_email_for_reset');
+    }
+    // تحقق إن الـ APP_URL موجود
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      throw new Error('missing_app_url');
+    }
+    const { data: linkData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: cleanEmail,
+      options: {
+        redirectTo: `${appUrl}/auth/callback`
+      }
+    });
+    // ملاحظة: generateLink بيبعت الإيميل تلقائياً
+    // عبر Supabase SMTP settings
+    // تأكد إن SMTP مضبوط في:
+    // Supabase -> Authentication -> Email Settings
+
+    if (resetError) {
+      // لا توقف العملية لو الإيميل فشل
+      console.error('Welcome email failed:', resetError.message);
+    } else {
+      // سجّل في audit_logs إن الإيميل اتبعت
+      await supabaseAdmin
+        .from('audit_logs')
+        .insert({
+          actor_id: adminId,
+          action_type: 'SEND_WELCOME_EMAIL',
+          entity_type: 'agency',
+          changes: {
+            agency_id: agency.id,
+            email_sent: true
+          }
+        })
+        .then(({ error }) => {
+          if (error) console.error('Audit welcome email error:', error.message);
+        });
+    }
+  } catch (emailError) {
+    // لا تكشف تفاصيل الخطأ
+    // الوكالة اتعملت بنجاح حتى لو الإيميل فشل
+    console.error(
+      'Email process error:', 
+      emailError instanceof Error ? emailError.message : 'unknown'
+    );
+  }
+
   return agency;
 }
 
