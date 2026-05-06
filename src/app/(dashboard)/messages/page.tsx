@@ -35,31 +35,17 @@ type ChatData = {
   agency_id?: string;
 };
 
-const MOCK_CHATS: ChatData[] = [
-  { id: '1', name: 'أحمد محمود', channel: 'whatsapp', lastMsg: 'نشط الآن', isAiPaused: false },
-  { id: '4', name: 'ياسر محمد', channel: 'whatsapp', lastMsg: 'هل يوجد حجز غداً؟', isAiPaused: false },
-  { id: '2', name: 'سارة خالد', channel: 'instagram', lastMsg: 'شكراً جداً!', isAiPaused: false },
-  { id: '5', name: 'نورهان علي', channel: 'instagram', lastMsg: 'بكام الكشف؟', isAiPaused: true },
-  { id: '3', name: 'كريم مصطفى', channel: 'messenger', lastMsg: 'ممكن تفاصيل الحجز؟', isAiPaused: true },
-];
-
 export default function MessagesPage() {
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   
   // Chat list state
-  const [chats, setChats] = useState<ChatData[]>(MOCK_CHATS);
-  const [activeChatId, setActiveChatId] = useState<string>('1');
+  const [chats, setChats] = useState<ChatData[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string>('');
   const [channelFilter, setChannelFilter] = useState<'all' | 'whatsapp' | 'messenger' | 'instagram'>('all');
 
-  // Messages state for active chat (Mock Data)
-  const [messagesMap, setMessagesMap] = useState<Record<string, any[]>>({
-    '1': [{ id: 1, text: 'أهلاً بك يا فندم! منورنا. أقدر أساعد حضرتك إزاي النهاردة؟', sender: 'outgoing', time: '10:00 ص' }],
-    '2': [{ id: 2, text: 'شكراً جداً على المساعدة!', sender: 'incoming', time: '11:15 ص' }],
-    '3': [{ id: 3, text: 'ممكن تفاصيل الحجز لو سمحت؟', sender: 'incoming', time: '09:30 ص' }],
-    '4': [{ id: 4, text: 'هل يوجد حجز غداً؟', sender: 'incoming', time: '08:00 ص' }],
-    '5': [{ id: 5, text: 'بكام الكشف عندكم؟', sender: 'incoming', time: '01:20 م' }],
-  });
+  // Messages state for active chat
+  const [messagesMap, setMessagesMap] = useState<Record<string, any[]>>({});
 
   // Derived state
   const filteredChats = chats.filter(chat => {
@@ -76,7 +62,7 @@ export default function MessagesPage() {
     return true;
   });
   const activeChat = filteredChats.find(c => c.id === activeChatId) || filteredChats[0] || chats[0];
-  const currentMessages = messagesMap[activeChat.id] || [];
+  const currentMessages = activeChat ? (messagesMap[activeChat.id] || []) : [];
   const [role, setRole] = useState<'admin' | 'agency' | 'master_admin'>('admin');
   
   // Master Admin / Agency Dropdowns
@@ -103,40 +89,60 @@ export default function MessagesPage() {
       const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
       const isMaster = superAdminEmails.includes(session.user.email || '');
       
+      let tenantIdForFilter = null;
+      
       if (isMaster) {
         setRole('master_admin');
         const { data: agData } = await supabase.from('agencies').select('id, name');
         if (agData) setAgencies(agData);
-        const { data: tnData } = await supabase.from('tenants').select('id, name, agency_id');
-        if (tnData) setAllTenants(tnData);
-        
-        // Master Admin sees massive global stats
-        setAiQuotaUsed(8450);
-        setHumanMessagesSent(1200);
+        const { data: tnData } = await supabase.from('tenants').select('id, name, agency_id, messages_used');
+        if (tnData) {
+          setAllTenants(tnData);
+          setAiQuotaUsed(tnData.reduce((acc, t) => acc + (t.messages_used || 0), 0));
+        }
+        setHumanMessagesSent(0);
       } else {
         // Check if Agency
         const { data: agencyData } = await supabase.from('agencies').select('id, name').eq('user_id', session.user.id).limit(1);
         if (agencyData && agencyData.length > 0) {
           setRole('agency');
-          const { data: tnData } = await supabase.from('tenants').select('id, name').eq('agency_id', agencyData[0].id);
-          if (tnData) setAllTenants(tnData);
-          
-          // Agency sees stats for all their sub-tenants
-          setAiQuotaUsed(3240);
-          setHumanMessagesSent(410);
+          const { data: tnData } = await supabase.from('tenants').select('id, name, messages_used').eq('agency_id', agencyData[0].id);
+          if (tnData) {
+            setAllTenants(tnData);
+            setAiQuotaUsed(tnData.reduce((acc, t) => acc + (t.messages_used || 0), 0));
+          }
+          setHumanMessagesSent(0);
         } else {
           // Normal Tenant (Clinic / Store Admin)
           setRole('admin');
-          const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+          const { data: tenant } = await supabase.from('tenants').select('id, messages_used').eq('user_id', session.user.id).single();
           if (tenant) {
+            tenantIdForFilter = tenant.id;
             const { data: branchData } = await supabase.from('branches').select('id, name').eq('tenant_id', tenant.id);
             if (branchData) setBranches(branchData);
+            setAiQuotaUsed(tenant.messages_used || 0);
           }
-          
-          // Clinic Admin sees their exact active subscription quota usage
-          setAiQuotaUsed(850);
-          setHumanMessagesSent(120); // Free manual replies!
+          setHumanMessagesSent(0);
         }
+      }
+
+      // Fetch conversations
+      let query = supabase.from('conversations').select('*').order('last_message_at', { ascending: false });
+      if (tenantIdForFilter) query = query.eq('tenant_id', tenantIdForFilter);
+      
+      const { data: convData } = await query;
+      if (convData && convData.length > 0) {
+        const formattedChats = convData.map(c => ({
+          id: c.id,
+          name: c.customer_name || c.customer_phone || 'عميل غير مسجل',
+          channel: c.channel || 'whatsapp',
+          lastMsg: c.last_message_preview || '',
+          isAiPaused: c.status === 'paused',
+          tenant_id: c.tenant_id,
+          agency_id: c.agency_id
+        }));
+        setChats(formattedChats);
+        setActiveChatId(formattedChats[0].id);
       }
     }
     fetchInitialData();
@@ -283,8 +289,10 @@ export default function MessagesPage() {
 
         <div className={styles.chatList} style={{ flex: 1, overflowY: 'auto' }}>
           {filteredChats.length === 0 ? (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-dim)' }}>
-              لا توجد محادثات في هذه المنصة حالياً.
+            <div style={{ padding: '3rem 2rem', textAlign: 'center', color: 'var(--text-dim)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+              <MessageCircle size={48} color="rgba(255,255,255,0.1)" />
+              <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>لا توجد محادثات بعد</div>
+              <div style={{ fontSize: '0.9rem' }}>شارك رابط واتساب مع عملاءك</div>
             </div>
           ) : (
             filteredChats.map(chat => (
@@ -327,6 +335,14 @@ export default function MessagesPage() {
       {/* --- MAIN CHAT AREA --- */}
       <div className={styles.chatArea} style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-main)' }}>
         
+        {!activeChat ? (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-dim)', gap: '1rem' }}>
+            <MessageCircle size={64} color="rgba(255,255,255,0.05)" />
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700 }}>لا توجد محادثات بعد</h2>
+            <p>شارك رابط واتساب مع عملاءك لبدء استقبال الرسائل هنا</p>
+          </div>
+        ) : (
+          <>
         {/* Chat Header */}
         <div className={styles.chatHeader} style={{ padding: '1rem 2rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -434,6 +450,8 @@ export default function MessagesPage() {
           </div>
         </div>
 
+          </>
+        )}
       </div>
     </div>
   );

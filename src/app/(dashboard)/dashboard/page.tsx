@@ -14,6 +14,7 @@ import CognitiveDashboard from './cognitive-view';
 
 export default function Home() {
   const [dict, setDict] = useState(() => getDictionary('clinic'));
+  const [aiStats, setAiStats] = useState({ ai: 0, human: 0 });
   const [stats, setStats] = useState([
     { label: 'إجمالي الحجوزات', value: '...', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
     { label: 'مرضى جدد', value: '...', trend: '+5%', icon: Users, color: '#a855f7' },
@@ -80,17 +81,21 @@ export default function Home() {
            const { count: tenantsCount } = await supabase.from('tenants').select('*', { count: 'exact', head: true });
            
            const { data: agRev } = await supabase.from('agencies').select('revenue, commission_rate');
-           const { data: tnRev } = await supabase.from('tenants').select('revenue, agency_id');
+           const { data: tnRev } = await supabase.from('tenants').select('revenue, agency_id, messages_used');
            
            let totalPlatformRevenue = 0;
-           tnRev?.forEach(t => { if (!t.agency_id) totalPlatformRevenue += (t.revenue || 0); });
+           let totalMessages = 0;
+           tnRev?.forEach(t => { 
+             if (!t.agency_id) totalPlatformRevenue += (t.revenue || 0); 
+             totalMessages += (t.messages_used || 0);
+           });
            agRev?.forEach(a => { totalPlatformRevenue += ((a.revenue || 0) * (a.commission_rate || 20) / 100); });
 
            setStats([
-             { label: 'إجمالي إيرادات المنصة', value: `$${totalPlatformRevenue.toLocaleString()}`, trend: '+15%', icon: TrendingUp, color: '#10b981' },
-             { label: 'عدد الوكالات النشطة', value: agenciesCount?.toString() || '0', trend: 'نمو مستمر', icon: Users, color: '#6366f1' },
-             { label: 'عدد العملاء الكلي', value: tenantsCount?.toString() || '0', trend: '+8%', icon: Users, color: '#a855f7' },
-             { label: 'رسائل اليوم الكلية', value: Math.floor(Math.random() * 5000 + 1000).toLocaleString(), trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
+             { label: 'إجمالي إيرادات المنصة', value: `$${totalPlatformRevenue.toLocaleString()}`, trend: totalPlatformRevenue > 0 ? '+15%' : '0%', icon: TrendingUp, color: '#10b981' },
+             { label: 'عدد الوكالات النشطة', value: agenciesCount?.toString() || '0', trend: agenciesCount ? 'نمو مستمر' : '0%', icon: Users, color: '#6366f1' },
+             { label: 'عدد العملاء الكلي', value: tenantsCount?.toString() || '0', trend: tenantsCount ? '+8%' : '0%', icon: Users, color: '#a855f7' },
+             { label: 'رسائل الكلية', value: totalMessages.toLocaleString(), trend: totalMessages > 0 ? 'ممتاز' : '0%', icon: MessageCircle, color: '#06b6d4' },
            ]);
            
            setLoading(false);
@@ -127,11 +132,18 @@ export default function Home() {
           .order('booking_time', { ascending: false })
           .limit(5);
 
+        const { count: aiMsgs } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id).eq('sender', 'model');
+        const { count: allMsgs } = await supabase.from('messages').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
+        const aiIndep = allMsgs && allMsgs > 0 ? Math.round(((aiMsgs || 0) / allMsgs) * 100) : 0;
+        const aiHuman = allMsgs && allMsgs > 0 ? 100 - aiIndep : 0;
+        
+        setAiStats({ ai: aiIndep, human: aiHuman });
+
         setStats([
-          { label: currentDict.totalBookings, value: bookingCount?.toString() || '0', trend: '+12%', icon: CalendarCheck, color: '#6366f1' },
-          { label: currentDict.newCustomers, value: uniqueCustomers.toString(), trend: '+5%', icon: Users, color: '#a855f7' },
-          { label: 'استقلالية الذكاء الاصطناعي', value: bookingCount ? '85%' : '0%', trend: 'ممتاز', icon: MessageCircle, color: '#06b6d4' },
-          { label: currentDict.revenue, value: (bookingCount ? bookingCount * 300 : 0).toLocaleString() + ' ج.م', trend: '+20%', icon: TrendingUp, color: '#10b981' },
+          { label: currentDict.totalBookings, value: bookingCount?.toString() || '0', trend: bookingCount ? '+12%' : '0%', icon: CalendarCheck, color: '#6366f1' },
+          { label: currentDict.newCustomers, value: uniqueCustomers.toString(), trend: uniqueCustomers > 0 ? '+5%' : '0%', icon: Users, color: '#a855f7' },
+          { label: 'استقلالية الذكاء الاصطناعي', value: `${aiIndep}%`, trend: aiIndep > 50 ? 'ممتاز' : '0%', icon: MessageCircle, color: '#06b6d4' },
+          { label: currentDict.revenue, value: (bookingCount ? bookingCount * 300 : 0).toLocaleString() + ' ج.م', trend: bookingCount ? '+20%' : '0%', icon: TrendingUp, color: '#10b981' },
         ]);
 
         setRecentBookings(bookings || []);
@@ -245,14 +257,14 @@ export default function Home() {
             <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>كم عدد {dict.bookings} التي تعامل معها الذكاء الاصطناعي بمفرده دون تدخل بشري؟</p>
           </div>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#a5b4fc' }}>
-            85<span style={{ fontSize: '1.5rem' }}>%</span>
+            {aiStats.ai}<span style={{ fontSize: '1.5rem' }}>%</span>
           </div>
         </div>
         
         {/* CSS Progress Bar */}
         <div style={{ width: '100%', height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
           <div style={{ 
-            width: '85%', 
+            width: `${aiStats.ai}%`, 
             height: '100%', 
             background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', 
             borderRadius: '10px',
@@ -260,8 +272,8 @@ export default function Home() {
           }}></div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.8rem', fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-          <span>تدخل بشري (15%)</span>
-          <span>إغلاق آلي بالكامل (85%)</span>
+          <span>تدخل بشري ({aiStats.human}%)</span>
+          <span>إغلاق آلي بالكامل ({aiStats.ai}%)</span>
         </div>
       </section>
 
@@ -313,8 +325,12 @@ export default function Home() {
               ))}
               {!loading && recentBookings.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>
-                    لا يوجد {dict.bookings} حالية.. ابدأ بمشاركة رابط الواتساب!
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <CalendarCheck size={48} color="rgba(255,255,255,0.1)" />
+                      <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>الأرقام 0</div>
+                      <div style={{ fontSize: '0.9rem' }}>ابدأ بإضافة عملاء ومشاركة رابط الواتساب</div>
+                    </div>
                   </td>
                 </tr>
               )}

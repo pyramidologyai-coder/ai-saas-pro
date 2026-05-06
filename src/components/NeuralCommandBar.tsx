@@ -50,20 +50,7 @@ export default function NeuralCommandBar() {
       // Simulate sub-400ms Edge AI processing for NLQ / Fuzzy Search
       const timeout = setTimeout(() => {
         const lowerQuery = query.toLowerCase();
-        const mockResults = [];
-        
-        // Navigation Commands
-        if (lowerQuery.includes('setting') || lowerQuery.includes('إعدادات')) {
-          mockResults.push({ id: 'nav_settings', type: 'navigation', title: 'Go to Settings', action: () => router.push('/settings') });
-        }
-        if (lowerQuery.includes('book') || lowerQuery.includes('حجز')) {
-          mockResults.push({ id: 'nav_bookings', type: 'navigation', title: 'Open Bookings Calendar', action: () => router.push('/bookings') });
-        }
-        
-        // NLQ Financial Queries
-        if (lowerQuery.includes('revenue') || lowerQuery.includes('ارباح') || lowerQuery.includes('أرباح')) {
-          mockResults.push({ id: 'ai_rev', type: 'ai_insight', title: 'Revenue Gap Analysis', desc: 'Analyzing revenue gap between last Tuesday and today (Auto-Reconciled)...', action: () => alert('AI Analysis: Revenue is up 12% compared to last Tuesday. Highest churn observed in branch B.') });
-        }
+        const mockResults: any[] = [];
 
         // AI Agent Query
         if (mockResults.length === 0) {
@@ -130,7 +117,7 @@ export default function NeuralCommandBar() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="w-full bg-transparent text-xl text-white placeholder-[var(--accent-primary)]/50 outline-none"
-            placeholder="Ask the Master Agent or Search (NLQ)..."
+            placeholder="ابدأ الكتابة للبحث..."
           />
           {isProcessing && <Loader2 size={20} className="animate-spin text-[var(--accent-primary)]" />}
         </div>

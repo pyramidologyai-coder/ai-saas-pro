@@ -11,40 +11,47 @@ export default function MarketingPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [tenantType, setTenantType] = useState('clinic');
+  const [dbCampaigns, setDbCampaigns] = useState<any[]>([]);
+  const [stats, setStats] = useState({ total: 0, sent: 0, recipients: 0 });
+  const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    const fetchTenant = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const { data: tenant } = await supabase.from('tenants').select('type').eq('user_id', session.user.id).single();
-        if (tenant) {
-          setTenantType(tenant.type);
-          setDict(getDictionary(tenant.type));
+    const fetchTenantAndCampaigns = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: tenant } = await supabase.from('tenants').select('id, type').eq('user_id', session.user.id).single();
+          if (tenant) {
+            setTenantType(tenant.type);
+            setDict(getDictionary(tenant.type));
+
+            const { data: campaignsData } = await supabase
+              .from('campaigns')
+              .select('*')
+              .eq('tenant_id', tenant.id)
+              .order('created_at', { ascending: false });
+
+            if (campaignsData) {
+              setDbCampaigns(campaignsData);
+              setStats({
+                total: campaignsData.length,
+                sent: campaignsData.reduce((acc, curr) => acc + (curr.sent_count || 0), 0),
+                recipients: campaignsData.reduce((acc, curr) => acc + (curr.recipients_count || 0), 0)
+              });
+            }
+          }
         }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchTenant();
+    fetchTenantAndCampaigns();
   }, []);
 
   // Mock Data
-  const campaigns = [
-    {
-      id: 1,
-      name: 'عرض تبييض الأسنان الصيفي',
-      type: 'Retargeting',
-      date: '2026-04-20 10:00:00',
-      status: 'Sent',
-      recipients: 150
-    },
-    {
-      id: 2,
-      name: 'تهنئة عيد الفطر',
-      type: 'General',
-      date: '2026-03-30 09:00:00',
-      status: 'Sent',
-      recipients: 840
-    }
-  ];
+  // Real data is fetched from Supabase
 
   const handleGenerate = () => {
     setIsGenerating(true);
@@ -87,21 +94,21 @@ export default function MarketingPage() {
             <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>إجمالي الحملات</h3>
             <Activity size={20} color="#10b981" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800 }}>2</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats.total.toLocaleString()}</div>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>الرسائل المرسلة</h3>
             <Send size={20} color="var(--accent-primary)" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800 }}>990</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats.sent.toLocaleString()}</div>
         </div>
         <div style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
             <h3 style={{ color: 'var(--text-dim)', fontSize: '1rem' }}>إجمالي {dict.customers} المستهدفين</h3>
             <Users size={20} color="#a855f7" />
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800 }}>1,200</div>
+          <div style={{ fontSize: '2rem', fontWeight: 800 }}>{stats.recipients.toLocaleString()}</div>
         </div>
       </div>
 
@@ -123,22 +130,40 @@ export default function MarketingPage() {
               </tr>
             </thead>
             <tbody>
-              {campaigns.map(camp => (
-                <tr key={camp.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                  <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-bright)' }}>{camp.name}</td>
-                  <td style={{ ...tdStyle, color: '#f59e0b' }}>{camp.type}</td>
-                  <td style={tdStyle}>{camp.date}</td>
-                  <td style={tdStyle}>
-                    <span style={{ background: '#10b98115', color: '#10b981', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
-                      {camp.status}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>{camp.recipients}</td>
-                  <td style={tdStyle}>
-                    <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer' }}>التفاصيل</button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-dim)' }}>
+                    جاري التحميل...
                   </td>
                 </tr>
-              ))}
+              ) : dbCampaigns.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                      <Megaphone size={48} color="rgba(255,255,255,0.1)" />
+                      <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>لا توجد حملات بعد</div>
+                      <div style={{ fontSize: '0.9rem' }}>اضغط + إطلاق حملة جديدة</div>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                dbCampaigns.map(camp => (
+                  <tr key={camp.id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                    <td style={{ ...tdStyle, fontWeight: 600, color: 'var(--text-bright)' }}>{camp.name}</td>
+                    <td style={{ ...tdStyle, color: '#f59e0b' }}>{camp.type}</td>
+                    <td style={tdStyle}>{new Date(camp.created_at).toLocaleString('ar-EG')}</td>
+                    <td style={tdStyle}>
+                      <span style={{ background: '#10b98115', color: '#10b981', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600 }}>
+                        {camp.status}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>{camp.recipients_count}</td>
+                    <td style={tdStyle}>
+                      <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 1rem', borderRadius: '6px', cursor: 'pointer' }}>التفاصيل</button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -204,11 +229,8 @@ export default function MarketingPage() {
             {campaignMode === 'template' && (
               <div style={{ marginBottom: '1.5rem' }}>
                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)' }}>اختر القالب المعتمد من ميتا</label>
-                <select style={inputStyle}>
-                  <option value="">اختر قالب مسجل...</option>
-                  <option value="eid_offer_1">eid_offer_1 (تمت الموافقة ✅)</option>
-                  <option value="welcome_back">welcome_back (تمت الموافقة ✅)</option>
-                  <option value="flash_sale">flash_sale (قيد المراجعة ⏳)</option>
+                <select style={inputStyle} disabled>
+                  <option value="">لا توجد قوالب معتمدة بعد (قم بإضافة قوالب من Meta Business)</option>
                 </select>
               </div>
             )}

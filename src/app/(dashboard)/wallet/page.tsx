@@ -7,46 +7,28 @@ import Link from 'next/link';
 export default function WalletPage() {
   const [loading, setLoading] = useState(true);
 
-  // Mock data for transactions based on the screenshot
-  const transactions = [
-    {
-      id: 1,
-      subscription: 'Maha',
-      subscriptionId: 'SID3508',
-      trxDate: '2026-04-19 15:31:03',
-      startDate: '2026-04-19 15:31:03',
-      endDate: '2026-05-03 15:31:03',
-      price: '0 SAR',
-      totalUsers: 1
-    },
-    {
-      id: 2,
-      subscription: 'Marketing Specialist',
-      subscriptionId: 'SID3509',
-      trxDate: '2026-04-19 15:31:17',
-      startDate: '2026-04-19 15:31:17',
-      endDate: '2026-05-03 15:31:17',
-      price: '0 SAR',
-      totalUsers: 1
-    },
-    {
-      id: 3,
-      subscription: 'Virtual Doctor',
-      subscriptionId: 'SID3513',
-      trxDate: '2026-04-22 15:27:34',
-      startDate: '2026-04-22 15:27:34',
-      endDate: '2026-05-06 15:27:34',
-      price: '0 SAR',
-      totalUsers: 1
-    }
-  ];
+  const [transactions, setTransactions] = useState<any[]>([]);
 
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    async function fetchData() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data: tenant } = await supabase.from('tenants').select('id').eq('user_id', session.user.id).single();
+          if (tenant) {
+            const { data: subsData } = await supabase.from('subscriptions').select('*').eq('tenant_id', tenant.id).order('created_at', { ascending: false });
+            if (subsData) {
+              setTransactions(subsData);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
   }, []);
 
   if (loading) {
@@ -148,18 +130,30 @@ export default function WalletPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((trx) => (
-                  <tr key={trx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.85rem' }}>
-                    <td style={tdStyle}>{trx.id}</td>
-                    <td style={{ ...tdStyle, color: 'var(--accent-primary)' }}>{trx.subscription}</td>
-                    <td style={tdStyle}>{trx.subscriptionId}</td>
-                    <td style={tdStyle}>{trx.trxDate}</td>
-                    <td style={tdStyle}>{trx.startDate}</td>
-                    <td style={tdStyle}>{trx.endDate}</td>
-                    <td style={{ ...tdStyle, fontWeight: 600 }}>{trx.price}</td>
-                    <td style={tdStyle}>{trx.totalUsers}</td>
+                {transactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-dim)' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
+                        <History size={48} color="rgba(255,255,255,0.1)" />
+                        <div style={{ fontSize: '1.2rem', fontWeight: 600 }}>لا يوجد سجل معاملات</div>
+                        <div style={{ fontSize: '0.9rem' }}>لم تقم بأي اشتراكات أو مدفوعات حتى الآن</div>
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  transactions.map((trx, index) => (
+                    <tr key={trx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', fontSize: '0.85rem' }}>
+                      <td style={tdStyle}>{index + 1}</td>
+                      <td style={{ ...tdStyle, color: 'var(--accent-primary)' }}>{trx.plan_id || 'Basic'}</td>
+                      <td style={tdStyle}>{trx.id.substring(0, 8)}...</td>
+                      <td style={tdStyle}>{new Date(trx.created_at).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                      <td style={tdStyle}>{trx.current_period_start ? new Date(trx.current_period_start).toLocaleDateString() : '-'}</td>
+                      <td style={tdStyle}>{trx.current_period_end ? new Date(trx.current_period_end).toLocaleDateString() : '-'}</td>
+                      <td style={{ ...tdStyle, fontWeight: 600 }}>{trx.status === 'active' ? 'PAID' : trx.status}</td>
+                      <td style={tdStyle}>1</td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
