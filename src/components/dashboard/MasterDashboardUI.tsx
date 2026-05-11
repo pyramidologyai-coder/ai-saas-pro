@@ -20,7 +20,7 @@ interface RecentAgency {
   readonly plan_type:
     'starter' | 'growth' | 'pro' | 'vip'
   readonly status:
-    'active' | 'inactive' | 'suspended'
+    'active' | 'inactive' | 'suspended' | 'pending' | 'unpaid'
   readonly created_at: string
   readonly tenants_count: number
 }
@@ -110,6 +110,16 @@ const STATUS_BADGES = {
     bg: 'bg-red-500/20',
     text: 'text-red-400',
     label: 'موقوفة'
+  },
+  pending: {
+    bg: 'bg-orange-500/20',
+    text: 'text-orange-400',
+    label: 'قيد الانتظار'
+  },
+  unpaid: {
+    bg: 'bg-yellow-500/20',
+    text: 'text-yellow-400',
+    label: 'بانتظار الدفع'
   }
 } as const
 
