@@ -28,10 +28,10 @@ function checkRateLimit(
   return true
 }
 
-async function withTimeout<T>(
-  promise: Promise<T>,
+async function withTimeout(
+  promise: Promise<any>,
   ms = 5000
-): Promise<T> {
+): Promise<any> {
   let timeoutId: ReturnType<
     typeof setTimeout
   > | undefined
