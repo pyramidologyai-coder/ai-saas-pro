@@ -176,7 +176,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const headersList = headers()
+    const headersList = await headers()
     await supabase
       .from('audit_logs')
       .insert({
