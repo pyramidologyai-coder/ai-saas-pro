@@ -1,171 +1,184 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createServerComponentClient }
+  from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { Building2, Users, Calendar, Activity, ShieldAlert, CreditCard } from 'lucide-react'
+import { AgencyDetailsUI }
+  from '@/components/agencies/AgencyDetailsUI'
+import type { SupabaseClient }
+  from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const VALID_LANGS = ['ar', 'en', 'fr'] as const
+type Lang = typeof VALID_LANGS[number]
 
 async function withTimeout<T>(
   promise: Promise<T>,
   ms = 5000
 ): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  let timeoutId: ReturnType<
+    typeof setTimeout
+  > | undefined = undefined
   try {
     const result = await Promise.race([
       promise,
       new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('timeout')), ms)
+        timeoutId = setTimeout(
+          () => reject(new Error('timeout')),
+          ms
+        )
       })
     ])
-    if (timeoutId !== undefined) clearTimeout(timeoutId)
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+    }
     return result
   } catch (error) {
-    if (timeoutId !== undefined) clearTimeout(timeoutId)
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId)
+    }
     throw error
   }
 }
 
-export default async function AgencyDetailsPage({
-  params
+async function checkAuth(
+  supabase: SupabaseClient
+): Promise<boolean> {
+  try {
+    const { data, error } =
+      await withTimeout(
+        supabase.auth.getUser(), 3000
+      )
+    return !error && !!data.user
+  } catch { return false }
+}
+
+async function checkMasterRole(
+  supabase: SupabaseClient
+): Promise<boolean> {
+  try {
+    const { data, error } =
+      await withTimeout(
+        supabase.rpc('verify_master_admin_role'),
+        3000
+      )
+    return !error && !!data
+  } catch { return false }
+}
+
+export default async function AgencyPage({
+  params,
+  searchParams
 }: {
-  params: Promise<{ id: string }>
+  params: { id: string }
+  searchParams: { lang?: string }
 }) {
-  const { id } = await params
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = createServerComponentClient({
+    cookies
+  })
 
-  // 1. getUser() + withTimeout
-  const { data: { user } } = await withTimeout(supabase.auth.getUser())
+  const isAuthenticated = await checkAuth(supabase)
+  if (!isAuthenticated) redirect('/login')
 
-  // 2. verify_master_admin_role()
-  if (!user || user.user_metadata?.role !== 'master_admin') {
-    redirect('/login')
+  const isMasterAdmin =
+    await checkMasterRole(supabase)
+  if (!isMasterAdmin) redirect('/login')
+
+  const agencyId = params.id
+  if (
+    typeof agencyId !== 'string'
+    || !UUID_REGEX.test(agencyId)
+  ) {
+    redirect('/dashboard/agencies')
   }
 
-  // Fetch Agency
-  const { data: agency } = await withTimeout(
-    supabase
-      .from('agencies')
-      .select('*')
-      .eq('id', id)
-      .single()
-  )
+  const rawLang = searchParams?.lang ?? 'ar'
+  const lang: Lang = VALID_LANGS.includes(
+    rawLang as Lang
+  ) ? rawLang as Lang : 'ar'
 
-  if (!agency) {
-    return <div className="p-6 text-white text-center text-xl mt-10" dir="rtl">الوكالة غير موجودة ⚠️</div>
-  }
+  let agency: Record<string, unknown> | null = null
+  let agencyError = false
 
-  // Fetch Tenants Count
-  const { count: tenantsCount } = await withTimeout(
-    supabase
-      .from('tenants')
-      .select('id', { count: 'exact', head: true })
-      .eq('agency_id', id)
-  )
-
-  const currentStatus = agency.subscription_status || agency.status || 'unknown'
-
-  const getStatusStyle = (status: string) => {
-    switch(status) {
-      case 'active': return 'bg-green-500/20 text-green-400'
-      case 'suspended': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+  try {
+    const { data, error } = await withTimeout(
+      supabase
+        .from('agencies')
+        .select(`
+          id,
+          name,
+          plan_type,
+          subscription_status,
+          created_at,
+          whatsapp_number,
+          messages_used,
+          messages_limit,
+          custom_domain,
+          logo_url
+        `)
+        .eq('id', agencyId)
+        .single(),
+      5000
+    )
+    if (error || !data) {
+      agencyError = true
+    } else {
+      agency = data
     }
+  } catch {
+    agencyError = true
   }
 
-  const getStatusText = (status: string) => {
-    switch(status) {
-      case 'active': return 'نشطة'
-      case 'suspended': return 'موقوفة'
-      default: return status
+  if (agencyError || !agency) {
+    redirect('/dashboard/agencies')
+  }
+
+  let commissionRate = 0
+  try {
+    const { data } = await withTimeout(
+      supabase.rpc(
+        'get_agency_commission',
+        { p_agency_id: agencyId }
+      ),
+      3000
+    )
+    if (typeof data === 'number'
+      && !isNaN(data)
+      && isFinite(data)) {
+      commissionRate = Math.max(0, data)
     }
+  } catch {
+    commissionRate = 0
+  }
+
+  let tenantsCount = 0
+  try {
+    const { count, error } = await withTimeout(
+      supabase
+        .from('tenants')
+        .select('id', {
+          count: 'exact',
+          head: true
+        })
+        .eq('agency_id', agencyId),
+      5000
+    )
+    if (!error && count !== null) {
+      tenantsCount = count
+    }
+  } catch {
+    tenantsCount = 0
   }
 
   return (
-    <div dir="rtl" className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-3">
-          <Building2 className="text-blue-400" />
-          ملف الوكالة
-        </h1>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* بيانات الوكالة */}
-        <div className="lg:col-span-2 bg-gray-800/50 border border-gray-700/50 p-6 rounded-xl space-y-6 shadow-xl">
-          <h2 className="text-lg font-semibold text-gray-200 border-b border-gray-700/50 pb-2">التفاصيل الأساسية</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Building2 size={16} /> اسم الوكالة
-              </div>
-              <div className="text-white font-medium text-lg">{agency.name}</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <CreditCard size={16} /> الباقة الحالية
-              </div>
-              <div className="text-blue-400 font-bold uppercase">{agency.plan_type || '—'}</div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Activity size={16} /> الحالة
-              </div>
-              <div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusStyle(currentStatus)}`}>
-                  {getStatusText(currentStatus)}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Users size={16} /> عدد العملاء المربوطين
-              </div>
-              <div className="text-white font-medium">{tenantsCount ?? 0} عميل</div>
-            </div>
-
-            <div className="space-y-1 md:col-span-2">
-              <div className="flex items-center gap-2 text-gray-400 text-sm">
-                <Calendar size={16} /> تاريخ الانضمام
-              </div>
-              <div className="text-white">
-                {agency.created_at ? new Date(agency.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* لوحة التحكم والإجراءات */}
-        <div className="bg-gray-800/50 border border-gray-700/50 p-6 rounded-xl flex flex-col justify-start items-center text-center space-y-6 shadow-xl">
-          <h2 className="text-lg font-semibold text-gray-200 w-full text-right border-b border-gray-700/50 pb-2">إجراءات الخطر</h2>
-          
-          <ShieldAlert size={64} className={currentStatus === 'active' ? 'text-orange-400/80' : 'text-green-400/80'} />
-          
-          <div className="space-y-2">
-            <h3 className="text-white font-medium">التحكم في وصول الوكالة</h3>
-            <p className="text-gray-400 text-xs leading-relaxed">
-              {currentStatus === 'active' 
-                ? 'في حال تعطيل الوكالة، سيتم إيقاف جميع العمليات التابعة لها ولن يتمكن عملاؤها من استخدام النظام.' 
-                : 'تفعيل الوكالة سيعيد لها كافة الصلاحيات بشكل فوري لاستخدام لوحة التحكم الخاصة بها.'}
-            </p>
-          </div>
-          
-          <button
-            className={`w-full py-3 rounded-xl font-bold transition-all shadow-lg ${
-              currentStatus === 'active' 
-                ? 'bg-orange-500/10 text-orange-400 hover:bg-orange-500 hover:text-white border border-orange-500/30' 
-                : 'bg-green-500/10 text-green-400 hover:bg-green-500 hover:text-white border border-green-500/30'
-            }`}
-          >
-            {currentStatus === 'active' ? 'تعطيل الوكالة فوراً' : 'إعادة تفعيل الوكالة'}
-          </button>
-        </div>
-
-      </div>
-    </div>
+    <AgencyDetailsUI
+      agency={agency!}
+      tenantsCount={tenantsCount}
+      commissionRate={commissionRate}
+      initialLang={lang}
+    />
   )
 }

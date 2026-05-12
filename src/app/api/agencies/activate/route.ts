@@ -133,9 +133,9 @@ export async function POST(req: Request) {
       )
     }
 
-    if (agency.subscription_status !== 'active') {
+    if (agency.subscription_status !== 'suspended') {
       return NextResponse.json(
-        { error: 'Agency is not active' },
+        { error: 'Agency is not suspended' },
         { status: 409 }
       )
     }
@@ -158,18 +158,17 @@ export async function POST(req: Request) {
         supabase
           .from('agencies')
           .update({
-            subscription_status: 'suspended',
-            suspended_at:
-              new Date().toISOString(),
-            suspended_by: user.id
+            subscription_status: 'active',
+            suspended_at: null,
+            suspended_by: null
           })
           .eq('id', agencyId)
-          .eq('subscription_status', 'active'),
+          .eq('subscription_status', 'suspended'),
         3000
       )
 
     if (updateError) {
-      console.error('[SUSPEND] update_failed')
+      console.error('[ACTIVATE] update_failed')
       return NextResponse.json(
         { error: 'Update failed' },
         { status: 500 }
@@ -181,14 +180,14 @@ export async function POST(req: Request) {
       .from('audit_logs')
       .insert({
         actor_id: user.id,
-        action_type: 'SUSPEND_AGENCY',
+        action_type: 'ACTIVATE_AGENCY',
         entity_type: 'agency',
         entity_id: agencyId,
         changes: {
           agency_id: agencyId,
           agency_name: agency.name,
-          status_before: 'active',
-          status_after: 'suspended',
+          status_before: 'suspended',
+          status_after: 'active',
           active_tenants_count:
             activeTenantsCount ?? 0,
           ip_address:
@@ -205,13 +204,13 @@ export async function POST(req: Request) {
       {
         success: true,
         agencyId,
-        suspendedAt: new Date().toISOString()
+        activatedAt: new Date().toISOString()
       },
       { status: 200 }
     )
 
   } catch {
-    console.error('[SUSPEND] internal_error')
+    console.error('[ACTIVATE] internal_error')
     return NextResponse.json(
       { error: 'Internal error' },
       { status: 500 }
