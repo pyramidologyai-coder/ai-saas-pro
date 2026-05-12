@@ -98,7 +98,7 @@ export default async function AgencyPage({
     rawLang as Lang
   ) ? rawLang as Lang : 'ar'
 
-  let agency: Record<string, unknown> | null = null
+  let agency: any = null
   let agencyError = false
 
   try {
