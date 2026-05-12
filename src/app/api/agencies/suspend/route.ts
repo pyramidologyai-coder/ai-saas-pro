@@ -149,7 +149,7 @@ export async function POST(req: Request) {
             head: true
           })
           .eq('agency_id', agencyId)
-          .eq('status', 'active'),
+          .eq('subscription_status', 'active'),
         3000
       )
 
@@ -158,13 +158,13 @@ export async function POST(req: Request) {
         supabase
           .from('agencies')
           .update({
-            status: 'suspended',
+            subscription_status: 'suspended',
             suspended_at:
               new Date().toISOString(),
             suspended_by: user.id
           })
           .eq('id', agencyId)
-          .eq('status', 'active'),
+          .eq('subscription_status', 'active'),
         3000
       )
 
