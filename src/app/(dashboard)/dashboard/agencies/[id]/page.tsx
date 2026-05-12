@@ -16,15 +16,15 @@ const VALID_LANGS = ['ar', 'en', 'fr'] as const
 type Lang = typeof VALID_LANGS[number]
 
 async function withTimeout<T>(
-  promise: Promise<T>,
+  promise: Promise<T> | PromiseLike<T>,
   ms = 5000
-): Promise<T> {
+): Promise<Awaited<T>> {
   let timeoutId: ReturnType<
     typeof setTimeout
   > | undefined = undefined
   try {
     const result = await Promise.race([
-      promise,
+      Promise.resolve(promise),
       new Promise<never>((_, reject) => {
         timeoutId = setTimeout(
           () => reject(new Error('timeout')),
