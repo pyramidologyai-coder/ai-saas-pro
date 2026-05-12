@@ -60,12 +60,11 @@ async function checkMasterRole(
   supabase: SupabaseClient
 ): Promise<boolean> {
   try {
-    const { data, error } =
-      await withTimeout(
-        supabase.rpc('verify_master_admin_role'),
-        3000
-      )
-    return !error && !!data
+    const result = await withTimeout(
+      supabase.rpc('verify_master_admin_role'),
+      3000
+    ) as { data: boolean | null; error: unknown }
+    return !result.error && !!result.data
   } catch { return false }
 }
 
