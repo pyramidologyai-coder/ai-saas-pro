@@ -90,7 +90,7 @@ export default async function AgencyPage({
     typeof agencyId !== 'string'
     || !UUID_REGEX.test(agencyId)
   ) {
-    redirect('/dashboard/agencies')
+    redirect('/super-admin/agencies')
   }
 
   const rawLang = searchParams?.lang ?? 'ar'
@@ -131,7 +131,7 @@ export default async function AgencyPage({
   }
 
   if (agencyError || !agency) {
-    redirect('/dashboard/agencies')
+    redirect('/super-admin/agencies')
   }
 
   let commissionRate = 0

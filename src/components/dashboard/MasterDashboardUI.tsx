@@ -583,7 +583,7 @@ export function MasterDashboardUI({
             أحدث الوكالات
           </h3>
           <Link
-            href="/dashboard/agencies"
+            href="/super-admin/agencies"
             className="text-sm text-blue-400
               hover:text-blue-300
               transition-colors">
@@ -724,7 +724,7 @@ export function MasterDashboardUI({
 
                           <Link
                             href={
-                              `/dashboard/agencies/${agency.id}`
+                              `/super-admin/agencies/${agency.id}`
                             }
                             aria-label={
                               `عرض تفاصيل ${agency.name}`

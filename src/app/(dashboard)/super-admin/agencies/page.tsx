@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Plus, Search, ExternalLink, Briefcase } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 
 export default function AgenciesPage() {
@@ -188,9 +189,11 @@ export default function AgenciesPage() {
                     </span>
                   </td>
                   <td style={{ padding: '1.2rem', textAlign: 'center' }}>
-                    <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto' }}>
-                      <ExternalLink size={14} /> تفاصيل
-                    </button>
+                    <Link href={`/super-admin/agencies/${a.id}`} style={{ textDecoration: 'none' }}>
+                      <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto' }}>
+                        <ExternalLink size={14} /> تفاصيل
+                      </button>
+                    </Link>
                   </td>
                 </tr>
               )
