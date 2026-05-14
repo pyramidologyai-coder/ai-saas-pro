@@ -16,6 +16,16 @@ export default function TrialBlocker({ children }: { children: React.ReactNode }
           return;
         }
 
+        // Bypass trial blocker for Master Admins
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .replace(/[^\x20-\x7E]/g, '').trim().toLowerCase()
+          .split(',').map(e => e.trim()).filter(Boolean);
+          
+        if (session.user.email && superAdminEmails.includes(session.user.email.toLowerCase())) {
+          setLoading(false);
+          return;
+        }
+
         const { data: tenant } = await supabase
           .from('tenants')
           .select('trial_ends_at, subscription_tier')
