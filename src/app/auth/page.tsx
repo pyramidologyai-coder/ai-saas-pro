@@ -1,7 +1,8 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import styles from './Auth.module.css';
 import { Building2, Stethoscope, Mail, Lock, Store } from 'lucide-react';
 
@@ -22,10 +23,15 @@ export default function AuthPage() {
     setLoading(true);
     setErrorMsg('');
 
+    const supabaseClient = createClientComponentClient({
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY
+    });
+
     try {
       if (isLogin) {
         // LOGIN
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
@@ -33,7 +39,7 @@ export default function AuthPage() {
         router.push('/dashboard');
       } else {
         // SIGNUP
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
           email,
           password,
           options: {
@@ -68,8 +74,12 @@ export default function AuthPage() {
 
   const handleGoogleLogin = async () => {
     setLoading(true);
+    const supabaseClient = createClientComponentClient({
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY
+    });
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/dashboard`
@@ -176,7 +186,11 @@ export default function AuthPage() {
                   style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', fontSize: '0.8rem', cursor: 'pointer', padding: 0 }}
                   onClick={async () => {
                     if (!email) { setErrorMsg('أدخل الإيميل أولاً'); return; }
-                    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    const supabaseClient = createClientComponentClient({
+                      supabaseUrl: SUPABASE_URL,
+                      supabaseKey: SUPABASE_ANON_KEY
+                    });
+                    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
                       redirectTo: `${window.location.origin}/auth/reset-password`
                     });
                     if (error) { setErrorMsg(error.message); return; }

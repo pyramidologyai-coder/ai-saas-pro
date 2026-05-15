@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -59,13 +61,33 @@ const Sidebar = () => {
 
   useEffect(() => {
     async function loadUserData() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        setUserEmail(session.user.email || '');
+      const supabaseClient = createClientComponentClient({
+        supabaseUrl: SUPABASE_URL,
+        supabaseKey: SUPABASE_ANON_KEY
+      });
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      
+      // Fallback to localStorage if cookie session is missing
+      let finalSession = session;
+      if (!finalSession) {
+         const localSession = await supabase.auth.getSession();
+         finalSession = localSession.data.session;
+         
+         // If localStorage has session but cookies don't, manually trigger auth change to set cookie
+         if (finalSession) {
+           await supabaseClient.auth.setSession({
+             access_token: finalSession.access_token,
+             refresh_token: finalSession.refresh_token
+           });
+         }
+      }
+
+      if (finalSession) {
+        setUserEmail(finalSession.user.email || '');
 
         // 1. Fetch Active Tenant and All Tenants
-        const activeTenant = await getActiveTenant(session.user);
-        const allTenantsList = await getAllTenants(session.user);
+        const activeTenant = await getActiveTenant(finalSession.user);
+        const allTenantsList = await getAllTenants(finalSession.user);
         setTenants(allTenantsList);
 
         if (activeTenant) {
@@ -82,7 +104,7 @@ const Sidebar = () => {
         const { data: agencyData } = await supabase
           .from('agencies')
           .select('id')
-          .eq('user_id', session.user.id)
+          .eq('user_id', finalSession.user.id)
           .limit(1);
         if (agencyData && agencyData.length > 0) {
           setIsAgencyOwner(true);
@@ -103,6 +125,11 @@ const Sidebar = () => {
   }, []);
 
   const handleLogout = async () => {
+    const supabaseClient = createClientComponentClient({
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY
+    });
+    await supabaseClient.auth.signOut();
     await supabase.auth.signOut();
     window.location.href = '/auth';
   };
@@ -153,10 +180,11 @@ const Sidebar = () => {
   const hiddenForCurrentType = tenantType ? (hiddenFeatures[tenantType] || []) : [];
 
   // ─── Master Admin detection ───────────────────────────────────────────────
+  const userEmailLower = (userEmail || '').toLowerCase();
   const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
     .replace(/[^\x20-\x7E]/g, '').trim()
-    .split(',').map(e => e.trim()).filter(Boolean);
-  const isMasterAdmin = !!userEmail && superAdminEmails.includes(userEmail);
+    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+  const isMasterAdmin = !!userEmailLower && superAdminEmails.includes(userEmailLower);
 
   // ─── Master Admin menu ────────────────────────────────────────────────────
   const masterNavItems = [
