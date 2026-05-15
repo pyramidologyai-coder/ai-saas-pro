@@ -399,7 +399,7 @@ export function MasterDashboardUI({
             </span>
           </div>
           <Link
-            href="/dashboard/agencies"
+            href="/super-admin/agencies"
             className="text-xs text-yellow-400
               hover:text-yellow-300
               underline shrink-0">
@@ -423,7 +423,7 @@ export function MasterDashboardUI({
             </span>
           </div>
           <Link
-            href="/dashboard/customers"
+            href="/super-admin/clients"
             className="text-xs text-orange-400
               hover:text-orange-300
               underline shrink-0">

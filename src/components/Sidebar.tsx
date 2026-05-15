@@ -160,15 +160,15 @@ const Sidebar = () => {
 
   // ─── Master Admin menu ────────────────────────────────────────────────────
   const masterNavItems = [
-    { icon: Home,          label: 'الرئيسية',          href: '/dashboard' },
-    { icon: TrendingUp,    label: 'التحليل المالي',     href: '/dashboard/financial' },
-    { icon: Building2,     label: 'الوكالات',           href: '/dashboard/agencies' },
-    { icon: Users,         label: 'العملاء الكلي',      href: '/customers' },
-    { icon: Package,       label: 'إدارة الباقات',      href: '/dashboard/plans' },
-    { icon: ShieldAlert,   label: 'سجلات المراقبة',     href: '/dashboard/audit-logs' },
-    { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
-    { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
-    { icon: Settings,      label: 'الإعدادات',          href: '/settings' },
+    { icon: Home,          label: 'الرئيسية',          href: '/super-admin' },
+    { icon: TrendingUp,    label: 'التحليل المالي',     href: '/super-admin/finance' },
+    { icon: Building2,     label: 'الوكالات',           href: '/super-admin/agencies' },
+    { icon: Users,         label: 'العملاء الكلي',      href: '/super-admin/clients' },
+    { icon: Package,       label: 'إدارة الباقات',      href: '/super-admin/plans' },
+    { icon: ShieldAlert,   label: 'سجلات المراقبة',     href: '/super-admin/logs' },
+    { icon: MessageCircle, label: 'الرسائل',            href: '/super-admin/messages' },
+    { icon: Megaphone,     label: 'التسويق',            href: '/super-admin/marketing' },
+    { icon: Settings,      label: 'الإعدادات',          href: '/super-admin/settings' },
   ];
 
   // ─── Super Admin (Agency Owner) menu ─────────────────────────────────────
