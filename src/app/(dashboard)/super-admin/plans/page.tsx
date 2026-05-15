@@ -44,7 +44,7 @@ async function checkAuth(supabase: SupabaseClient): Promise<boolean> {
 
 async function checkMasterRole(supabase: SupabaseClient): Promise<boolean> {
   try {
-    const { data, error } = await supabase.rpc('verify_master_admin_role').throwOnError()
+    const { data, error } = await supabase.rpc('is_master_admin').throwOnError()
     return !!data
   } catch {
     return false
@@ -67,7 +67,7 @@ export default async function PlansPage({
   const isMaster = isMasterAdmin.status === 'fulfilled' && isMasterAdmin.value
 
   if (!isAuth || !isMaster) {
-    redirect('/login')
+    redirect('/auth')
   }
 
   const rawLang = searchParams?.lang ?? 'ar'

@@ -61,7 +61,7 @@ async function checkMasterRole(
 ): Promise<boolean> {
   try {
     const { data, error } = await supabase
-      .rpc('verify_master_admin_role')
+      .rpc('is_master_admin')
       .throwOnError()
     return !!data
   } catch { return false }
@@ -79,11 +79,11 @@ export default async function AgencyPage({
   })
 
   const isAuthenticated = await checkAuth(supabase)
-  if (!isAuthenticated) redirect('/login')
+  if (!isAuthenticated) redirect('/auth')
 
   const isMasterAdmin =
     await checkMasterRole(supabase)
-  if (!isMasterAdmin) redirect('/login')
+  if (!isMasterAdmin) redirect('/auth')
 
   const agencyId = params.id
   if (
