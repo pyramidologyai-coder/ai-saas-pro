@@ -108,13 +108,17 @@ export default function DashboardPage() {
           return;
         }
 
-        const userEmail = session.user.email;
-        const masterEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
+        const userEmail = (session.user.email || '').toLowerCase();
+        const masterEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .replace(/[^\x20-\x7E]/g, '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
         const isMasterByEmail = !!userEmail && masterEmails.includes(userEmail);
         
         let isMasterByRpc = false;
         try {
-          const { data } = await withTimeout(supabase.rpc('verify_master_admin_role'), 3000) as any;
+          const { data } = await withTimeout(supabase.rpc('is_master_admin'), 3000) as any;
           isMasterByRpc = !!data;
         } catch (e) {
           // Ignore RPC error if they match email

@@ -51,7 +51,20 @@ const SuperAdminDashboard = () => {
   const checkAdminAndFetch = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session || !SUPER_ADMIN_EMAILS.includes(session.user.email || '')) {
+      if (!session) {
+        setIsAdmin(false);
+        setLoading(false);
+        return;
+      }
+      
+      const userEmail = (session.user.email || '').toLowerCase();
+      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+        .replace(/[^\x20-\x7E]/g, '')
+        .split(',')
+        .map(e => e.trim().toLowerCase())
+        .filter(Boolean);
+        
+      if (!superAdminEmails.includes(userEmail)) {
         setIsAdmin(false);
         setLoading(false);
         return; // Not authorized

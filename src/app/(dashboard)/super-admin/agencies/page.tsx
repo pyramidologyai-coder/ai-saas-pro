@@ -32,8 +32,14 @@ export default function AgenciesPage() {
       return;
     }
     
-    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
-    const isMasterAdmin = superAdminEmails.includes(session.user.email || '') || session.user.user_metadata?.role === 'master_admin';
+    const userEmail = (session.user.email || '').toLowerCase();
+    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+      .replace(/[^\x20-\x7E]/g, '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
+      
+    const isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
     
     if (!isMasterAdmin) {
       router.replace('/dashboard');
