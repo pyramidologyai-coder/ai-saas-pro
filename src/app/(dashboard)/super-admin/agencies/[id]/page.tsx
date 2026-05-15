@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AgencyDetailsUI }
   from '@/components/agencies/AgencyDetailsUI'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import type { SupabaseClient }
   from '@supabase/supabase-js'
 
@@ -94,7 +95,9 @@ export default async function AgencyPage({
   searchParams: { lang?: string }
 }) {
   const supabase = createServerComponentClient({
-    cookies
+    cookies,
+    supabaseUrl: SUPABASE_URL,
+    supabaseKey: SUPABASE_ANON_KEY
   })
 
   const isAuthenticated = await checkAuth(supabase)

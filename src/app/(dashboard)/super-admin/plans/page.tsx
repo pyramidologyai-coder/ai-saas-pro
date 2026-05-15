@@ -2,6 +2,7 @@ import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { PlansUI } from '@/components/super-admin/PlansUI'
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
@@ -74,7 +75,11 @@ export default async function PlansPage({
 }: {
   searchParams: { lang?: string }
 }) {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase = createServerComponentClient({ 
+    cookies,
+    supabaseUrl: SUPABASE_URL,
+    supabaseKey: SUPABASE_ANON_KEY
+  })
 
   const [isAuthenticated, isMasterAdmin] = await Promise.allSettled([
     checkAuth(supabase),
