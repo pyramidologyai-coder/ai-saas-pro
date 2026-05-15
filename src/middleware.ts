@@ -35,66 +35,7 @@ export default async function middleware(req: NextRequest) {
       ? hostname.replace(`.aisaaspro.com`, '') // replace with your actual Vercel domain later
       : hostname.replace(`.localhost:3000`, '');
 
-  // Master Vault: Edge protection for /super-admin
-  // Access flow: append ?vault_key=SECRET once → sets a signed session cookie → subsequent requests use cookie
-  if (url.pathname.startsWith('/super-admin')) {
-    // Strip any invisible chars (NULL bytes, BOM) that PowerShell pipe may inject into env vars
-    const masterSecret = (process.env.MASTER_VAULT_KEY ?? '').replace(/[^\x20-\x7E]/g, '').trim();
 
-    if (!masterSecret) {
-      // Vault key not configured — block all access silently
-      console.error('[SECURITY] MASTER_VAULT_KEY env variable is not set. /super-admin is inaccessible.');
-      url.pathname = '/404';
-      return NextResponse.rewrite(url);
-    }
-
-    const vaultKeyParam = url.searchParams.get('vault_key');
-
-    if (vaultKeyParam) {
-      // Sanitize input and compare
-      const cleanParam = vaultKeyParam.replace(/[^\x20-\x7E]/g, '').trim();
-      const keysMatch = cleanParam.length > 0 && cleanParam === masterSecret;
-
-      if (keysMatch) {
-        // Store a hashed session token, NOT the secret itself
-        const sessionToken = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterSecret + req.headers.get('user-agent')))
-          .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
-
-        const cleanUrl = new URL(url.pathname, req.url);
-        const response = NextResponse.redirect(cleanUrl);
-        response.cookies.set('master_vault_session', sessionToken, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          maxAge: 60 * 60 * 4 // 4 hours (reduced from 24)
-        });
-        return response;
-      }
-
-      // Wrong key — stealth block
-      console.warn(`[SECURITY TRIPWIRE] Wrong vault_key attempt on /super-admin from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
-      url.pathname = '/404';
-      return NextResponse.rewrite(url);
-    }
-
-    // Validate existing session cookie
-    const vaultCookie = req.cookies.get('master_vault_session');
-    if (!vaultCookie?.value) {
-      console.warn(`[SECURITY TRIPWIRE] Unauthorized /super-admin access from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
-      url.pathname = '/404';
-      return NextResponse.rewrite(url);
-    }
-
-    // Recompute expected session token and compare
-    const expectedToken = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(masterSecret + req.headers.get('user-agent')))
-      .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join(''));
-
-    if (vaultCookie.value !== expectedToken) {
-      console.warn(`[SECURITY TRIPWIRE] Invalid vault session cookie from IP: ${req.headers.get('x-forwarded-for') || 'Unknown'}`);
-      url.pathname = '/404';
-      return NextResponse.rewrite(url);
-    }
-  }
 
   // If it's the main domain, a vercel preview domain, or an API route, just let it pass
   if (
