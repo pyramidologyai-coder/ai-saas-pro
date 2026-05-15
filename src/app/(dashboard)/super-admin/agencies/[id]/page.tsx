@@ -59,12 +59,31 @@ async function checkAuth(
 async function checkMasterRole(
   supabase: SupabaseClient
 ): Promise<boolean> {
+  let isMasterByRpc = false
   try {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .rpc('is_master_admin')
       .throwOnError()
-    return !!data
-  } catch { return false }
+    isMasterByRpc = !!data
+  } catch {
+    // Ignore
+  }
+  
+  if (isMasterByRpc) return true
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userEmail = (user?.email || '').toLowerCase()
+    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+      .replace(/[^\x20-\x7E]/g, '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean)
+      
+    return superAdminEmails.includes(userEmail)
+  } catch {
+    return false
+  }
 }
 
 export default async function AgencyPage({

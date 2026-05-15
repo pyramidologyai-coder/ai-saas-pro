@@ -43,9 +43,27 @@ async function checkAuth(supabase: SupabaseClient): Promise<boolean> {
 }
 
 async function checkMasterRole(supabase: SupabaseClient): Promise<boolean> {
+  let isMasterByRpc = false
   try {
-    const { data, error } = await supabase.rpc('is_master_admin').throwOnError()
-    return !!data
+    const { data } = await supabase.rpc('is_master_admin').throwOnError()
+    isMasterByRpc = !!data
+  } catch {
+    // Ignore RPC error
+  }
+
+  if (isMasterByRpc) return true
+
+  // Fallback to Env variable check
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    const userEmail = (user?.email || '').toLowerCase()
+    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+      .replace(/[^\x20-\x7E]/g, '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean)
+      
+    return superAdminEmails.includes(userEmail)
   } catch {
     return false
   }
