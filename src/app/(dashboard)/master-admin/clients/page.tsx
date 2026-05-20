@@ -39,8 +39,8 @@ export default async function MasterAdminClientsPage() {
       redirectTarget = '/auth';
     } else {
       const [verifyRes, isMasterRes] = await Promise.allSettled([
-        withTimeout(supabase.rpc('verify_master_admin_role')),
-        withTimeout(supabase.rpc('is_master_admin'))
+        withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
+        withTimeout(Promise.resolve(supabase.rpc('is_master_admin')))
       ]);
 
       const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
@@ -53,7 +53,7 @@ export default async function MasterAdminClientsPage() {
       } else {
         // Fetch clients safely with Promise.allSettled
         const clientsRes = await Promise.allSettled([
-          withTimeout(supabase.rpc('get_master_clients'))
+          withTimeout(Promise.resolve(supabase.rpc('get_master_clients')))
         ]);
         
         let fetchedData = null;
@@ -65,7 +65,7 @@ export default async function MasterAdminClientsPage() {
             clientsData = fetchedData;
         } else {
             // Fallback query if RPC doesn't exist or fails
-            const fallback = await withTimeout(supabase.from('tenants').select(`
+            const fallback = await withTimeout(Promise.resolve(supabase.from('tenants').select(`
               id,
               name,
               type,
@@ -76,7 +76,7 @@ export default async function MasterAdminClientsPage() {
               messages_limit,
               agency_id,
               agencies ( name )
-            `).order('created_at', { ascending: false }));
+            `).order('created_at', { ascending: false })));
             
             if (fallback.data) {
                 clientsData = fallback.data.map((t: any) => ({

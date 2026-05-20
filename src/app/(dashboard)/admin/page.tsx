@@ -118,7 +118,7 @@ export default function DashboardPage() {
         
         let isMasterByRpc = false;
         try {
-          const { data } = await withTimeout(supabase.rpc('is_master_admin'), 3000) as any;
+          const { data } = await withTimeout(Promise.resolve(supabase.rpc('is_master_admin')), 3000) as any;
           isMasterByRpc = !!data;
         } catch (e) {
           // Ignore RPC error if they match email
