@@ -19,6 +19,15 @@ export default function AdminPage() {
           return;
         }
 
+        const userEmail = (session.user.email || '').toLowerCase();
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .replace(/[^\x20-\x7E]/g, '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
+        
+        const isMasterByEmail = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
+        
         let isMasterByRpc = false;
         try {
           const { data } = await supabase.rpc('is_master_admin');
@@ -27,7 +36,7 @@ export default function AdminPage() {
           // Ignore
         }
 
-        const isMaster = isMasterByRpc || session.user.user_metadata?.role === 'master_admin';
+        const isMaster = isMasterByEmail || isMasterByRpc;
         setIsMasterAdmin(isMaster);
 
         if (isMaster) {
