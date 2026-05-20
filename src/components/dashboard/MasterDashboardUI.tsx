@@ -399,7 +399,7 @@ export function MasterDashboardUI({
             </span>
           </div>
           <Link
-            href="/super-admin/agencies"
+            href="/master-admin/agencies"
             className="text-xs text-yellow-400
               hover:text-yellow-300
               underline shrink-0">
@@ -423,7 +423,7 @@ export function MasterDashboardUI({
             </span>
           </div>
           <Link
-            href="/super-admin/clients"
+            href="/master-admin/clients"
             className="text-xs text-orange-400
               hover:text-orange-300
               underline shrink-0">
@@ -583,7 +583,7 @@ export function MasterDashboardUI({
             أحدث الوكالات
           </h3>
           <Link
-            href="/super-admin/agencies"
+            href="/master-admin/agencies"
             className="text-sm text-blue-400
               hover:text-blue-300
               transition-colors">
@@ -724,7 +724,7 @@ export function MasterDashboardUI({
 
                           <Link
                             href={
-                              `/super-admin/agencies/${agency.id}`
+                              `/master-admin/agencies/${agency.id}`
                             }
                             aria-label={
                               `عرض تفاصيل ${agency.name}`

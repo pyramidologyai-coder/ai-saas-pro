@@ -40,7 +40,7 @@ export default function WalletPage() {
       
       {/* Header Tabs Simulation */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--glass-border)', marginBottom: '3rem', justifyContent: 'center', gap: '2rem' }}>
-        <Link href="/dashboard" style={{ textDecoration: 'none' }}>
+        <Link href="/admind style={{ textDecoration: 'none' }}>
           <div style={{ padding: '1rem', color: 'var(--text-dim)', cursor: 'pointer' }}>الرئيسية (Dashboard)</div>
         </Link>
         <Link href="/profile" style={{ textDecoration: 'none' }}>

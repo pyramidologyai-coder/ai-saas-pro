@@ -10,7 +10,7 @@ import { CardSkeleton } from '@/components/ui/Skeleton';
 import { supabase } from '@/lib/supabase';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
-import CognitiveDashboard from '../../app/(dashboard)/dashboard/cognitive-view';
+import CognitiveDashboard from '../../app/(dashboard)/admin/cognitive-view';
 
 export default function ClientDashboard() {
   const [dict, setDict] = useState(() => getDictionary('clinic'));

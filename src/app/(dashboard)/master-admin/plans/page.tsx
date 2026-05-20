@@ -1,7 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { PlansUI } from '@/components/super-admin/PlansUI'
+import { PlansUI } from '@/components/master-admin/PlansUI'
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
 import type { SupabaseClient } from '@supabase/supabase-js'
 

@@ -42,7 +42,7 @@ export default function AgenciesPage() {
     const isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
     
     if (!isMasterAdmin) {
-      router.replace('/dashboard');
+      router.replace('/admind);
       return;
     }
 
@@ -201,7 +201,7 @@ export default function AgenciesPage() {
                     </span>
                   </td>
                   <td style={{ padding: '1.2rem', textAlign: 'center' }}>
-                    <Link href={`/super-admin/agencies/${a.id}`} style={{ textDecoration: 'none' }}>
+                    <Link href={`/master-admin/agencies/${a.id}`} style={{ textDecoration: 'none' }}>
                       <button style={{ background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto' }}>
                         <ExternalLink size={14} /> تفاصيل
                       </button>

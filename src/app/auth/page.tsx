@@ -36,7 +36,7 @@ export default function AuthPage() {
           password,
         });
         if (error) throw error;
-        router.push('/dashboard');
+        router.push('/admind);
       } else {
         // SIGNUP
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
@@ -52,7 +52,7 @@ export default function AuthPage() {
         if (authError) throw authError;
 
         if (authData.user && authData.session) {
-          router.push('/dashboard');
+          router.push('/admind);
         } else if (authData.user && !authData.session) {
           alert('تم إنشاء الحساب بنجاح! يرجى مراجعة بريدك الإلكتروني لتأكيد الحساب قبل تسجيل الدخول.');
         }

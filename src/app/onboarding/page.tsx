@@ -23,7 +23,7 @@ export default function OnboardingWizard() {
         .limit(1);
       
       if (existingTenant && existingTenant.length > 0) {
-        router.replace('/dashboard');
+        router.replace('/admind);
       }
     };
     checkExisting();
@@ -116,7 +116,7 @@ export default function OnboardingWizard() {
           localStorage.setItem('active_tenant_id', newTenant.id);
         }
         
-        router.push('/dashboard');
+        router.push('/admind);
       } catch (e) {
         console.error("GENERAL ERROR:", e);
         alert('حدث خطأ. يرجى مراجعة الـ Console للتفاصيل.');

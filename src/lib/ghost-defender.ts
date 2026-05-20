@@ -11,7 +11,7 @@ export class GhostDefender {
         '/api/v1/debug-keys',
         '/.env',
         '/wp-admin',
-        '/super-admin-bypass'
+        '/master-admin-bypass'
     ];
 
     /**

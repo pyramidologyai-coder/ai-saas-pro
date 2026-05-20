@@ -1,4 +1,4 @@
-import FinancialPage from '../../dashboard/financial/page';
+import FinancialPage from '../../admin/financial/page';
 export default function SuperAdminFinancePage() {
   return <FinancialPage />;
 }

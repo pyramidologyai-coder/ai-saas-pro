@@ -1,4 +1,4 @@
-import AuditLogsPage from '../../dashboard/audit-logs/page';
+import AuditLogsPage from '../../admin/audit-logs/page';
 export default function SuperAdminLogsPage() {
   return <AuditLogsPage />;
 }

@@ -141,13 +141,13 @@ const Sidebar = () => {
   const dict = getDictionary(tenantType);
 
   const adminNavItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
-    { id: 'financial', icon: TrendingUp, label: 'التحليل المالي', href: '/dashboard/financial' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/admind },
+    { id: 'financial', icon: TrendingUp, label: 'التحليل المالي', href: '/admin/financial' },
     ...(isAgencyOwner ? [
       { id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' },
-      { id: 'agency_plans', icon: CreditCard, label: 'إدارة الباقات والأسعار', href: '/dashboard/agency-plans' }
+      { id: 'agency_plans', icon: CreditCard, label: 'إدارة الباقات والأسعار', href: '/admin/agency-plans' }
     ] : []),
-    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/dashboard/plans' },
+    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/admin/plans' },
     { id: 'services', icon: Briefcase, label: sidebarLabels.services, href: '/services' },
     { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
@@ -161,7 +161,7 @@ const Sidebar = () => {
   ];
 
   const staffNavItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/dashboard' },
+    { id: 'dashboard', icon: LayoutDashboard, label: t.dashboard, href: '/admind },
     { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },
     { id: 'customers', icon: Users, label: sidebarLabels.customers, href: '/customers' },
@@ -188,23 +188,23 @@ const Sidebar = () => {
 
   // ─── Master Admin menu ────────────────────────────────────────────────────
   const masterNavItems = [
-    { icon: Home,          label: 'الرئيسية',          href: '/super-admin' },
-    { icon: TrendingUp,    label: 'التحليل المالي',     href: '/super-admin/finance' },
-    { icon: Building2,     label: 'الوكالات',           href: '/super-admin/agencies' },
-    { icon: Users,         label: 'العملاء الكلي',      href: '/super-admin/clients' },
-    { icon: Package,       label: 'إدارة الباقات',      href: '/super-admin/plans' },
-    { icon: ShieldAlert,   label: 'سجلات المراقبة',     href: '/super-admin/logs' },
-    { icon: MessageCircle, label: 'الرسائل',            href: '/super-admin/messages' },
-    { icon: Megaphone,     label: 'التسويق',            href: '/super-admin/marketing' },
-    { icon: Settings,      label: 'الإعدادات',          href: '/super-admin/settings' },
+    { icon: Home,          label: 'الرئيسية',          href: '/master-admin' },
+    { icon: TrendingUp,    label: 'التحليل المالي',     href: '/master-admin/finance' },
+    { icon: Building2,     label: 'الوكالات',           href: '/master-admin/agencies' },
+    { icon: Users,         label: 'العملاء الكلي',      href: '/master-admin/clients' },
+    { icon: Package,       label: 'إدارة الباقات',      href: '/master-admin/plans' },
+    { icon: ShieldAlert,   label: 'سجلات المراقبة',     href: '/master-admin/logs' },
+    { icon: MessageCircle, label: 'الرسائل',            href: '/master-admin/messages' },
+    { icon: Megaphone,     label: 'التسويق',            href: '/master-admin/marketing' },
+    { icon: Settings,      label: 'الإعدادات',          href: '/master-admin/settings' },
   ];
 
   // ─── Super Admin (Agency Owner) menu ─────────────────────────────────────
   const agencyNavItems = [
-    { icon: Home,          label: 'الرئيسية',           href: '/dashboard' },
-    { icon: TrendingUp,    label: 'التحليل المالي',      href: '/dashboard/financial' },
+    { icon: Home,          label: 'الرئيسية',           href: '/admind },
+    { icon: TrendingUp,    label: 'التحليل المالي',      href: '/admin/financial' },
     { icon: Users,         label: 'عملاءه',             href: '/customers' },
-    { icon: Tag,           label: 'إدارة أسعاره',       href: '/dashboard/agency-plans' },
+    { icon: Tag,           label: 'إدارة أسعاره',       href: '/admin/agency-plans' },
     { icon: MessageCircle, label: 'الرسائل',            href: '/messages' },
     { icon: Megaphone,     label: 'التسويق',            href: '/marketing' },
     { icon: Settings,      label: 'الإعدادات',          href: '/settings' },
@@ -213,8 +213,8 @@ const Sidebar = () => {
   // ─── Admin menus by business type ─────────────────────────────────────────
   const adminMenuByType: Record<string, Array<{ icon: React.ElementType; label: string; href: string }>> = {
     clinic: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: Heart,         label: 'الخدمات الطبية',          href: '/services' },
       { icon: Calendar,      label: 'الحجوزات والكشوفات',      href: '/bookings' },
       { icon: Users,         label: 'المرضى',                  href: '/customers' },
@@ -228,8 +228,8 @@ const Sidebar = () => {
       { icon: Settings,      label: 'الإعدادات',               href: '/settings' },
     ],
     restaurant: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: BookOpen,      label: 'قائمة الطعام',           href: '/services' },
       { icon: ShoppingBag,   label: 'الطلبات',                href: '/bookings' },
       { icon: Users,         label: 'الزبائن',                href: '/customers' },
@@ -243,8 +243,8 @@ const Sidebar = () => {
       { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
     ],
     salon: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: Sparkles,      label: 'الخدمات',                href: '/services' },
       { icon: Calendar,      label: 'المواعيد',               href: '/bookings' },
       { icon: Users,         label: 'العميلات',               href: '/customers' },
@@ -258,8 +258,8 @@ const Sidebar = () => {
       { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
     ],
     realestate: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: Building2,     label: 'العقارات المتاحة',        href: '/services' },
       { icon: Calendar,      label: 'مواعيد المعاينات',       href: '/bookings' },
       { icon: Users,         label: 'العملاء المستثمرين',     href: '/customers' },
@@ -273,8 +273,8 @@ const Sidebar = () => {
       { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
     ],
     store: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: Tag,           label: 'المنتجات',               href: '/services' },
       { icon: Package,       label: 'الطلبات',                href: '/bookings' },
       { icon: Users,         label: 'المشترين',               href: '/customers' },
@@ -288,8 +288,8 @@ const Sidebar = () => {
       { icon: Settings,      label: 'الإعدادات',              href: '/settings' },
     ],
     cars: [
-      { icon: Home,          label: 'الرئيسية',               href: '/dashboard' },
-      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/dashboard/financial' },
+      { icon: Home,          label: 'الرئيسية',               href: '/admind },
+      { icon: TrendingUp,    label: 'التحليل المالي',          href: '/admin/financial' },
       { icon: Car,           label: 'السيارات المتاحة',        href: '/services' },
       { icon: Calendar,      label: 'مواعيد التجربة',         href: '/bookings' },
       { icon: Users,         label: 'المشترين',               href: '/customers' },

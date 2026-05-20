@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Loader2, Save } from 'lucide-react';
-import { savePlanAction } from '@/app/(dashboard)/super-admin/actions';
+import { savePlanAction } from '@/app/(dashboard)/master-admin/actions';
 
 export const PlanEditor = () => {
   const [plans, setPlans] = useState<any[]>([]);

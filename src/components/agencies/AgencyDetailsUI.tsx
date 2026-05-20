@@ -396,7 +396,7 @@ export function AgencyDetailsUI({
         justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4">
           <Link
-            href="/dashboard/agencies"
+            href="/admin/agencies"
             className="p-2 rounded-lg bg-gray-800
               text-gray-400 hover:bg-gray-700
               transition-colors"

@@ -34,7 +34,7 @@ export default function GlobalError({
               >
                 <RefreshCw size={18} /> حاول مجدداً
               </button>
-              <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid #475569', color: '#f8fafc', padding: '0.8rem 1.5rem', borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none' }}>
+              <Link href="/admind style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid #475569', color: '#f8fafc', padding: '0.8rem 1.5rem', borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none' }}>
                 <Home size={18} /> الرئيسية
               </Link>
             </div>
