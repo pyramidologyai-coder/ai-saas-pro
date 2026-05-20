@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { MasterDashboardUI } from '@/components/dashboard/MasterDashboardUI';
+import { MasterDashboardUI } from '@/components/master-admin/MasterDashboardUI';
 import ClientDashboard from '@/components/dashboard/ClientDashboard';
 import { supabase } from '@/lib/supabase';
 import { CardSkeleton } from '@/components/ui/Skeleton';
