@@ -94,11 +94,13 @@ export default async function AgencyPage({
   params: { id: string }
   searchParams: { lang?: string }
 }) {
-  const supabase = createServerComponentClient({
-    cookies,
-    supabaseUrl: SUPABASE_URL,
-    supabaseKey: SUPABASE_ANON_KEY
-  })
+  const supabase = createServerComponentClient(
+    { cookies },
+    {
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY
+    }
+  )
 
   const isAuthenticated = await checkAuth(supabase)
   if (!isAuthenticated) redirect('/auth')

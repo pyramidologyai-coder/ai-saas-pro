@@ -13,15 +13,11 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
 
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
-}
-if (!VERIFY_TOKEN) {
-  throw new Error('META_VERIFY_TOKEN environment variable is not set.');
-}
+// Webhooks use Admin Client to bypass RLS — Meta sends no Bearer token
+// Environment variables will be checked gracefully during runtime if missing
 
 // Webhooks use Admin Client to bypass RLS — Meta sends no Bearer token
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+const supabaseAdmin = createClient(supabaseUrl as string, serviceRoleKey as string);
 
 // Webhook Verification (GET)
 export async function GET(req: Request) {

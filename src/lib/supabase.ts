@@ -15,4 +15,7 @@ const supabaseAnonKey = sanitize(
   'sb_publishable_GgL2OrovQ9csIwroqg812g_qQr0jJhm'
 );
 
+export const SUPABASE_URL = supabaseUrl;
+export const SUPABASE_ANON_KEY = supabaseAnonKey;
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

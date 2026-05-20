@@ -75,11 +75,13 @@ export default async function PlansPage({
 }: {
   searchParams: { lang?: string }
 }) {
-  const supabase = createServerComponentClient({ 
-    cookies,
-    supabaseUrl: SUPABASE_URL,
-    supabaseKey: SUPABASE_ANON_KEY
-  })
+  const supabase = createServerComponentClient(
+    { cookies },
+    {
+      supabaseUrl: SUPABASE_URL,
+      supabaseKey: SUPABASE_ANON_KEY
+    }
+  )
 
   const [isAuthenticated, isMasterAdmin] = await Promise.allSettled([
     checkAuth(supabase),
