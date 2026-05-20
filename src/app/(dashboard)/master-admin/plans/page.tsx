@@ -69,8 +69,9 @@ export default async function PlansPage({
 }: {
   searchParams: { lang?: string }
 }) {
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient(
-    { cookies },
+    { cookies: () => cookieStore as any },
     {
       supabaseUrl: SUPABASE_URL,
       supabaseKey: SUPABASE_ANON_KEY

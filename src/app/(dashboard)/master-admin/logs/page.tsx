@@ -7,8 +7,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 
 export default async function SuperAdminLogsPage() {
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient(
-    { cookies },
+    { cookies: () => cookieStore as any },
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );
 

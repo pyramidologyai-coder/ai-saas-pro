@@ -85,8 +85,9 @@ export default async function AgencyPage({
   params: { id: string }
   searchParams: { lang?: string }
 }) {
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient(
-    { cookies },
+    { cookies: () => cookieStore as any },
     {
       supabaseUrl: SUPABASE_URL,
       supabaseKey: SUPABASE_ANON_KEY

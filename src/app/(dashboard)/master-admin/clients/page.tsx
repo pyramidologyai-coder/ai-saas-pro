@@ -24,8 +24,9 @@ async function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<Awaited<
 }
 
 export default async function MasterAdminClientsPage() {
+  const cookieStore = await cookies();
   const supabase = createServerComponentClient(
-    { cookies },
+    { cookies: () => cookieStore as any },
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );
 
