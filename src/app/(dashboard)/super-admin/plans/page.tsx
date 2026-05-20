@@ -36,7 +36,7 @@ async function withTimeout<T>(
 
 async function checkAuth(supabase: SupabaseClient): Promise<boolean> {
   try {
-    const { data, error } = await withTimeout(supabase.auth.getUser(), 3000)
+    const { data, error } = await withTimeout(supabase.auth.getUser(), 10000)
     return !error && !!data.user
   } catch {
     return false

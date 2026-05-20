@@ -51,7 +51,7 @@ async function checkAuth(
   try {
     const { data, error } =
       await withTimeout(
-        supabase.auth.getUser(), 3000
+        supabase.auth.getUser(), 10000
       )
     return !error && !!data.user
   } catch { return false }
