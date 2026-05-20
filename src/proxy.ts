@@ -37,14 +37,19 @@ export default async function middleware(req: NextRequest) {
 
 
 
-  // If it's the main domain, a vercel preview domain, or an API route, just let it pass
+  // If it's the main domain, a vercel preview domain, an API route, or main dashboard paths, just let it pass
   if (
     hostname === 'localhost:3000' ||
     hostname === 'aisaaspro.com' ||
     hostname === 'www.aisaaspro.com' ||
     hostname.endsWith('.vercel.app') ||
     url.pathname.startsWith('/api') ||
-    url.pathname.startsWith('/master-admin')
+    url.pathname.startsWith('/master-admin') ||
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/auth') ||
+    url.pathname.startsWith('/onboarding') ||
+    url.pathname.startsWith('/agency-admin') ||
+    url.pathname.startsWith('/profile')
   ) {
     return NextResponse.next();
   }
