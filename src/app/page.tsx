@@ -21,7 +21,7 @@ export default function LandingPage() {
           <a href="#pricing" className={styles.navLink}>الأسعار</a>
           <a href="#contact" className={styles.navLink}>تواصل معنا</a>
         </div>
-        <Link href="/admind>
+        <Link href="/admin">
           <button className={styles.loginBtn}>تسجيل الدخول</button>
         </Link>
       </nav>
@@ -43,7 +43,7 @@ export default function LandingPage() {
               ابدأ الآن (التسجيل الذاتي) <ChevronLeft size={20} />
             </button>
           </Link>
-          <Link href="/admind>
+          <Link href="/admin">
             <button className={styles.secondaryCta}>تجربة النظام (Live Demo)</button>
           </Link>
         </div>

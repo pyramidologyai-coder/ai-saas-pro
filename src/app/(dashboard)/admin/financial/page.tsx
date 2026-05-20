@@ -52,7 +52,7 @@ export default function FinancialPage() {
       }
 
       if (!['master_admin', 'super_admin', 'admin'].includes(determinedRole)) {
-        router.replace('/admind);
+        router.replace('/admin');
         return;
       }
 

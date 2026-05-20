@@ -42,7 +42,7 @@ export default function AgenciesPage() {
     const isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
     
     if (!isMasterAdmin) {
-      router.replace('/admind);
+      router.replace('/admin');
       return;
     }
 

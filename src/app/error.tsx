@@ -32,7 +32,7 @@ export default function Error({
           >
             <RefreshCw size={18} /> حاول مجدداً
           </button>
-          <Link href="/admind style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.8rem 1.5rem', borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none' }}>
+          <Link href="/admin" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.8rem 1.5rem', borderRadius: '12px', fontWeight: 'bold', textDecoration: 'none' }}>
             <Home size={18} /> العودة للوحة التحكم
           </Link>
         </div>
