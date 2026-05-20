@@ -43,7 +43,8 @@ export default async function middleware(req: NextRequest) {
     hostname === 'aisaaspro.com' ||
     hostname === 'www.aisaaspro.com' ||
     hostname.endsWith('.vercel.app') ||
-    url.pathname.startsWith('/api')
+    url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/master-admin')
   ) {
     return NextResponse.next();
   }
