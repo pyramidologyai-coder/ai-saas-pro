@@ -43,28 +43,22 @@ async function checkAuth(supabase: SupabaseClient): Promise<boolean> {
   }
 }
 
-async function checkMasterRole(supabase: SupabaseClient): Promise<boolean> {
-  let isMasterByRpc = false
+async function checkMasterRole(
+  supabase: SupabaseClient
+): Promise<boolean> {
   try {
-    const { data } = await supabase.rpc('is_master_admin').throwOnError()
-    isMasterByRpc = !!data
-  } catch {
-    // Ignore RPC error
-  }
+    const [verifyRes, isMasterRes] = await Promise.allSettled([
+      supabase.rpc('verify_master_admin_role'),
+      supabase.rpc('is_master_admin')
+    ]);
 
-  if (isMasterByRpc) return true
+    const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
+    const fallbackData = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
 
-  // Fallback to Env variable check
-  try {
-    const { data: { user } } = await supabase.auth.getUser()
-    const userEmail = (user?.email || '').toLowerCase()
-    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-      .replace(/[^\x20-\x7E]/g, '')
-      .split(',')
-      .map(e => e.trim().toLowerCase())
-      .filter(Boolean)
-      
-    return superAdminEmails.includes(userEmail)
+    if (verifyData || fallbackData) return true;
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.user_metadata?.role === 'master_admin';
   } catch {
     return false
   }

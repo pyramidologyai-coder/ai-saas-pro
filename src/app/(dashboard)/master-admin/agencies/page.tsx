@@ -32,14 +32,20 @@ export default function AgenciesPage() {
       return;
     }
     
-    const userEmail = (session.user.email || '').toLowerCase();
-    const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-      .replace(/[^\x20-\x7E]/g, '')
-      .split(',')
-      .map(e => e.trim().toLowerCase())
-      .filter(Boolean);
-      
-    const isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
+    let isMasterAdmin = false;
+    try {
+      const [verifyRes, isMasterRes] = await Promise.allSettled([
+        supabase.rpc('verify_master_admin_role'),
+        supabase.rpc('is_master_admin')
+      ]);
+
+      const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
+      const fallbackData = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
+
+      isMasterAdmin = !!verifyData || !!fallbackData || session.user.user_metadata?.role === 'master_admin';
+    } catch (e) {
+      console.error('RPC failed', e);
+    }
     
     if (!isMasterAdmin) {
       router.replace('/admin');
