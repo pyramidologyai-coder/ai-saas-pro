@@ -20,10 +20,7 @@ export default function NotificationBell() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const userEmail = session.user.email || '';
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-      
-      if (superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin') {
+      if (session.user.user_metadata?.role === 'master_admin') {
         setUserRole('master_admin');
         return;
       }

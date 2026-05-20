@@ -15,8 +15,7 @@ export default function AuditLogsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
-      if (!superAdminEmails.includes(session.user.email || '')) {
+      if (session.user.user_metadata?.role !== 'master_admin') {
         setIsAdmin(false);
         setLoading(false);
         return;

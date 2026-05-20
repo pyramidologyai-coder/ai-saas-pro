@@ -17,11 +17,7 @@ export default function TrialBlocker({ children }: { children: React.ReactNode }
         }
 
         // Bypass trial blocker for Master Admins
-        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-          .replace(/[^\x20-\x7E]/g, '').trim().toLowerCase()
-          .split(',').map(e => e.trim()).filter(Boolean);
-          
-        if (session.user.email && superAdminEmails.includes(session.user.email.toLowerCase())) {
+        if (session.user.user_metadata?.role === 'master_admin') {
           setLoading(false);
           return;
         }

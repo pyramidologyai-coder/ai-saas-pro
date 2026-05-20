@@ -65,9 +65,7 @@ export default function ClientDashboard() {
           return;
         }
         
-        const userEmail = session.user.email;
-        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-        const isMasterUser = !!userEmail && superAdminEmails.includes(userEmail);
+        const isMasterUser = session.user.user_metadata?.role === 'master_admin';
         setIsMaster(isMasterUser);
 
         const tenant = await getActiveTenant(session.user);

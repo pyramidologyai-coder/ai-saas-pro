@@ -18,8 +18,7 @@ const CustomersPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
-      const isMasterAdmin = superAdminEmails.includes(session.user.email || '') || session.user.user_metadata?.role === 'master_admin';
+      const isMasterAdmin = session.user.user_metadata?.role === 'master_admin';
 
       if (isMasterAdmin) {
         setRole('master_admin');

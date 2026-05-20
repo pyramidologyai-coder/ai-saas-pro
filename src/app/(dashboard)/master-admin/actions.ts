@@ -2,13 +2,11 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim()).filter(Boolean);
-
-/**
- * 10000-YEAR HACKER DEFENSE: Server-Side ONLY Admin Client
- * Validates the user's token securely on the server before granting any Service Role access.
- */
 const getAdminClient = async (token: string) => {
+    if (!token || token.length < 10) {
+        throw new Error('Security Violation: Invalid token');
+    }
+
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -17,19 +15,31 @@ const getAdminClient = async (token: string) => {
         throw new Error('Missing required Supabase environment variables.');
     }
 
-    if (SUPER_ADMIN_EMAILS.length === 0) {
-        throw new Error('SUPER_ADMIN_EMAILS environment variable is not configured.');
+    // 1. Initialize client with user JWT to run the RPC under user context
+    const supabaseUserClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        }
+    });
+
+    // 2. Perform RPC Role Verification under user's session
+    const { data: isMaster, error: rpcError } = await supabaseUserClient.rpc('verify_master_admin_role');
+    
+    let isValid = !!isMaster;
+    
+    // Fallback logic
+    if ((isMaster === null || isMaster === undefined || rpcError) && !isValid) {
+        const { data: isMasterFallback } = await supabaseUserClient.rpc('is_master_admin');
+        isValid = !!isMasterFallback;
     }
 
-    // 1. Verify user token using anon key (no elevated privileges)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    const { data: { user }, error } = await supabase.auth.getUser(token);
-
-    if (error || !user || !SUPER_ADMIN_EMAILS.includes(user.email || '')) {
+    if (!isValid) {
         throw new Error('Security Violation: Unauthorized Super Admin Access');
     }
 
-    // 2. Return Service Role Client (server-side only, never sent to browser)
+    // 3. Return secure Service Role Client
     return createClient(supabaseUrl, serviceRoleKey);
 };
 

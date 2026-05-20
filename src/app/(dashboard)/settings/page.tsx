@@ -81,8 +81,7 @@ const SettingsPage = () => {
       }
 
       // Check Role
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
-      if (superAdminEmails.includes(session.user.email || '')) {
+      if (session.user.user_metadata?.role === 'master_admin') {
         setRole('master_admin');
       } else {
         const { data: agencyRes } = await supabase.from('agencies').select('*').eq('user_id', session.user.id).limit(1);

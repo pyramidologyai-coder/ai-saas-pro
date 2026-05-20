@@ -56,6 +56,7 @@ const Sidebar = () => {
   const [userEmail, setUserEmail] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isAgencyOwner, setIsAgencyOwner] = useState(false);
+  const [isMasterAdmin, setIsMasterAdmin] = useState(false);
   const [tenants, setTenants] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -84,6 +85,7 @@ const Sidebar = () => {
 
       if (finalSession) {
         setUserEmail(finalSession.user.email || '');
+        setIsMasterAdmin(finalSession.user.user_metadata?.role === 'master_admin');
 
         // 1. Fetch Active Tenant and All Tenants
         const activeTenant = await getActiveTenant(finalSession.user);
@@ -178,13 +180,6 @@ const Sidebar = () => {
   };
 
   const hiddenForCurrentType = tenantType ? (hiddenFeatures[tenantType] || []) : [];
-
-  // ─── Master Admin detection ───────────────────────────────────────────────
-  const userEmailLower = (userEmail || '').toLowerCase();
-  const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-    .replace(/[^\x20-\x7E]/g, '').trim()
-    .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
-  const isMasterAdmin = !!userEmailLower && superAdminEmails.includes(userEmailLower);
 
   // ─── Master Admin menu ────────────────────────────────────────────────────
   const masterNavItems = [

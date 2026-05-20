@@ -27,13 +27,7 @@ export default function FinancialPage() {
         return;
       }
       
-      const userEmail = (session.user.email || '').toLowerCase();
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-        .replace(/[^\x20-\x7E]/g, '')
-        .split(',')
-        .map(e => e.trim().toLowerCase())
-        .filter(Boolean);
-      const isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
+      const isMasterAdmin = session.user.user_metadata?.role === 'master_admin';
       
       let determinedRole = '';
 

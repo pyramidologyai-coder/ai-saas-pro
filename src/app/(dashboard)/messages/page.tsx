@@ -86,8 +86,7 @@ export default function MessagesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '').split(',').map(e => e.trim());
-      const isMaster = superAdminEmails.includes(session.user.email || '');
+      const isMaster = session.user.user_metadata?.role === 'master_admin';
       
       let tenantIdForFilter = null;
       
