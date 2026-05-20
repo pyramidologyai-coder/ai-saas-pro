@@ -132,8 +132,10 @@ export default async function AgencyPage({
         .select(`
           id,
           name,
+          contact_email,
           plan_type,
           subscription_status,
+          subscription_end_date,
           created_at,
           whatsapp_number,
           messages_used,

@@ -19,7 +19,9 @@ import {
   Percent,
   Loader2,
   CheckCircle,
-  XCircle
+  XCircle,
+  Mail,
+  Clock
 } from 'lucide-react'
 
 const UUID_REGEX =
@@ -54,6 +56,8 @@ const translations = {
     processing: 'جاري التنفيذ...',
     error: 'حدث خطأ',
     notSet: 'غير محدد',
+    email: 'البريد الإلكتروني',
+    endDate: 'تاريخ الانتهاء',
     locale: 'ar-SA'
   },
   en: {
@@ -81,6 +85,8 @@ const translations = {
     processing: 'Processing...',
     error: 'An error occurred',
     notSet: 'Not set',
+    email: 'Email',
+    endDate: 'End Date',
     locale: 'en-US'
   },
   fr: {
@@ -108,6 +114,8 @@ const translations = {
     processing: 'En cours...',
     error: "Une erreur s'est produite",
     notSet: 'Non défini',
+    email: 'E-mail',
+    endDate: 'Date de fin',
     locale: 'fr-FR'
   }
 } as const
@@ -153,8 +161,10 @@ function formatDate(
 interface AgencyData {
   id: string
   name: string
+  contact_email?: string | null
   plan_type: string
   subscription_status: string
+  subscription_end_date?: string | null
   created_at: string
   whatsapp_number?: string | null
   messages_used?: number | null
@@ -398,8 +408,8 @@ export function AgencyDetailsUI({
               text-white">
               {agency.name}
             </h1>
-            <p className="text-gray-400 text-sm">
-              {t.agencyDetails}
+            <p className="text-gray-400 text-sm mt-1 flex items-center gap-2">
+              <Mail size={14} /> {agency.contact_email || t.agencyDetails}
             </p>
           </div>
           <span className={`px-3 py-1
@@ -533,6 +543,36 @@ export function AgencyDetailsUI({
       <div className="rounded-xl border
         bg-gray-800/50 border-gray-700/50
         p-4 space-y-4">
+
+        <div className="flex items-center
+          justify-between py-2 border-b
+          border-gray-700/50">
+          <div className="flex items-center
+            gap-2 text-gray-400">
+            <Mail size={16}/>
+            <span className="text-sm">
+              {t.email}
+            </span>
+          </div>
+          <span className="text-white text-sm">
+            {agency.contact_email || t.notSet}
+          </span>
+        </div>
+
+        <div className="flex items-center
+          justify-between py-2 border-b
+          border-gray-700/50">
+          <div className="flex items-center
+            gap-2 text-gray-400">
+            <Clock size={16}/>
+            <span className="text-sm">
+              {t.endDate}
+            </span>
+          </div>
+          <span className="text-white text-sm">
+            {agency.subscription_end_date ? formatDate(agency.subscription_end_date, t.locale) : t.notSet}
+          </span>
+        </div>
 
         <div className="flex items-center
           justify-between py-2 border-b

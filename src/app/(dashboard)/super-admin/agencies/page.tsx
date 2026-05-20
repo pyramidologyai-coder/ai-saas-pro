@@ -182,8 +182,14 @@ export default function AgenciesPage() {
 
               return (
                 <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <td style={{ padding: '1.2rem', fontWeight: 600, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <Briefcase size={18} color="var(--accent-primary)" /> {a.name}
+                  <td style={{ padding: '1.2rem', fontWeight: 600 }}>
+                    <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+                      <Briefcase size={20} color="var(--accent-primary)" /> 
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                        <span style={{ fontSize: '1rem', color: 'var(--text-main)' }}>{a.name}</span>
+                        {a.contact_email && <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 400 }}>{a.contact_email}</span>}
+                      </div>
+                    </div>
                   </td>
                   <td style={{ padding: '1.2rem', fontWeight: 700 }}>{a.tenants?.length || 0}</td>
                   <td style={{ padding: '1.2rem', fontWeight: 700 }}>${revenue.toLocaleString()}</td>
