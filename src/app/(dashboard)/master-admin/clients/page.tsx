@@ -49,6 +49,16 @@ export default async function MasterAdminClientsPage() {
       isMaster = !!verifyData || !!isMasterFallback;
 
       if (!isMaster) {
+        const userEmail = (user.email || '').toLowerCase();
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .replace(/[^\x20-\x7E]/g, '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
+        isMaster = superAdminEmails.includes(userEmail) || user.user_metadata?.role === 'master_admin';
+      }
+
+      if (!isMaster) {
         redirectTarget = '/admin';
       } else {
         // Fetch clients safely with Promise.allSettled
