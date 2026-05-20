@@ -1,7 +1,8 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import ClientDashboard from '@/components/dashboard/ClientDashboard';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { useRouter } from 'next/navigation';
 
@@ -12,8 +13,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     async function checkAuthAndRole() {
+      const supabaseClient = createClientComponentClient({
+        supabaseUrl: SUPABASE_URL,
+        supabaseKey: SUPABASE_ANON_KEY
+      });
+
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) {
           router.replace('/auth');
           return;
@@ -21,7 +27,7 @@ export default function AdminPage() {
 
         let isMasterByRpc = false;
         try {
-          const { data } = await supabase.rpc('is_master_admin');
+          const { data } = await supabaseClient.rpc('is_master_admin');
           isMasterByRpc = !!data;
         } catch (e) {
           // Ignore
