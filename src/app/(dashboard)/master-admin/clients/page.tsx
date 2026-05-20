@@ -46,17 +46,7 @@ export default async function MasterAdminClientsPage() {
       const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
       const isMasterFallback = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
 
-      isMaster = !!verifyData || !!isMasterFallback;
-
-      if (!isMaster) {
-        const userEmail = (user.email || '').toLowerCase();
-        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-          .replace(/[^\x20-\x7E]/g, '')
-          .split(',')
-          .map(e => e.trim().toLowerCase())
-          .filter(Boolean);
-        isMaster = superAdminEmails.includes(userEmail) || user.user_metadata?.role === 'master_admin';
-      }
+      isMaster = !!verifyData || !!isMasterFallback || user.user_metadata?.role === 'master_admin';
 
       if (!isMaster) {
         redirectTarget = '/admin';

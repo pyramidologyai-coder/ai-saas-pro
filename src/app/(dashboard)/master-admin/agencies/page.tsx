@@ -42,17 +42,7 @@ export default function AgenciesPage() {
       const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
       const fallbackData = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
 
-      isMasterAdmin = !!verifyData || !!fallbackData;
-
-      if (!isMasterAdmin) {
-        const userEmail = (session.user.email || '').toLowerCase();
-        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
-          .replace(/[^\x20-\x7E]/g, '')
-          .split(',')
-          .map(e => e.trim().toLowerCase())
-          .filter(Boolean);
-        isMasterAdmin = superAdminEmails.includes(userEmail) || session.user.user_metadata?.role === 'master_admin';
-      }
+      isMasterAdmin = !!verifyData || !!fallbackData || session.user.user_metadata?.role === 'master_admin';
     } catch (e) {
       console.error('RPC failed', e);
     }
