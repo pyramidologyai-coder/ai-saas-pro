@@ -329,8 +329,23 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         setNewIntendedFor('both')
 
         // Reload plans
-        const { data: updatedPlans } = await supabase.rpc('get_plans_with_stats')
-        if (updatedPlans) setPlans(updatedPlans)
+        const [plansRes, statsRes] = await Promise.all([
+          supabase.from('plans').select('*'),
+          supabase.rpc('get_plans_with_stats')
+        ])
+        
+        if (plansRes.data) {
+          const statsList = statsRes.data || []
+          const merged = plansRes.data.map((p: any) => {
+            const stats = statsList.find((s: any) => s.id === p.id) || {}
+            return {
+              ...p,
+              agencies_count: stats.agencies_count || 0,
+              revenue: stats.revenue || 0
+            }
+          })
+          setPlans(merged)
+        }
         router.refresh()
       }
     } catch (err) {

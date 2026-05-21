@@ -78,10 +78,11 @@ export default async function PlansPage({
     }
   )
 
-  const [userRes, isMasterRes, plansRes, featuresRes] = await Promise.allSettled([
+  const [userRes, isMasterRes, plansStatsRes, plansTableRes, featuresRes] = await Promise.allSettled([
     withTimeout(supabase.auth.getUser(), 10000),
     withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
     withTimeout(supabase.rpc('get_plans_with_stats'), 5000),
+    withTimeout(supabase.from('plans').select('*'), 5000),
     withTimeout(supabase.from('plan_features').select('*'), 5000)
   ]);
 
@@ -97,9 +98,17 @@ export default async function PlansPage({
 
   let plans: any[] = []
 
-  if (plansRes.status === 'fulfilled' && !plansRes.value.error) {
-    plans = plansRes.value.data || []
-  }
+  const statsList = plansStatsRes.status === 'fulfilled' && !(plansStatsRes.value as any).error ? (plansStatsRes.value as any).data || [] : [];
+  const rawPlans = plansTableRes.status === 'fulfilled' && !(plansTableRes.value as any).error ? (plansTableRes.value as any).data || [] : [];
+
+  plans = rawPlans.map((rp: any) => {
+    const stats = statsList.find((s: any) => s.id === rp.id) || {};
+    return {
+      ...rp,
+      agencies_count: stats.agencies_count || 0,
+      revenue: stats.revenue || 0
+    };
+  });
 
   if (featuresRes.status === 'fulfilled' && !featuresRes.value.error && featuresRes.value.data) {
     const features = featuresRes.value.data
