@@ -80,7 +80,8 @@ const DICTIONARY = {
     filterAll: 'الكل',
     langAr: 'العربية',
     langEn: 'English',
-    langFr: 'Français'
+    langFr: 'Français',
+    noInvoices: 'لا توجد فواتير بعد'
   },
   en: {
     title: 'Financial Analysis & Reports',
@@ -113,7 +114,8 @@ const DICTIONARY = {
     filterAll: 'All',
     langAr: 'العربية',
     langEn: 'English',
-    langFr: 'Français'
+    langFr: 'Français',
+    noInvoices: 'No invoices found yet'
   },
   fr: {
     title: 'Analyse Financière & Rapports',
@@ -146,56 +148,37 @@ const DICTIONARY = {
     filterAll: 'Tout',
     langAr: 'العربية',
     langEn: 'English',
-    langFr: 'Français'
+    langFr: 'Français',
+    noInvoices: 'Aucune facture trouvée pour le moment'
   }
 } as const
 
-// Sleek dark-mode mock fallbacks in case database has null/missing fields
-const MOCK_FALLBACK = {
-  totalRevenue: 124950,
-  thisMonthRevenue: 18450,
-  lastMonthRevenue: 16200,
-  paidInvoicesCount: 342,
-  pendingInvoicesCount: 24,
-  activeAgenciesCount: 48,
-  suspendedAgenciesCount: 3,
-  activeClientsCount: 384,
-  revenueByPlan: [
-    { name: 'starter', label: 'Starter ($49)', value: 14700 },
-    { name: 'growth', label: 'Growth ($99)', value: 34650 },
-    { name: 'pro', label: 'Pro ($199)', value: 45770 },
-    { name: 'vip', label: 'VIP ($399)', value: 29830 }
-  ],
-  invoices: [
-    { id: 'inv_1092', agency_name: 'Apex Marketing', amount: 399, status: 'paid' as const, created_at: '2026-05-20' },
-    { id: 'inv_1091', agency_name: 'MedClinic Group', amount: 199, status: 'paid' as const, created_at: '2026-05-19' },
-    { id: 'inv_1090', agency_name: 'Elixir Tech Agency', amount: 399, status: 'pending' as const, created_at: '2026-05-19' },
-    { id: 'inv_1089', agency_name: 'Nova Real Estate', amount: 99, status: 'paid' as const, created_at: '2026-05-18' },
-    { id: 'inv_1088', agency_name: 'Dental Care Ltd', amount: 49, status: 'unpaid' as const, created_at: '2026-05-18' },
-    { id: 'inv_1087', agency_name: 'Beauty & Co', amount: 199, status: 'paid' as const, created_at: '2026-05-17' },
-    { id: 'inv_1086', agency_name: 'Prime Salons', amount: 399, status: 'paid' as const, created_at: '2026-05-16' }
-  ]
-}
+// We have removed MOCK_FALLBACK and replaced it with strict empty state parameters as requested.
 
 export function FinanceUI({ initialData }: FinanceUIProps) {
   const [lang, setLang] = useState<Lang>('ar')
   const [isPending, startTransition] = useTransition()
 
-  // Consolidate data from RPC with safe fallbacks
-  const totalRevenue = initialData?.total_revenue ?? initialData?.totalRevenue ?? MOCK_FALLBACK.totalRevenue
-  const thisMonthRevenue = initialData?.this_month_revenue ?? initialData?.thisMonthRevenue ?? MOCK_FALLBACK.thisMonthRevenue
-  const lastMonthRevenue = initialData?.last_month_revenue ?? initialData?.lastMonthRevenue ?? MOCK_FALLBACK.lastMonthRevenue
+  // Consolidate data from RPC with zero / empty fallbacks (no dummy values)
+  const totalRevenue = initialData?.total_revenue ?? initialData?.totalRevenue ?? 0
+  const thisMonthRevenue = initialData?.this_month_revenue ?? initialData?.thisMonthRevenue ?? 0
+  const lastMonthRevenue = initialData?.last_month_revenue ?? initialData?.lastMonthRevenue ?? 0
   
-  const paidInvoicesCount = initialData?.paid_invoices_count ?? initialData?.paidInvoicesCount ?? MOCK_FALLBACK.paidInvoicesCount
-  const pendingInvoicesCount = initialData?.pending_invoices_count ?? initialData?.pendingInvoicesCount ?? MOCK_FALLBACK.pendingInvoicesCount
+  const paidInvoicesCount = initialData?.paid_invoices_count ?? initialData?.paidInvoicesCount ?? 0
+  const pendingInvoicesCount = initialData?.pending_invoices_count ?? initialData?.pendingInvoicesCount ?? 0
   
-  const activeAgenciesCount = initialData?.active_agencies_count ?? initialData?.activeAgenciesCount ?? MOCK_FALLBACK.activeAgenciesCount
-  const suspendedAgenciesCount = initialData?.suspended_agencies_count ?? initialData?.suspendedAgenciesCount ?? MOCK_FALLBACK.suspendedAgenciesCount
+  const activeAgenciesCount = initialData?.active_agencies_count ?? initialData?.activeAgenciesCount ?? 0
+  const suspendedAgenciesCount = initialData?.suspended_agencies_count ?? initialData?.suspendedAgenciesCount ?? 0
   
-  const activeClientsCount = initialData?.active_clients_count ?? initialData?.activeClientsCount ?? MOCK_FALLBACK.activeClientsCount
+  const activeClientsCount = initialData?.active_clients_count ?? initialData?.activeClientsCount ?? 0
   
-  const rawRevenueByPlan = initialData?.revenue_by_plan ?? initialData?.revenueByPlan ?? MOCK_FALLBACK.revenueByPlan
-  const invoices = initialData?.invoices ?? MOCK_FALLBACK.invoices
+  const rawRevenueByPlan = initialData?.revenue_by_plan ?? initialData?.revenueByPlan ?? [
+    { name: 'starter', label: 'Starter ($49)', value: 0 },
+    { name: 'growth', label: 'Growth ($99)', value: 0 },
+    { name: 'pro', label: 'Pro ($199)', value: 0 },
+    { name: 'vip', label: 'VIP ($399)', value: 0 }
+  ]
+  const invoices = initialData?.invoices ?? []
 
   const d = DICTIONARY[lang]
   const isRtl = lang === 'ar'
@@ -458,46 +441,54 @@ export function FinanceUI({ initialData }: FinanceUIProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800/50">
-                {invoices.map((inv) => {
-                  let statusStyle = 'bg-gray-500/10 text-gray-400'
-                  let statusLabel: string = d.statusPending
-                  
-                  if (inv.status === 'paid') {
-                    statusStyle = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15'
-                    statusLabel = d.statusPaid
-                  } else if (inv.status === 'pending') {
-                    statusStyle = 'bg-amber-500/10 text-amber-400 border border-amber-500/15'
-                    statusLabel = d.statusPending
-                  } else if (inv.status === 'unpaid') {
-                    statusStyle = 'bg-red-500/10 text-red-400 border border-red-500/15'
-                    statusLabel = d.statusUnpaid
-                  } else if (inv.status === 'refunded') {
-                    statusStyle = 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
-                    statusLabel = d.statusRefunded
-                  }
+                {invoices.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-16 text-center text-gray-500 text-sm font-medium">
+                      {d.noInvoices}
+                    </td>
+                  </tr>
+                ) : (
+                  invoices.map((inv) => {
+                    let statusStyle = 'bg-gray-500/10 text-gray-400'
+                    let statusLabel: string = d.statusPending
+                    
+                    if (inv.status === 'paid') {
+                      statusStyle = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15'
+                      statusLabel = d.statusPaid
+                    } else if (inv.status === 'pending') {
+                      statusStyle = 'bg-amber-500/10 text-amber-400 border border-amber-500/15'
+                      statusLabel = d.statusPending
+                    } else if (inv.status === 'unpaid') {
+                      statusStyle = 'bg-red-500/10 text-red-400 border border-red-500/15'
+                      statusLabel = d.statusUnpaid
+                    } else if (inv.status === 'refunded') {
+                      statusStyle = 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
+                      statusLabel = d.statusRefunded
+                    }
 
-                  return (
-                    <tr key={inv.id} className="hover:bg-gray-800/35 transition-colors">
-                      <td className={`py-3.5 px-2 font-mono text-xs text-gray-400 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        {inv.id}
-                      </td>
-                      <td className={`py-3.5 px-2 font-semibold text-white ${isRtl ? 'text-right' : 'text-left'}`}>
-                        {inv.agency_name || 'Direct Business'}
-                      </td>
-                      <td className="py-3.5 px-2 text-center font-bold text-white">
-                        {formatUSD(inv.amount)}
-                      </td>
-                      <td className="py-3.5 px-2 text-center">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle}`}>
-                          {statusLabel}
-                        </span>
-                      </td>
-                      <td className={`py-3.5 px-2 text-gray-400 text-xs ${isRtl ? 'text-left' : 'text-right'}`}>
-                        {inv.created_at}
-                      </td>
-                    </tr>
-                  )
-                })}
+                    return (
+                      <tr key={inv.id} className="hover:bg-gray-800/35 transition-colors">
+                        <td className={`py-3.5 px-2 font-mono text-xs text-gray-400 ${isRtl ? 'text-right' : 'text-left'}`}>
+                          {inv.id}
+                        </td>
+                        <td className={`py-3.5 px-2 font-semibold text-white ${isRtl ? 'text-right' : 'text-left'}`}>
+                          {inv.agency_name || 'Direct Business'}
+                        </td>
+                        <td className="py-3.5 px-2 text-center font-bold text-white">
+                          {formatUSD(inv.amount)}
+                        </td>
+                        <td className="py-3.5 px-2 text-center">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle}`}>
+                            {statusLabel}
+                          </span>
+                        </td>
+                        <td className={`py-3.5 px-2 text-gray-400 text-xs ${isRtl ? 'text-left' : 'text-right'}`}>
+                          {inv.created_at}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>
