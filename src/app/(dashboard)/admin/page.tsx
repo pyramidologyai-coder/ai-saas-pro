@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
   const router = useRouter();
-  const [loadingAuth, setLoadingAuth] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [isMasterAdmin, setIsMasterAdmin] = useState(false);
 
   useEffect(() => {
@@ -39,42 +39,38 @@ export default function AdminPage() {
         if (isMaster) {
           router.replace('/master-admin');
         } else {
-          setLoadingAuth(false);
+          setLoading(false);
         }
 
       } catch (err) {
         setIsMasterAdmin(false);
-        setLoadingAuth(false);
+        setLoading(false);
       }
     }
     
     checkAuthAndRole();
   }, [router]);
 
-  if (loadingAuth || isMasterAdmin) {
+  if (loading) {
     return (
       <div style={{
         position: 'fixed',
         inset: 0,
-        background: 'var(--bg-main, #0a0a0a)',
+        background: '#0a0a0a',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 99999
+        zIndex: 9999
       }}>
-        <style>{`
-          @keyframes spin {
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
         <div style={{
           width: '40px',
-          height: '40px', 
-          border: '3px solid #333',
+          height: '40px',
+          border: '3px solid #1f1f1f',
           borderTop: '3px solid #6366f1',
           borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }}/>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
