@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { PlansUI } from '@/components/master-admin/PlansUI'
@@ -70,7 +70,7 @@ export default async function PlansPage({
   searchParams: { lang?: string }
 }) {
   const cookieStore = await cookies();
-  const supabase = createServerComponentClient(
+  const supabase = createRouteHandlerClient(
     { cookies: () => cookieStore as any },
     {
       supabaseUrl: SUPABASE_URL,

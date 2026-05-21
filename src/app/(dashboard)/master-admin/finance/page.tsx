@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import FinancialPage from '../../admin/financial/page';
@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function SuperAdminFinancePage() {
   const cookieStore = await cookies();
-  const supabase = createServerComponentClient(
+  const supabase = createRouteHandlerClient(
     { cookies: () => cookieStore as any },
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );

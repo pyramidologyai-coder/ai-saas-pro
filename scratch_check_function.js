@@ -25,37 +25,22 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !serviceRoleKey) {
-  console.error("Missing Supabase credentials in .env.local or .env.prod.local");
+  console.error("Missing SUPABASE env vars");
   process.exit(1);
 }
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-async function checkRPCs() {
-  console.log("Checking RPCs...");
-  
-  const rpcs = [
-    'verify_master_admin_role',
-    'get_master_dashboard_data'
-  ];
-
-  let missing = false;
-
-  for (const rpc of rpcs) {
-    const { data, error } = await supabase.rpc(rpc);
-    if (error && error.code === 'PGRST202') { // Function not found
-      console.log(`❌ RPC '${rpc}' is MISSING.`);
-      missing = true;
-    } else {
-      console.log(`✅ RPC '${rpc}' EXISTS.`);
-    }
-  }
-
-  if (missing) {
-    console.log("\nSome RPCs are missing. You need to add them.");
+async function run() {
+  const query = `SELECT pg_get_functiondef(oid) as def FROM pg_proc WHERE proname = 'verify_master_admin_role';`;
+  console.log("Checking function definition via exec_sql...");
+  const { data, error } = await supabase.rpc('exec_sql', { sql_query: query });
+  if (error) {
+    console.error("Error executing query:", error);
   } else {
-    console.log("\nAll RPCs are present!");
+    console.log("SUCCESS");
+    console.log(JSON.stringify(data, null, 2));
   }
 }
 
-checkRPCs();
+run();

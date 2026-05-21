@@ -1,4 +1,4 @@
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AgenciesUI } from '@/components/master-admin/AgenciesUI';
@@ -25,7 +25,7 @@ async function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<Awaited<
 
 export default async function MasterAdminAgenciesPage() {
   const cookieStore = await cookies();
-  const supabase = createServerComponentClient(
+  const supabase = createRouteHandlerClient(
     { cookies: () => cookieStore as any },
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );

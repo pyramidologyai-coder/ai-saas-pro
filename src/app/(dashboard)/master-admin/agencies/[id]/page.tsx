@@ -1,4 +1,4 @@
-import { createServerComponentClient }
+import { createRouteHandlerClient }
   from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -86,7 +86,7 @@ export default async function AgencyPage({
   searchParams: { lang?: string }
 }) {
   const cookieStore = await cookies();
-  const supabase = createServerComponentClient(
+  const supabase = createRouteHandlerClient(
     { cookies: () => cookieStore as any },
     {
       supabaseUrl: SUPABASE_URL,
