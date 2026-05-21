@@ -39,6 +39,7 @@ interface Plan {
   reminder_enabled: boolean
   voice_reminder_enabled: boolean
   reminder_credits: number
+  intended_for?: 'agency' | 'business' | 'both'
   features?: PlanFeature[]
 }
 
@@ -92,6 +93,10 @@ const DICTIONARY = {
     pMessagesLimit: 'حد الرسائل (أدخل -1 للرسائل غير المحدودة)',
     pVoiceMinutesLimit: 'حد دقائق الصوت (أدخل -1 للدقائق غير المحدودة)',
     pReminderCredits: 'رصيد تذكير مجاني',
+    intendedFor: 'الفئة المستهدفة',
+    optionAgency: 'الوكالات فقط (Agency)',
+    optionBusiness: 'العملاء المباشرين (Business Direct)',
+    optionBoth: 'كلاهما (Both)',
     submit: 'إضافة الباقة الآن',
     cancel: 'إلغاء',
     
@@ -159,6 +164,10 @@ const DICTIONARY = {
     pMessagesLimit: 'Messages Limit (Enter -1 for unlimited)',
     pVoiceMinutesLimit: 'Voice Minutes Limit (Enter -1 for unlimited)',
     pReminderCredits: 'Free Reminder Credits',
+    intendedFor: 'Intended For',
+    optionAgency: 'Agencies Only (Agency)',
+    optionBusiness: 'Direct Businesses (Business Direct)',
+    optionBoth: 'Both (Agency & Direct)',
     submit: 'Add Plan Now',
     cancel: 'Cancel',
     
@@ -226,6 +235,10 @@ const DICTIONARY = {
     pMessagesLimit: 'Limite de messages (Saisissez -1 pour illimite)',
     pVoiceMinutesLimit: 'Limite de minutes vocales (Saisissez -1 pour illimite)',
     pReminderCredits: 'Credits de rappel gratuits',
+    intendedFor: 'Destiné à',
+    optionAgency: 'Agences Uniquement',
+    optionBusiness: 'Clients Directs',
+    optionBoth: 'Les deux',
     submit: 'Enregistrer',
     cancel: 'Annuler',
     
@@ -314,6 +327,7 @@ export function SettingsUI({
   const [newReminderEnabled, setNewReminderEnabled] = useState(false)
   const [newVoiceReminderEnabled, setNewVoiceReminderEnabled] = useState(false)
   const [newReminderCredits, setNewReminderCredits] = useState<number>(0)
+  const [newIntendedFor, setNewIntendedFor] = useState<'agency' | 'business' | 'both'>('both')
   const [addingPlan, setAddingPlan] = useState(false)
 
   // ----------------------------------------------------
@@ -470,6 +484,7 @@ export function SettingsUI({
         p_messages_limit: newMessagesLimit,
         p_voice_minutes_limit: newVoiceLimit,
         p_commission_rate: newCommissionRate,
+        p_intended_for: newIntendedFor,
         p_reminder_enabled: newReminderEnabled,
         p_voice_reminder_enabled: newVoiceReminderEnabled,
         p_reminder_credits: newReminderCredits
@@ -493,6 +508,7 @@ export function SettingsUI({
         setNewReminderEnabled(false)
         setNewVoiceReminderEnabled(false)
         setNewReminderCredits(0)
+        setNewIntendedFor('both')
 
         // Reload plans
         const { data: updatedPlans } = await supabase.rpc('get_plans_with_stats')
@@ -917,6 +933,21 @@ export function SettingsUI({
                       />
                     </div>
 
+                    {/* Intended For */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-semibold text-gray-300 block">{d.intendedFor}</label>
+                      <select
+                        value={newIntendedFor}
+                        onChange={(e) => setNewIntendedFor(e.target.value as any)}
+                        required
+                        className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm"
+                      >
+                        <option value="both">{d.optionBoth}</option>
+                        <option value="agency">{d.optionAgency}</option>
+                        <option value="business">{d.optionBusiness}</option>
+                      </select>
+                    </div>
+
                   </div>
 
                   <div className="flex gap-4 items-center pt-2">
@@ -1006,10 +1037,25 @@ export function SettingsUI({
                         <h3 className={`text-xl font-bold uppercase ${isVIP ? 'text-purple-400' : 'text-white'}`}>
                           {plan.name || plan.slug.toUpperCase()}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                          <span className="text-[11px] text-gray-400">
-                            {isActive ? d.isActive : d.isInactive}
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                          <div className="flex items-center gap-1">
+                            <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                            <span className="text-[11px] text-gray-400">
+                              {isActive ? d.isActive : d.isInactive}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                            plan.intended_for === 'agency'
+                              ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                              : plan.intended_for === 'business'
+                              ? 'bg-teal-500/10 text-teal-400 border-teal-500/20'
+                              : 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                          }`}>
+                            {plan.intended_for === 'agency'
+                              ? d.optionAgency.split(' ')[0]
+                              : plan.intended_for === 'business'
+                              ? d.optionBusiness.split(' ')[0]
+                              : d.optionBoth.split(' ')[0]}
                           </span>
                         </div>
                       </div>
