@@ -32,11 +32,10 @@ if (!supabaseUrl || !serviceRoleKey) {
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 async function run() {
-  const query = `SELECT pg_get_functiondef(oid) as def FROM pg_proc WHERE proname = 'verify_master_admin_role';`;
-  console.log("Checking function definition via exec_sql...");
-  const { data, error } = await supabase.rpc('exec_sql', { sql_query: query });
+  console.log("Calling get_financial_overview RPC...");
+  const { data, error } = await supabase.rpc('get_financial_overview');
   if (error) {
-    console.error("Error executing query:", error);
+    console.error("Error executing RPC get_financial_overview:", error);
   } else {
     console.log("SUCCESS");
     console.log(JSON.stringify(data, null, 2));
