@@ -55,8 +55,8 @@ const Sidebar = () => {
   const [tenantType, setTenantType] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isAgencyOwner, setIsAgencyOwner] = useState(false);
-  const [isMasterAdmin, setIsMasterAdmin] = useState(false);
+  const [isAgencyOwner, setIsAgencyOwner] = useState(() => pathname?.startsWith('/agency-admin') || pathname?.startsWith('/admin/agency-plans'));
+  const [isMasterAdmin, setIsMasterAdmin] = useState(() => pathname?.startsWith('/master-admin'));
   const [tenants, setTenants] = useState<any[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
