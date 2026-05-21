@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
@@ -13,6 +13,7 @@ import UsageAlerts from '@/components/financial/UsageAlerts';
 import RevenueSourcesTable from '@/components/financial/RevenueSourcesTable';
 
 export default function FinancialPage() {
+  const supabase = createClientComponentClient();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [role, setRole] = useState<string | null>(null);

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './Messages.module.css';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { 
   Search, 
   Send, 
@@ -36,6 +36,7 @@ type ChatData = {
 };
 
 export default function MessagesPage() {
+  const supabase = createClientComponentClient();
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   

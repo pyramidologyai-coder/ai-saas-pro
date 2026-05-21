@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock } from 'lucide-react';
 import { getActiveTenant } from '@/lib/tenant';
 import { saveTenantSettingsAction } from './actions';
 import { getDictionary } from '@/lib/dictionary';
 
 const SettingsPage = () => {
+  const supabase = createClientComponentClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
