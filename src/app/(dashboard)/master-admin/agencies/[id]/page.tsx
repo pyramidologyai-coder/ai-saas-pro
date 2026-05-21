@@ -94,13 +94,6 @@ export default async function AgencyPage({
     }
   )
 
-  const isAuthenticated = await checkAuth(supabase)
-  if (!isAuthenticated) redirect('/auth')
-
-  const isMasterAdmin =
-    await checkMasterRole(supabase)
-  if (!isMasterAdmin) redirect('/auth')
-
   const agencyId = params.id
   if (
     typeof agencyId !== 'string'
@@ -109,16 +102,10 @@ export default async function AgencyPage({
     redirect('/master-admin/agencies')
   }
 
-  const rawLang = searchParams?.lang ?? 'ar'
-  const lang: Lang = VALID_LANGS.includes(
-    rawLang as Lang
-  ) ? rawLang as Lang : 'ar'
-
-  let agency: any = null
-  let agencyError = false
-
-  try {
-    const { data, error } = await withTimeout(
+  const [userRes, isMasterRes, agencyRes, commissionRes, tenantsRes] = await Promise.allSettled([
+    withTimeout(supabase.auth.getUser(), 10000),
+    withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
+    withTimeout(
       supabase
         .from('agencies')
         .select(`
@@ -138,41 +125,15 @@ export default async function AgencyPage({
         .eq('id', agencyId)
         .single(),
       5000
-    )
-    if (error || !data) {
-      agencyError = true
-    } else {
-      agency = data
-    }
-  } catch {
-    agencyError = true
-  }
-
-  if (agencyError || !agency) {
-    redirect('/master-admin/agencies')
-  }
-
-  let commissionRate = 0
-  try {
-    const { data } = await withTimeout(
+    ),
+    withTimeout(
       supabase.rpc(
         'get_agency_commission',
         { p_agency_id: agencyId }
       ),
       3000
-    )
-    if (typeof data === 'number'
-      && !isNaN(data)
-      && isFinite(data)) {
-      commissionRate = Math.max(0, data)
-    }
-  } catch {
-    commissionRate = 0
-  }
-
-  let tenantsCount = 0
-  try {
-    const { count, error } = await withTimeout(
+    ),
+    withTimeout(
       supabase
         .from('tenants')
         .select('id', {
@@ -182,16 +143,41 @@ export default async function AgencyPage({
         .eq('agency_id', agencyId),
       5000
     )
-    if (!error && count !== null) {
-      tenantsCount = count
-    }
-  } catch {
-    tenantsCount = 0
+  ]);
+
+  const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+  const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
+
+  if (!user || !isMaster) {
+    redirect('/auth')
   }
+
+  const agency = agencyRes.status === 'fulfilled' && agencyRes.value.data ? agencyRes.value.data : null;
+  if (!agency) {
+    redirect('/master-admin/agencies')
+  }
+
+  let commissionRate = 0;
+  if (commissionRes.status === 'fulfilled') {
+    const commData = commissionRes.value.data;
+    if (typeof commData === 'number' && !isNaN(commData) && isFinite(commData)) {
+      commissionRate = Math.max(0, commData);
+    }
+  }
+
+  let tenantsCount = 0;
+  if (tenantsRes.status === 'fulfilled' && !tenantsRes.value.error && tenantsRes.value.count !== null) {
+    tenantsCount = tenantsRes.value.count;
+  }
+
+  const rawLang = searchParams?.lang ?? 'ar'
+  const lang: Lang = VALID_LANGS.includes(
+    rawLang as Lang
+  ) ? rawLang as Lang : 'ar'
 
   return (
     <AgencyDetailsUI
-      agency={agency!}
+      agency={agency}
       tenantsCount={tenantsCount}
       commissionRate={commissionRate}
       initialLang={lang}

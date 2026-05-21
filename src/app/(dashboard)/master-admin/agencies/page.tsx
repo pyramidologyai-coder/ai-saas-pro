@@ -31,47 +31,39 @@ export default async function MasterAdminAgenciesPage() {
   );
 
   let redirectTarget: string | null = null;
-  let isMaster = false;
   let agenciesData: any[] = [];
   
   try {
-    const { data: { user }, error: authError } = await withTimeout(supabase.auth.getUser());
-    if (authError || !user) {
+    const [userRes, isMasterRes, agenciesRes] = await Promise.allSettled([
+      withTimeout(supabase.auth.getUser()),
+      withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
+      withTimeout(
+        Promise.resolve(
+          supabase
+            .from('agencies')
+            .select(`
+              *,
+              tenants (id)
+            `)
+            .order('created_at', { ascending: false })
+        )
+      )
+    ]);
+
+    const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+    const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
+    agenciesData = agenciesRes.status === 'fulfilled' && agenciesRes.value.data ? agenciesRes.value.data : [];
+
+    if (!user) {
       redirectTarget = '/auth';
-    } else {
-      const [verifyRes, isMasterRes] = await Promise.allSettled([
-        withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
-        withTimeout(Promise.resolve(supabase.rpc('is_master_admin')))
-      ]);
-
-      const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
-      const isMasterFallback = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
-
-      isMaster = !!verifyData || !!isMasterFallback || user.user_metadata?.role === 'master_admin';
-
-      if (!isMaster) {
-        redirectTarget = '/admin';
-      } else {
-        const agenciesRes = await withTimeout(
-          Promise.resolve(
-            supabase
-              .from('agencies')
-              .select(`
-                *,
-                tenants (id)
-              `)
-              .order('created_at', { ascending: false })
-          )
-        );
-        agenciesData = agenciesRes.data || [];
-      }
+    } else if (!isMaster) {
+      redirectTarget = '/admin';
     }
   } catch (e) {
     console.error('Error in MasterAdminAgenciesPage:', e);
     if (!redirectTarget) redirectTarget = '/admin';
   }
 
-  // Redirect outside try/catch
   if (redirectTarget) {
     redirect(redirectTarget);
   }

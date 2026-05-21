@@ -13,27 +13,24 @@ export default async function MasterAdminPage() {
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    redirect('/auth');
-  }
+  const [userRes, isMasterRes, dashboardRes] = await Promise.allSettled([
+    supabase.auth.getUser(),
+    supabase.rpc('verify_master_admin_role'),
+    supabase.rpc('get_master_dashboard_data')
+  ]);
 
-  // 1. غيّر الـ Auth من Email لـ RPC:
-  let { data: isMaster } = await supabase.rpc('verify_master_admin_role');
-  
-  // Fallback in case verify_master_admin_role doesn't exist but is_master_admin does
-  if (isMaster === null || isMaster === undefined) {
-    const { data: isMasterFallback } = await supabase.rpc('is_master_admin');
-    isMaster = isMasterFallback;
+  const user = userRes.status === 'fulfilled' ? userRes.value.data.user : null;
+  let isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
+  const rpcData = dashboardRes.status === 'fulfilled' ? dashboardRes.value.data : null;
+
+  if (!user) {
+    redirect('/auth');
   }
 
   if (!isMaster) {
     redirect('/admin');
   }
 
-  // Fetch dashboard data
-  const { data: rpcData, error } = await supabase.rpc('get_master_dashboard_data');
-  
   let dashboardData = {
     agenciesCount: 0,
     tenantsCount: 0,
@@ -46,7 +43,7 @@ export default async function MasterAdminPage() {
     usageRate: 0
   };
 
-  if (!error && rpcData) {
+  if (rpcData) {
     dashboardData = {
       agenciesCount: Number(rpcData.agenciesCount) || 0,
       tenantsCount: Number(rpcData.tenantsCount) || 0,

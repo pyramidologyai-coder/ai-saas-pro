@@ -13,15 +13,15 @@ export default async function SuperAdminMessagesPage() {
     { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
   );
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const [userRes, isMasterRes] = await Promise.allSettled([
+    supabase.auth.getUser(),
+    supabase.rpc('verify_master_admin_role')
+  ]);
+
+  const user = userRes.status === 'fulfilled' ? userRes.value.data.user : null;
+  const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
+
   if (!user) redirect('/auth');
-
-  let { data: isMaster } = await supabase.rpc('verify_master_admin_role');
-  if (isMaster === null || isMaster === undefined) {
-    const { data: isMasterFallback } = await supabase.rpc('is_master_admin');
-    isMaster = isMasterFallback;
-  }
-
   if (!isMaster) redirect('/admin');
 
   return <MessagesPage />;

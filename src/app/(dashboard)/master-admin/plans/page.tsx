@@ -78,15 +78,17 @@ export default async function PlansPage({
     }
   )
 
-  const [isAuthenticated, isMasterAdmin] = await Promise.allSettled([
-    checkAuth(supabase),
-    checkMasterRole(supabase)
-  ])
+  const [userRes, isMasterRes, plansRes, featuresRes] = await Promise.allSettled([
+    withTimeout(supabase.auth.getUser(), 10000),
+    withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
+    withTimeout(supabase.rpc('get_plans_with_stats'), 5000),
+    withTimeout(supabase.from('plan_features').select('*'), 5000)
+  ]);
 
-  const isAuth = isAuthenticated.status === 'fulfilled' && isAuthenticated.value
-  const isMaster = isMasterAdmin.status === 'fulfilled' && isMasterAdmin.value
+  const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+  const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
 
-  if (!isAuth || !isMaster) {
+  if (!user || !isMaster) {
     redirect('/auth')
   }
 
@@ -94,36 +96,17 @@ export default async function PlansPage({
   const lang: Lang = VALID_LANGS.includes(rawLang as Lang) ? (rawLang as Lang) : 'ar'
 
   let plans: any[] = []
-  let fetchError = false
 
-  try {
-    // 1. Fetch plans with stats via RPC
-    // 2. Fetch plan features
-    const [plansRes, featuresRes] = await Promise.allSettled([
-      withTimeout(supabase.rpc('get_plans_with_stats'), 5000),
-      withTimeout(supabase.from('plan_features').select('*'), 5000)
-    ])
-
-    if (plansRes.status === 'fulfilled' && !plansRes.value.error) {
-      plans = plansRes.value.data || []
-    } else {
-      fetchError = true
-    }
-
-    // Merge features into plans
-    if (featuresRes.status === 'fulfilled' && !featuresRes.value.error && featuresRes.value.data) {
-      const features = featuresRes.value.data
-      plans = plans.map(p => ({
-        ...p,
-        features: features.filter((f: any) => f.plan_id === p.id)
-      }))
-    }
-  } catch {
-    fetchError = true
+  if (plansRes.status === 'fulfilled' && !plansRes.value.error) {
+    plans = plansRes.value.data || []
   }
 
-  if (fetchError && plans.length === 0) {
-    // Graceful fallback or ignore since PlansUI will handle empty arrays
+  if (featuresRes.status === 'fulfilled' && !featuresRes.value.error && featuresRes.value.data) {
+    const features = featuresRes.value.data
+    plans = plans.map(p => ({
+      ...p,
+      features: features.filter((f: any) => f.plan_id === p.id)
+    }))
   }
 
   return <PlansUI initialPlans={plans} initialLang={lang} />

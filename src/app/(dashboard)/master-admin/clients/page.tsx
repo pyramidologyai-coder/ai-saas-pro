@@ -31,77 +31,61 @@ export default async function MasterAdminClientsPage() {
   );
 
   let redirectTarget: string | null = null;
-  let isMaster = false;
   let clientsData: any[] = [];
   
   try {
-    const { data: { user }, error: authError } = await withTimeout(supabase.auth.getUser());
-    if (authError || !user) {
+    const [userRes, isMasterRes, clientsRes] = await Promise.allSettled([
+      withTimeout(supabase.auth.getUser()),
+      withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
+      withTimeout(Promise.resolve(supabase.rpc('get_master_clients')))
+    ]);
+
+    const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+    const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
+    let fetchedData = clientsRes.status === 'fulfilled' ? clientsRes.value.data : null;
+
+    if (!user) {
       redirectTarget = '/auth';
+    } else if (!isMaster) {
+      redirectTarget = '/admin';
     } else {
-      const [verifyRes, isMasterRes] = await Promise.allSettled([
-        withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
-        withTimeout(Promise.resolve(supabase.rpc('is_master_admin')))
-      ]);
-
-      const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : null;
-      const isMasterFallback = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : null;
-
-      isMaster = !!verifyData || !!isMasterFallback || user.user_metadata?.role === 'master_admin';
-
-      if (!isMaster) {
-        redirectTarget = '/admin';
+      if (fetchedData && Array.isArray(fetchedData)) {
+          clientsData = fetchedData;
       } else {
-        // Fetch clients safely with Promise.allSettled
-        const clientsRes = await Promise.allSettled([
-          withTimeout(Promise.resolve(supabase.rpc('get_master_clients')))
-        ]);
-        
-        let fetchedData = null;
-        if (clientsRes[0].status === 'fulfilled') {
-            fetchedData = clientsRes[0].value.data;
-        }
-
-        if (fetchedData && Array.isArray(fetchedData)) {
-            clientsData = fetchedData;
-        } else {
-            // Fallback query if RPC doesn't exist or fails
-            const fallback = await withTimeout(Promise.resolve(supabase.from('tenants').select(`
-              id,
-              name,
-              type,
-              plan_type,
-              status,
-              trial_ends_at,
-              messages_used,
-              messages_limit,
-              agency_id,
-              agencies ( name )
-            `).order('created_at', { ascending: false })));
-            
-            if (fallback.data) {
-                clientsData = fallback.data.map((t: any) => ({
-                    id: t.id,
-                    name: t.name,
-                    type: t.type,
-                    plan_type: t.plan_type,
-                    status: t.status,
-                    end_date: t.trial_ends_at,
-                    messages_used: t.messages_used,
-                    messages_limit: t.messages_limit,
-                    agency_name: t.agencies ? t.agencies.name : '' // direct if empty
-                }));
-            }
-        }
+          // Fallback query if RPC doesn't exist or fails
+          const fallback = await withTimeout(Promise.resolve(supabase.from('tenants').select(`
+            id,
+            name,
+            type,
+            plan_type,
+            status,
+            trial_ends_at,
+            messages_used,
+            messages_limit,
+            agency_id,
+            agencies ( name )
+          `).order('created_at', { ascending: false })));
+          
+          if (fallback.data) {
+              clientsData = fallback.data.map((t: any) => ({
+                  id: t.id,
+                  name: t.name,
+                  type: t.type,
+                  plan_type: t.plan_type,
+                  status: t.status,
+                  end_date: t.trial_ends_at,
+                  messages_used: t.messages_used,
+                  messages_limit: t.messages_limit,
+                  agency_name: t.agencies ? t.agencies.name : '' // direct if empty
+              }));
+          }
       }
     }
   } catch (e) {
     console.error('Error in MasterAdminClientsPage:', e);
-    // Use fallback to /admin instead of failing the request entirely
     if (!redirectTarget) redirectTarget = '/admin';
   }
 
-  // Redirect MUST be outside try/catch
   if (redirectTarget) {
     redirect(redirectTarget);
   }
