@@ -36,7 +36,26 @@ export default function AuthPage() {
           password,
         });
         if (error) throw error;
-        router.push('/admin');
+
+        // Direct check for master admin role to avoid flash
+        let isMaster = false;
+        try {
+          const { data } = await supabaseClient.rpc('verify_master_admin_role');
+          if (data) {
+            isMaster = true;
+          } else {
+            const { data: fallbackData } = await supabaseClient.rpc('is_master_admin');
+            isMaster = !!fallbackData;
+          }
+        } catch (e) {
+          // Ignore
+        }
+
+        if (isMaster) {
+          router.replace('/master-admin');
+        } else {
+          router.replace('/admin');
+        }
       } else {
         // SIGNUP
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
