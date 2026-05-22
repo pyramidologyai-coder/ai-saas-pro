@@ -18,6 +18,50 @@ export default function AuthPage() {
   const [businessName, setBusinessName] = useState('');
   const [businessType, setBusinessType] = useState('clinic');
 
+  React.useEffect(() => {
+    const checkActiveSession = async () => {
+      const supabaseClient = createClientComponentClient({
+        supabaseUrl: SUPABASE_URL,
+        supabaseKey: SUPABASE_ANON_KEY
+      });
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session?.user) {
+        const user = session.user;
+        const isMasterMetadata = user.user_metadata?.role === 'master_admin';
+        
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
+        
+        if (superAdminEmails.length === 0) {
+          superAdminEmails.push('pyramidology.ai@gmail.com', 'ashsameh1@gmail.com');
+        }
+        const isSuperAdminEmail = user.email && superAdminEmails.includes(user.email.toLowerCase());
+
+        let isMaster = false;
+        try {
+          const { data } = await supabaseClient.rpc('verify_master_admin_role');
+          if (data) {
+            isMaster = true;
+          } else {
+            const { data: fallbackData } = await supabaseClient.rpc('is_master_admin');
+            isMaster = !!fallbackData;
+          }
+        } catch (e) {
+          // Ignore
+        }
+
+        if (isMaster || isMasterMetadata || isSuperAdminEmail) {
+          router.replace('/master-admin');
+        } else {
+          router.replace('/admin');
+        }
+      }
+    };
+    checkActiveSession();
+  }, [router]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -41,12 +85,14 @@ export default function AuthPage() {
         const isMasterMetadata = user?.user_metadata?.role === 'master_admin';
         
         // Direct local check of super admin emails to avoid any latency or race conditions
-        const superAdminEmails = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS
-          ?.split(',')
-          .map(e => e.trim().toLowerCase()) || [
-            'pyramidology.ai@gmail.com',
-            'ashsameh1@gmail.com'
-          ];
+        const superAdminEmails = (process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS || '')
+          .split(',')
+          .map(e => e.trim().toLowerCase())
+          .filter(Boolean);
+        
+        if (superAdminEmails.length === 0) {
+          superAdminEmails.push('pyramidology.ai@gmail.com', 'ashsameh1@gmail.com');
+        }
         const isSuperAdminEmail = user?.email && superAdminEmails.includes(user.email.toLowerCase());
 
         // Direct check for master admin role to avoid flash (RPC backup)
@@ -113,7 +159,7 @@ export default function AuthPage() {
       const { error } = await supabaseClient.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/admin`
+          redirectTo: `${window.location.origin}/auth`
         }
       });
       if (error) throw error;
