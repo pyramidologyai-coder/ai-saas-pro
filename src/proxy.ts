@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
 import { GhostDefender } from './lib/ghost-defender';
 
 export const config = {
@@ -14,6 +15,7 @@ export default async function middleware(req: NextRequest) {
   if (trapResponse) return trapResponse;
 
   const url = req.nextUrl;
+  const res = NextResponse.next();
   let hostname = req.headers.get('host') || 'localhost:3000';
 
   // Remove port for production
@@ -23,7 +25,7 @@ export default async function middleware(req: NextRequest) {
 
   const currentHost =
     process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
-      ? hostname.replace(`.aisaaspro.com`, '')
+      ? hostname.replace(`.reportclinics.vercel.app`, '')
       : hostname.replace(`.localhost:3000`, '');
 
   // ✅ كل المسارات المحمية والداخلية
@@ -52,13 +54,24 @@ export default async function middleware(req: NextRequest) {
   // ✅ الدومينات الأساسية
   const isMainDomain =
     hostname === 'localhost:3000' ||
-    hostname === 'aisaaspro.com' ||
-    hostname === 'www.aisaaspro.com' ||
     hostname === 'reportclinics.vercel.app' ||
     hostname.endsWith('.vercel.app');
 
+  // ✅ لو على /admin وعنده session → check لو master admin وحوله
+  if (url.pathname === '/admin' && isMainDomain) {
+    const supabase = createMiddlewareClient({ req, res });
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session) {
+      const { data: isMaster } = await supabase.rpc('verify_master_admin_role');
+      if (isMaster) {
+        return NextResponse.redirect(new URL('/master-admin', req.url));
+      }
+    }
+  }
+
   if (isMainDomain || isExemptPath) {
-    return NextResponse.next();
+    return res;
   }
 
   // Custom domain → rewrite
