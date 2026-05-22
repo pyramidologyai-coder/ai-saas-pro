@@ -1,79 +1,45 @@
-'use client';
-import React, { useEffect, useState } from 'react';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import ClientDashboard from '@/components/dashboard/ClientDashboard';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
-import { CardSkeleton } from '@/components/ui/Skeleton';
-import { useRouter } from 'next/navigation';
 
-export default function AdminPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [isMasterAdmin, setIsMasterAdmin] = useState(false);
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    async function checkAuthAndRole() {
-      const supabaseClient = createClientComponentClient({
-        supabaseUrl: SUPABASE_URL,
-        supabaseKey: SUPABASE_ANON_KEY
-      });
+export default async function AdminPage() {
+  const cookieStore = await cookies();
+  const supabase = createRouteHandlerClient(
+    { cookies: () => cookieStore as any },
+    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
+  );
 
-      try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-          router.replace('/auth');
-          return;
-        }
+  const { data: { user } } = await supabase.auth.getUser();
 
-        let isMasterByRpc = false;
-        try {
-          const { data } = await supabaseClient.rpc('is_master_admin');
-          isMasterByRpc = !!data;
-        } catch (e) {
-          // Ignore
-        }
+  if (!user) {
+    redirect('/auth');
+  }
 
-        const isMaster = isMasterByRpc || session.user.user_metadata?.role === 'master_admin';
-        setIsMasterAdmin(isMaster);
-
-        if (isMaster) {
-          router.replace('/master-admin');
-        } else {
-          setLoading(false);
-        }
-
-      } catch (err) {
-        setIsMasterAdmin(false);
-        setLoading(false);
-      }
+  // Check if master admin
+  let isMaster = false;
+  try {
+    const { data } = await supabase.rpc('verify_master_admin_role');
+    if (data) {
+      isMaster = true;
+    } else {
+      const { data: fallbackData } = await supabase.rpc('is_master_admin');
+      isMaster = !!fallbackData;
     }
-    
-    checkAuthAndRole();
-  }, [router]);
+  } catch (e) {
+    // Ignore
+  }
 
-  if (loading) {
-    return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        background: '#0a0a0a',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999
-      }}>
-        <div style={{
-          width: '40px',
-          height: '40px',
-          border: '3px solid #1f1f1f',
-          borderTop: '3px solid #6366f1',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite'
-        }}/>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
+  // Check metadata role as fallback
+  const isMasterMetadata = user.user_metadata?.role === 'master_admin';
+
+  if (isMaster || isMasterMetadata) {
+    redirect('/master-admin');
   }
 
   return <ClientDashboard />;
 }
+
