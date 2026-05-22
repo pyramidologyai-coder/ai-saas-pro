@@ -71,5 +71,5 @@ export default async function MasterAdminAgenciesPage() {
     redirect(redirectTarget);
   }
 
-  return <AgenciesUI initialAgencies={agenciesData} plans={plansData} />;
+  return <AgenciesUI initialAgencies={agenciesData} plans={plansData} adminId={user?.id} />;
 }

@@ -29,6 +29,7 @@ import { useLanguage } from '@/context/LanguageContext';
 interface AgenciesUIProps {
   initialAgencies: any[];
   plans?: any[];
+  adminId?: string;
 }
 
 const d = {
@@ -172,7 +173,7 @@ const d = {
   }
 };
 
-export function AgenciesUI({ initialAgencies, plans = [] }: AgenciesUIProps) {
+export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIProps) {
   const { language } = useLanguage();
   const currentLang = (language as 'ar' | 'en' | 'fr') || 'ar';
   const t = d[currentLang];
@@ -221,13 +222,18 @@ export function AgenciesUI({ initialAgencies, plans = [] }: AgenciesUIProps) {
     
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      let activeAdminId = adminId;
+      if (!activeAdminId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        activeAdminId = session?.user?.id;
+      }
+
+      if (!activeAdminId) {
         alert("Session expired. Please log in again.");
         return;
       }
       
-      const createdAgency = await createAgencyAction(newAgency, session.user.id);
+      const createdAgency = await createAgencyAction(newAgency, activeAdminId);
       
       alert(t.successAdd);
       setShowAddForm(false);
