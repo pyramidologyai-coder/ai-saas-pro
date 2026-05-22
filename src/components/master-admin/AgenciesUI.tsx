@@ -222,12 +222,27 @@ export function AgenciesUI({ initialAgencies, plans = [] }: AgenciesUIProps) {
     setLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        alert("Session expired. Please log in again.");
+        return;
+      }
       
-      await createAgencyAction(newAgency, session.user.id);
+      const createdAgency = await createAgencyAction(newAgency, session.user.id);
       
       alert(t.successAdd);
       setShowAddForm(false);
+      
+      // Update local state instantly (double-protection for immediate render)
+      if (createdAgency) {
+        setAgencies(prev => [
+          {
+            ...createdAgency,
+            tenants: [] // default empty tenants array to match the query interface
+          },
+          ...prev
+        ]);
+      }
+
       setNewAgency({
         name: '',
         email: '',
