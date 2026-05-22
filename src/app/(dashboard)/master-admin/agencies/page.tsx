@@ -32,9 +32,10 @@ export default async function MasterAdminAgenciesPage() {
 
   let redirectTarget: string | null = null;
   let agenciesData: any[] = [];
+  let plansData: any[] = [];
   
   try {
-    const [userRes, isMasterRes, agenciesRes] = await Promise.allSettled([
+    const [userRes, isMasterRes, agenciesRes, plansRes] = await Promise.allSettled([
       withTimeout(supabase.auth.getUser()),
       withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
       withTimeout(
@@ -47,12 +48,14 @@ export default async function MasterAdminAgenciesPage() {
             `)
             .order('created_at', { ascending: false })
         )
-      )
+      ),
+      withTimeout(Promise.resolve(supabase.from('plans').select('*')))
     ]);
 
     const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
-    agenciesData = agenciesRes.status === 'fulfilled' && agenciesRes.value.data ? agenciesRes.value.data : [];
+    agenciesData = agenciesRes.status === 'fulfilled' && !(agenciesRes.value as any).error ? (agenciesRes.value as any).data || [] : [];
+    plansData = plansRes.status === 'fulfilled' && !(plansRes.value as any).error ? (plansRes.value as any).data || [] : [];
 
     if (!user) {
       redirectTarget = '/auth';
@@ -68,5 +71,5 @@ export default async function MasterAdminAgenciesPage() {
     redirect(redirectTarget);
   }
 
-  return <AgenciesUI initialAgencies={agenciesData} />;
+  return <AgenciesUI initialAgencies={agenciesData} plans={plansData} />;
 }
