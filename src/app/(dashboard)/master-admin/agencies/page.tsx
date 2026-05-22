@@ -33,6 +33,7 @@ export default async function MasterAdminAgenciesPage() {
   let redirectTarget: string | null = null;
   let agenciesData: any[] = [];
   let plansData: any[] = [];
+  let user: any = null;
   
   try {
     const [userRes, isMasterRes, agenciesRes, plansRes] = await Promise.allSettled([
@@ -52,7 +53,7 @@ export default async function MasterAdminAgenciesPage() {
       withTimeout(Promise.resolve(supabase.from('plans').select('*')))
     ]);
 
-    const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+    user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
     agenciesData = agenciesRes.status === 'fulfilled' && !(agenciesRes.value as any).error ? (agenciesRes.value as any).data || [] : [];
     plansData = plansRes.status === 'fulfilled' && !(plansRes.value as any).error ? (plansRes.value as any).data || [] : [];
