@@ -31,13 +31,25 @@ export default function AuthPage() {
     try {
       if (isLogin) {
         // LOGIN
-        const { error } = await supabaseClient.auth.signInWithPassword({
+        const { data: authData, error } = await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
 
-        // Direct check for master admin role to avoid flash
+        const user = authData?.user;
+        const isMasterMetadata = user?.user_metadata?.role === 'master_admin';
+        
+        // Direct local check of super admin emails to avoid any latency or race conditions
+        const superAdminEmails = process.env.NEXT_PUBLIC_SUPER_ADMIN_EMAILS
+          ?.split(',')
+          .map(e => e.trim().toLowerCase()) || [
+            'pyramidology.ai@gmail.com',
+            'ashsameh1@gmail.com'
+          ];
+        const isSuperAdminEmail = user?.email && superAdminEmails.includes(user.email.toLowerCase());
+
+        // Direct check for master admin role to avoid flash (RPC backup)
         let isMaster = false;
         try {
           const { data } = await supabaseClient.rpc('verify_master_admin_role');
@@ -51,7 +63,7 @@ export default function AuthPage() {
           // Ignore
         }
 
-        if (isMaster) {
+        if (isMaster || isMasterMetadata || isSuperAdminEmail) {
           router.replace('/master-admin');
         } else {
           router.replace('/admin');
