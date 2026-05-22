@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 // Sanitize keys to remove invisible BOM characters injected by copy-paste
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
@@ -150,6 +151,7 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
       const resendApiKey = process.env.RESEND_API_KEY;
 
       if (resendApiKey) {
+        const resendClient = new Resend(resendApiKey);
         const emailHtml = `
           <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; background: #0f172a; color: #f8fafc; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05);">
             <h2 style="color: #8b5cf6; text-align: center; font-size: 24px; margin-bottom: 20px;">مرحباً بك في منصة Report Clinics 🚀</h2>
@@ -163,22 +165,15 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
           </div>
         `;
 
-        const emailRes = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: 'no-reply@pyramidology.ai',
-            to: cleanEmail,
-            subject: 'تفعيل حساب وكالتك الجديدة - Report Clinics 🚀',
-            html: emailHtml,
-          }),
+        const { data: emailRes, error: emailError } = await resendClient.emails.send({
+          from: 'no-reply@pyramidology.ai',
+          to: cleanEmail,
+          subject: 'تفعيل حساب وكالتك الجديدة - Report Clinics 🚀',
+          html: emailHtml,
         });
 
-        if (emailRes.ok) {
-          console.log("Welcome email sent via Resend successfully.");
+        if (!emailError) {
+          console.log("Welcome email sent via Resend SDK successfully.", emailRes);
           await supabaseAdmin
             .from('audit_logs')
             .insert({
@@ -191,8 +186,7 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
               }
             });
         } else {
-          const errorText = await emailRes.text();
-          console.error("Resend welcome email API call failed:", errorText);
+          console.error("Resend SDK welcome email failed:", emailError.message);
         }
       } else {
         console.warn("RESEND_API_KEY is not defined in env variables.");
