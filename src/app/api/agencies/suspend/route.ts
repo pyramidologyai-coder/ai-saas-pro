@@ -139,9 +139,9 @@ export async function POST(req: Request) {
       )
     }
 
-    if (agency.subscription_status !== 'active') {
+    if (agency.subscription_status === 'suspended') {
       return NextResponse.json(
-        { error: 'Agency is not active' },
+        { error: 'Agency is already suspended' },
         { status: 409 }
       )
     }
@@ -169,8 +169,7 @@ export async function POST(req: Request) {
               new Date().toISOString(),
             suspended_by: user.id
           })
-          .eq('id', agencyId)
-          .eq('subscription_status', 'active'),
+          .eq('id', agencyId),
         3000
       )
 
