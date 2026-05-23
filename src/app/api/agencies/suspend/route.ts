@@ -59,8 +59,9 @@ async function withTimeout(
 
 export async function POST(req: Request) {
   try {
+    const cookieStore = await cookies()
     const supabase = createRouteHandlerClient({
-      cookies
+      cookies: () => cookieStore as any
     })
 
     const { data: { user }, error: authError } =
@@ -75,13 +76,18 @@ export async function POST(req: Request) {
       )
     }
 
-    if (user.user_metadata?.role
-      !== 'master_admin') {
+    const { data: isMaster } = await withTimeout(
+      Promise.resolve(supabase.rpc('verify_master_admin_role')),
+      3000
+    )
+
+    if (!isMaster) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
       )
     }
+
 
     if (!checkRateLimit(user.id)) {
       return NextResponse.json(
