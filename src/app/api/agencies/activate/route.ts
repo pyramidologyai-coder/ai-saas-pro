@@ -146,71 +146,27 @@ export async function POST(req: Request) {
       )
     }
 
-    const { count: activeTenantsCount } =
-      await withTimeout(
-        supabase
-          .from('tenants')
-          .select('id', {
-            count: 'exact',
-            head: true
-          })
-          .eq('agency_id', agencyId)
-          .eq('subscription_status', 'active'),
-        3000
-      )
+    const { data, error: rpcError } = await withTimeout(
+      Promise.resolve(supabase.rpc('activate_agency_cascade', { 
+        p_agency_id: agencyId 
+      })),
+      5000
+    )
 
-    const { error: updateError } =
-      await withTimeout(
-        supabase
-          .from('agencies')
-          .update({
-            subscription_status: 'active',
-            suspended_at: null,
-            suspended_by: null
-          })
-          .eq('id', agencyId)
-          .eq('subscription_status', 'suspended'),
-        3000
-      )
-
-    if (updateError) {
-      console.error('[ACTIVATE] update_failed')
+    if (rpcError || !data?.success) {
+      console.error('[ACTIVATE] rpc_failed', rpcError)
       return NextResponse.json(
-        { error: 'Update failed' },
+        { error: data?.error || 'Update failed' },
         { status: 500 }
       )
     }
-
-    const headersList = await headers()
-    await supabase
-      .from('audit_logs')
-      .insert({
-        actor_id: user.id,
-        action_type: 'ACTIVATE_AGENCY',
-        entity_type: 'agency',
-        entity_id: agencyId,
-        changes: {
-          agency_id: agencyId,
-          agency_name: agency.name,
-          status_before: 'suspended',
-          status_after: 'active',
-          active_tenants_count:
-            activeTenantsCount ?? 0,
-          ip_address:
-            headersList.get('x-forwarded-for')
-            ?? 'unknown',
-          user_agent:
-            headersList.get('user-agent')
-            ?? 'unknown',
-          timestamp: new Date().toISOString()
-        }
-      })
 
     return NextResponse.json(
       {
         success: true,
         agencyId,
-        activatedAt: new Date().toISOString()
+        activatedAt: new Date().toISOString(),
+        tenantsActivated: data.tenants_activated
       },
       { status: 200 }
     )
