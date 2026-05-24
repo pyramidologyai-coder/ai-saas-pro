@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { 
   Loader2, 
   Plus, 
@@ -174,6 +174,7 @@ const d = {
 };
 
 export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIProps) {
+  const supabase = createClientComponentClient();
   const { language } = useLanguage();
   const currentLang = (language as 'ar' | 'en' | 'fr') || 'ar';
   const t = d[currentLang];
