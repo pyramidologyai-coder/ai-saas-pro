@@ -269,9 +269,8 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
     const isSuspended = currentStatus === 'suspended';
     const actionType = isSuspended ? 'activate' : 'suspend';
     const messageConfirm = isSuspended ? t.confirmActivate : t.confirmSuspend;
-
     if (!confirm(messageConfirm)) return;
-
+    
     setLoading(true);
     try {
       const res = await fetch(`/api/agencies/${actionType}`, {
@@ -279,14 +278,17 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ agencyId })
       });
-
+      
+      const data = await res.json().catch(() => ({}));
+      
       if (res.ok) {
         await fetchAgencies();
       } else {
-        alert(t.loading + ' Error');
+        alert('Error: ' + (data.error || 'Unknown error') + ' (Status: ' + res.status + ')');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert('Network Error: ' + e.message);
     } finally {
       setLoading(false);
     }
