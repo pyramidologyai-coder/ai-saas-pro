@@ -37,7 +37,8 @@ const translations = {
     page: 'صفحة',
     of: 'من',
     empty: 'لا يوجد عملاء',
-    exportCsv: 'تصدير البيانات (CSV)'
+    exportCsv: 'تصدير البيانات (CSV)',
+    agencyBadge: 'وكالة 🏢'
   },
   en: {
     dir: 'ltr' as const,
@@ -69,7 +70,8 @@ const translations = {
     page: 'Page',
     of: 'of',
     empty: 'No clients found',
-    exportCsv: 'Export to CSV'
+    exportCsv: 'Export to CSV',
+    agencyBadge: 'Agency 🏢'
   },
   fr: {
     dir: 'ltr' as const,
@@ -101,7 +103,8 @@ const translations = {
     page: 'Page',
     of: 'sur',
     empty: 'Aucun client trouvé',
-    exportCsv: 'Exporter en CSV'
+    exportCsv: 'Exporter en CSV',
+    agencyBadge: 'Agence 🏢'
   }
 } as const;
 
@@ -117,6 +120,7 @@ interface ClientData {
   agency_name?: string;
   agency_status?: string | null;
   agency_id?: string | null;
+  record_type?: string | null;
 }
 
 export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) {
@@ -181,10 +185,10 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
     const rows = filteredClients.map(c => [
       c.name || '',
       c.type || '',
-      c.plan_type || '',
+      c.record_type === 'agency' ? (lang === 'ar' ? 'وكالة 🏢' : lang === 'fr' ? 'Agence 🏢' : 'Agency 🏢') : (c.plan_type || ''),
       c.status || '',
-      c.agency_name || (lang === 'ar' ? 'مباشر' : 'Direct'),
-      c.agency_id ? (c.agency_status || 'active') : (lang === 'ar' ? 'مباشر' : 'Direct'),
+      c.record_type === 'agency' ? (lang === 'ar' ? 'وكالة 🏢' : lang === 'fr' ? 'Agence 🏢' : 'Agency 🏢') : (c.agency_name || (lang === 'ar' ? 'مباشر' : 'Direct')),
+      c.record_type === 'agency' ? (lang === 'ar' ? 'وكالة 🏢' : lang === 'fr' ? 'Agence 🏢' : 'Agency 🏢') : (c.agency_id ? (c.agency_status || 'active') : (lang === 'ar' ? 'مباشر' : 'Direct')),
       c.messages_used || 0,
       c.messages_limit === -1 ? '∞' : (c.messages_limit || 0),
       c.end_date ? new Date(c.end_date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') : ''
@@ -300,7 +304,15 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                   <tr key={c.id} className="hover:bg-gray-800/30 transition-colors">
                     <td className={`py-4 px-4 font-semibold text-white ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{c.name}</td>
                     <td className={`py-4 px-4 text-gray-400 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{getTypeTranslation(c.type)}</td>
-                    <td className={`py-4 px-4 text-indigo-400 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{c.plan_type}</td>
+                    <td className={`py-4 px-4 text-indigo-400 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
+                      {c.record_type === 'agency' ? (
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                          {t.agencyBadge}
+                        </span>
+                      ) : (
+                        c.plan_type
+                      )}
+                    </td>
                     <td className={`py-4 px-4 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
                         {status.label}
@@ -309,7 +321,11 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                     <td className={`py-4 px-4 text-gray-300 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       <div className="flex items-center gap-2">
                         <Building2 size={14} className="text-gray-500 shrink-0" />
-                        {!c.agency_id ? (
+                        {c.record_type === 'agency' ? (
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                            {t.agencyBadge}
+                          </span>
+                        ) : !c.agency_id ? (
                           <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700/50">
                             {t.direct}
                           </span>

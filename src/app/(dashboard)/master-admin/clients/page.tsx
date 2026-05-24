@@ -78,7 +78,8 @@ export default async function MasterAdminClientsPage() {
                   messages_limit: t.messages_limit,
                   agency_name: t.agencies ? t.agencies.name : '',
                   agency_status: t.agencies?.subscription_status || null,
-                  agency_id: t.agency_id
+                  agency_id: t.agency_id,
+                  record_type: 'tenant'
               }));
           }
       }
