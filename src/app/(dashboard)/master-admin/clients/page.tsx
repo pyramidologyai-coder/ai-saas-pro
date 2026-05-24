@@ -63,7 +63,7 @@ export default async function MasterAdminClientsPage() {
             messages_used,
             messages_limit,
             agency_id,
-            agencies ( name )
+            agencies ( name, subscription_status )
           `).order('created_at', { ascending: false })));
           
           if (fallback.data) {
@@ -76,7 +76,9 @@ export default async function MasterAdminClientsPage() {
                   end_date: t.trial_ends_at,
                   messages_used: t.messages_used,
                   messages_limit: t.messages_limit,
-                  agency_name: t.agencies ? t.agencies.name : '' // direct if empty
+                  agency_name: t.agencies ? t.agencies.name : '',
+                  agency_status: t.agencies?.subscription_status || null,
+                  agency_id: t.agency_id
               }));
           }
       }

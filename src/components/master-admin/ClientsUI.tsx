@@ -15,6 +15,7 @@ const translations = {
     allPlans: 'كل الباقات',
     allAgencies: 'كل الوكالات',
     direct: 'مباشر (Direct)',
+    suspendedReseller: 'وكالة موقوفة',
     name: 'الاسم',
     type: 'النوع',
     plan: 'الباقة',
@@ -45,6 +46,7 @@ const translations = {
     allPlans: 'All Plans',
     allAgencies: 'All Agencies',
     direct: 'Direct',
+    suspendedReseller: 'Suspended Reseller',
     name: 'Name',
     type: 'Type',
     plan: 'Plan',
@@ -75,6 +77,7 @@ const translations = {
     allPlans: 'Tous les forfaits',
     allAgencies: 'Toutes les agences',
     direct: 'Direct',
+    suspendedReseller: 'Agence Suspendue',
     name: 'Nom',
     type: 'Type',
     plan: 'Forfait',
@@ -109,6 +112,8 @@ interface ClientData {
   messages_used?: number;
   messages_limit?: number;
   agency_name?: string;
+  agency_status?: string | null;
+  agency_id?: string | null;
 }
 
 export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) {
@@ -254,8 +259,21 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                     </td>
                     <td className={`py-4 px-4 text-gray-300 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       <div className="flex items-center gap-2">
-                        <Building2 size={14} className="text-gray-500" />
-                        {c.agency_name || t.direct}
+                        <Building2 size={14} className="text-gray-500 shrink-0" />
+                        {!c.agency_id ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700/50">
+                            {t.direct}
+                          </span>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="font-medium text-white">{c.agency_name}</span>
+                            {c.agency_status === 'suspended' && (
+                              <span className="text-[10px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 w-fit mt-1">
+                                {t.suspendedReseller}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className={`py-4 px-4 text-gray-400 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
