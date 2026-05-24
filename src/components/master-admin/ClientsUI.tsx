@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useMemo } from 'react';
-import { Search, Building2, Calendar, MessageCircle, Activity, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Building2, Calendar, MessageCircle, Activity, Filter, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 
 const VALID_LANGS = ['ar', 'en', 'fr'] as const;
 type Lang = typeof VALID_LANGS[number];
@@ -36,7 +36,8 @@ const translations = {
     next: 'التالي',
     page: 'صفحة',
     of: 'من',
-    empty: 'لا يوجد عملاء'
+    empty: 'لا يوجد عملاء',
+    exportCsv: 'تصدير البيانات (CSV)'
   },
   en: {
     dir: 'ltr' as const,
@@ -67,7 +68,8 @@ const translations = {
     next: 'Next',
     page: 'Page',
     of: 'of',
-    empty: 'No clients found'
+    empty: 'No clients found',
+    exportCsv: 'Export to CSV'
   },
   fr: {
     dir: 'ltr' as const,
@@ -98,7 +100,8 @@ const translations = {
     next: 'Suivant',
     page: 'Page',
     of: 'sur',
-    empty: 'Aucun client trouvé'
+    empty: 'Aucun client trouvé',
+    exportCsv: 'Exporter en CSV'
   }
 } as const;
 
@@ -162,6 +165,44 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
     return { bg: 'bg-gray-500/20', text: 'text-gray-400', label: t.inactive };
   };
 
+  const handleExport = () => {
+    const headers = [
+      lang === 'ar' ? 'الاسم' : lang === 'fr' ? 'Nom' : 'Name',
+      lang === 'ar' ? 'النوع' : lang === 'fr' ? 'Type' : 'Type',
+      lang === 'ar' ? 'الباقة' : lang === 'fr' ? 'Forfait' : 'Plan',
+      lang === 'ar' ? 'الحالة' : lang === 'fr' ? 'Statut' : 'Status',
+      lang === 'ar' ? 'الوكالة' : lang === 'fr' ? 'Agence' : 'Agency',
+      lang === 'ar' ? 'حالة الوكالة' : lang === 'fr' ? 'Statut de l\'agence' : 'Agency Status',
+      lang === 'ar' ? 'الرسائل المستخدمة' : lang === 'fr' ? 'Messages utilisés' : 'Messages Used',
+      lang === 'ar' ? 'حد الرسائل' : lang === 'fr' ? 'Limite de messages' : 'Messages Limit',
+      lang === 'ar' ? 'تاريخ الانضمام' : lang === 'fr' ? 'Date d\'inscription' : 'Joined Date'
+    ];
+    
+    const rows = filteredClients.map(c => [
+      c.name || '',
+      c.type || '',
+      c.plan_type || '',
+      c.status || '',
+      c.agency_name || (lang === 'ar' ? 'مباشر' : 'Direct'),
+      c.agency_id ? (c.agency_status || 'active') : (lang === 'ar' ? 'مباشر' : 'Direct'),
+      c.messages_used || 0,
+      c.messages_limit === -1 ? '∞' : (c.messages_limit || 0),
+      c.end_date ? new Date(c.end_date).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US') : ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `clients_export_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div dir={t.dir} className="p-6 space-y-6 text-white min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -223,6 +264,14 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
           <option value="all">{t.allAgencies}</option>
           {uniqueAgencies.map(a => <option key={a} value={a}>{a === 'Direct' ? t.direct : a}</option>)}
         </select>
+
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white text-sm font-semibold rounded-xl px-5 py-2.5 outline-none transition-all shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/30 shrink-0"
+        >
+          <Download size={16} />
+          {t.exportCsv}
+        </button>
       </div>
 
       <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden">
