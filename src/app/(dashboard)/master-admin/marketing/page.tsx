@@ -32,9 +32,10 @@ export default async function MasterAdminMarketingPage() {
 
   let redirectTarget: string | null = null;
   let campaignsData: any[] = [];
+  let agenciesData: any[] = [];
 
   try {
-    const [userRes, isMasterRes, campaignsRes] = await Promise.allSettled([
+    const [userRes, isMasterRes, campaignsRes, agenciesRes] = await Promise.allSettled([
       withTimeout(supabase.auth.getUser()),
       withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
       withTimeout(Promise.resolve(
@@ -59,12 +60,14 @@ export default async function MasterAdminMarketingPage() {
           `)
           .order('created_at', { ascending: false })
           .limit(200)
-      ))
+      )),
+      withTimeout(Promise.resolve(supabase.from('agencies').select('id, name')))
     ]);
 
     const user = userRes.status === 'fulfilled' ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
     const campaigns = campaignsRes.status === 'fulfilled' ? campaignsRes.value.data : [];
+    const agencies = agenciesRes.status === 'fulfilled' ? agenciesRes.value.data : [];
 
     if (!user) {
       redirectTarget = '/auth';
@@ -72,6 +75,7 @@ export default async function MasterAdminMarketingPage() {
       redirectTarget = '/admin';
     } else {
       campaignsData = campaigns || [];
+      agenciesData = agencies || [];
     }
   } catch (e) {
     console.error('Error in MasterAdminMarketingPage:', e);
@@ -88,9 +92,7 @@ export default async function MasterAdminMarketingPage() {
   const sanitizedCampaigns = campaignsData
     .filter((c: any) => c.id && UUID_REGEX.test(c.id))
     .map((c: any) => {
-      // ⛔ Secure masking of any sensitive fields
       const { meta_token, api_key, gemini_api_key, ...safeCampaign } = c;
-      
       return {
         ...safeCampaign,
         tenant_name: c.tenants?.name || 'مستأجر غير معروف',
@@ -98,5 +100,7 @@ export default async function MasterAdminMarketingPage() {
       };
     });
 
-  return <MasterMarketingUI campaigns={sanitizedCampaigns} />;
+  const sanitizedAgencies = agenciesData.filter((a: any) => a.id && UUID_REGEX.test(a.id));
+
+  return <MasterMarketingUI campaigns={sanitizedCampaigns} agencies={sanitizedAgencies} />;
 }

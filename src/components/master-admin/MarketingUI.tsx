@@ -40,6 +40,7 @@ interface Campaign {
 
 interface MarketingUIProps {
   campaigns?: Campaign[];
+  agencies?: { id: string; name: string }[];
 }
 
 const DICTIONARY = {
@@ -141,7 +142,7 @@ const DICTIONARY = {
   }
 } as const;
 
-export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
+export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUIProps) {
   const [lang, setLang] = useState<Lang>('ar');
   const [search, setSearch] = useState('');
   const [agencyFilter, setAgencyFilter] = useState('');
@@ -165,6 +166,10 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
   ).map((str) => JSON.parse(str));
 
   const uniqueTypes = Array.from(new Set(campaigns.map((c) => c.type.toLowerCase())));
+
+  // Use passed agencies or fallback to unique agencies extracted from campaigns
+  const agenciesList = agencies.length > 0 ? agencies : uniqueAgencies;
+  const typeOptions = uniqueTypes.length > 0 ? uniqueTypes : ['whatsapp', 'messenger', 'instagram'];
 
   // 1. Filter local campaigns list based on UI filters
   const filteredCampaigns = campaigns.filter((camp) => {
@@ -335,7 +340,7 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
         
         {/* Search */}
         <div className="lg:col-span-6 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
             <Search size={16} />
           </div>
           <input
@@ -354,7 +359,7 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
 
         {/* Agency Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
             <Filter size={15} />
           </div>
           <select
@@ -365,10 +370,10 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
             }}
             className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
           >
             <option value="">{d.filterAgency}</option>
-            {uniqueAgencies.map((agency) => (
+            {agenciesList.map((agency) => (
               <option key={agency.id} value={agency.id}>
                 {agency.name}
               </option>
@@ -378,7 +383,7 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
 
         {/* Status Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
             <Activity size={15} />
           </div>
           <select
@@ -389,7 +394,7 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
             }}
             className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
           >
             <option value="">{d.filterStatus}</option>
             <option value="sent">{d.filterStatusSent}</option>
@@ -401,7 +406,7 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
 
         {/* Type Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
             <Megaphone size={15} />
           </div>
           <select
@@ -412,10 +417,10 @@ export function MasterMarketingUI({ campaigns = [] }: MarketingUIProps) {
             }}
             className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
           >
             <option value="">{d.filterType}</option>
-            {uniqueTypes.map((t) => (
+            {typeOptions.map((t) => (
               <option key={t} value={t} className="capitalize">
                 {t.toUpperCase()}
               </option>
