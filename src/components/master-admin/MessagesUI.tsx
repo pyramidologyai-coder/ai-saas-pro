@@ -13,7 +13,10 @@ import {
   Activity,
   ArrowDownLeft,
   ArrowUpRight,
-  Layers
+  Layers,
+  Smartphone,
+  Facebook,
+  Instagram
 } from 'lucide-react';
 
 type Lang = 'ar' | 'en' | 'fr';
@@ -21,9 +24,8 @@ type Lang = 'ar' | 'en' | 'fr';
 interface Message {
   id: string;
   tenant_id: string;
-  session_id: string;
-  sender: 'incoming' | 'outgoing';
-  text: string;
+  channel: string;
+  sender: string;
   created_at: string;
   tenant_name: string;
   agency_id: string | null;
@@ -40,9 +42,9 @@ interface MessagesUIProps {
 
 const DICTIONARY = {
   ar: {
-    title: 'نظام مراقبة الرسائل الموحد',
-    subtitle: 'تتبع لحظي وشامل لكافة الرسائل الصادرة والواردة والمحادثات النشطة عبر القنوات المتعددة.',
-    searchPlaceholder: 'بحث برقم الهاتف أو الكلمات...',
+    title: 'نظام مراقبة القنوات والمحادثات الموحد',
+    subtitle: 'مراقبة وإحصاءات لحظية لبيانات وحركة الرسائل الصادرة والواردة بدون كشف المحتوى الخصوصي للمشتركين.',
+    searchPlaceholder: 'بحث باسم العميل...',
     filterAgency: 'كل الوكالات',
     filterTenant: 'كل العملاء',
     filterType: 'جميع الأنواع',
@@ -52,15 +54,16 @@ const DICTIONARY = {
     filterDateToday: 'اليوم',
     filterDate7Days: 'آخر 7 أيام',
     filterDateAll: 'كل الأوقات',
+    filterChannel: 'كل القنوات',
     colAgency: 'الوكالة',
     colClient: 'العميل',
-    colContent: 'محتوى الرسالة',
+    colChannel: 'القناة',
     colType: 'النوع',
     colTime: 'الوقت',
     kpiTodayMsgs: 'إجمالي رسائل اليوم',
     kpiActiveConvs: 'المحادثات النشطة',
     kpiResponseRate: 'معدل الاستجابة',
-    noMessages: 'لا توجد رسائل مطابقة لخيارات التصفية.',
+    noMessages: 'لا توجد بيانات رسائل مطابقة لخيارات التصفية.',
     langAr: 'العربية',
     langEn: 'English',
     langFr: 'Français',
@@ -69,9 +72,9 @@ const DICTIONARY = {
     pageOf: 'صفحة {current} من {total}'
   },
   en: {
-    title: 'Omnichannel Messages Monitor',
-    subtitle: 'Real-time and comprehensive tracking of all incoming/outgoing messages and active chats across channels.',
-    searchPlaceholder: 'Search by phone or keywords...',
+    title: 'Omnichannel Messages & Chats Monitor',
+    subtitle: 'Real-time and metadata tracking of all incoming/outgoing message flows with strict privacy compliance.',
+    searchPlaceholder: 'Search by client name...',
     filterAgency: 'All Agencies',
     filterTenant: 'All Clients',
     filterType: 'All Types',
@@ -81,9 +84,10 @@ const DICTIONARY = {
     filterDateToday: 'Today',
     filterDate7Days: 'Last 7 Days',
     filterDateAll: 'All Time',
+    filterChannel: 'All Channels',
     colAgency: 'Agency',
     colClient: 'Client',
-    colContent: 'Content',
+    colChannel: 'Channel',
     colType: 'Type',
     colTime: 'Time',
     kpiTodayMsgs: "Today's Messages",
@@ -98,9 +102,9 @@ const DICTIONARY = {
     pageOf: 'Page {current} of {total}'
   },
   fr: {
-    title: 'Moniteur de Messages Omnicanal',
-    subtitle: 'Suivi complet et en temps réel de tous les messages entrants/sortants et discussions actives.',
-    searchPlaceholder: 'Rechercher par téléphone ou mots-clés...',
+    title: 'Moniteur de Messages & Discussions Omnicanal',
+    subtitle: 'Suivi des flux et métadonnées des messages entrants et sortants dans le respect de la vie privée.',
+    searchPlaceholder: 'Rechercher par nom de client...',
     filterAgency: 'Toutes les Agences',
     filterTenant: 'Tous les Clients',
     filterType: 'Tous les Types',
@@ -110,9 +114,10 @@ const DICTIONARY = {
     filterDateToday: "Aujourd'hui",
     filterDate7Days: '7 Derniers Jours',
     filterDateAll: 'Tout Temps',
+    filterChannel: 'Tous les Canaux',
     colAgency: 'Agence',
     colClient: 'Client',
-    colContent: 'Contenu',
+    colChannel: 'Canal',
     colType: 'Type',
     colTime: 'Temps',
     kpiTodayMsgs: "Messages d'Aujourd'hui",
@@ -140,6 +145,7 @@ export function MessagesUI({
   const [agencyFilter, setAgencyFilter] = useState('');
   const [tenantFilter, setTenantFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [channelFilter, setChannelFilter] = useState('');
   const [dateFilter, setDateFilter] = useState<'today' | '7days' | 'all'>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -149,15 +155,12 @@ export function MessagesUI({
   const isRtl = lang === 'ar';
   const ITEMS_PER_PAGE = 20;
 
-  // 1. Filter local messages list based on UI selections
+  // 1. Filter local messages based on UI selectors
   const filteredMessages = initialMessages.filter((msg) => {
     const term = search.toLowerCase();
 
-    // Search matches content or session_id (sender phone number)
-    const matchesSearch =
-      msg.text.toLowerCase().includes(term) ||
-      msg.session_id.toLowerCase().includes(term) ||
-      msg.tenant_name.toLowerCase().includes(term);
+    // Search matches client name (no phone number or content search to enforce strict privacy)
+    const matchesSearch = msg.tenant_name.toLowerCase().includes(term);
 
     // Filter by Agency
     const matchesAgency = !agencyFilter || msg.agency_id === agencyFilter;
@@ -165,8 +168,11 @@ export function MessagesUI({
     // Filter by Tenant
     const matchesTenant = !tenantFilter || msg.tenant_id === tenantFilter;
 
-    // Filter by Message Type (incoming/outgoing)
+    // Filter by Message Type
     const matchesType = !typeFilter || msg.sender === typeFilter;
+
+    // Filter by Channel
+    const matchesChannel = !channelFilter || msg.channel.toLowerCase() === channelFilter.toLowerCase();
 
     // Filter by Date Category
     let matchesDate = true;
@@ -182,13 +188,13 @@ export function MessagesUI({
       matchesDate = msgDate >= sevenDaysAgo;
     }
 
-    return matchesSearch && matchesAgency && matchesTenant && matchesType && matchesDate;
+    return matchesSearch && matchesAgency && matchesTenant && matchesType && matchesChannel && matchesDate;
   });
 
   // Calculate dynamic KPI counters from the filtered messages
-  const outgoingCount = filteredMessages.filter((m) => m.sender === 'outgoing').length;
+  const outgoingCount = filteredMessages.filter((m) => m.sender === 'outgoing' || m.sender === 'ai' || m.sender === 'human_agent').length;
   const totalCount = filteredMessages.length;
-  const calculatedResponseRate = totalCount > 0 ? ((outgoingCount / totalCount) * 100).toFixed(1) + '%' : '98.8%';
+  const calculatedResponseRate = totalCount > 0 ? ((outgoingCount / totalCount) * 100).toFixed(1) + '%' : '98.5%';
 
   // 2. Paginate filtered messages
   const totalPages = Math.max(Math.ceil(filteredMessages.length / ITEMS_PER_PAGE), 1);
@@ -212,6 +218,37 @@ export function MessagesUI({
     } catch {
       return dateStr;
     }
+  };
+
+  // Channel badge style mapper
+  const getChannelBadge = (channel: string) => {
+    const ch = channel.toLowerCase();
+    if (ch === 'whatsapp') {
+      return {
+        className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15',
+        icon: <Smartphone size={12} />,
+        label: isRtl ? 'واتساب 📱' : 'WhatsApp 📱'
+      };
+    }
+    if (ch === 'messenger' || ch === 'facebook') {
+      return {
+        className: 'bg-blue-500/10 text-blue-400 border border-blue-500/15',
+        icon: <Facebook size={12} />,
+        label: isRtl ? 'فيسبوك 📘' : 'Facebook 📘'
+      };
+    }
+    if (ch === 'instagram') {
+      return {
+        className: 'bg-purple-500/10 text-purple-400 border border-purple-500/15',
+        icon: <Instagram size={12} />,
+        label: isRtl ? 'إنستغرام 📸' : 'Instagram 📸'
+      };
+    }
+    return {
+      className: 'bg-gray-500/10 text-gray-400 border border-gray-500/15',
+      icon: <Layers size={12} />,
+      label: channel.toUpperCase()
+    };
   };
 
   // Filter tenants list dynamically based on the selected agency
@@ -369,20 +406,39 @@ export function MessagesUI({
           </select>
         </div>
 
-        {/* Type Filter */}
+        {/* Channel Filter */}
         <div className="lg:col-span-2 relative">
           <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
-            <Filter size={15} />
+            <Layers size={15} />
           </div>
+          <select
+            value={channelFilter}
+            onChange={(e) => {
+              setChannelFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
+              isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
+            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+          >
+            <option value="">{d.filterChannel}</option>
+            <option value="whatsapp">WhatsApp 📱</option>
+            <option value="messenger">Facebook Messenger 📘</option>
+            <option value="instagram">Instagram 📸</option>
+          </select>
+        </div>
+
+        {/* Type Filter */}
+        <div className="lg:col-span-1 relative">
           <select
             value={typeFilter}
             onChange={(e) => {
               setTypeFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
-              isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none ${
+              isRtl ? 'text-right' : 'text-left'
+            }`}
           >
             <option value="">{d.filterType}</option>
             <option value="incoming">{d.filterTypeIncoming}</option>
@@ -391,19 +447,16 @@ export function MessagesUI({
         </div>
 
         {/* Date Filter */}
-        <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
-            <Calendar size={15} />
-          </div>
+        <div className="lg:col-span-1 relative">
           <select
             value={dateFilter}
             onChange={(e) => {
               setDateFilter(e.target.value as any);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
-              isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none`}
+            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none ${
+              isRtl ? 'text-right' : 'text-left'
+            }`}
           >
             <option value="all">{d.filterDateAll}</option>
             <option value="today">{d.filterDateToday}</option>
@@ -422,7 +475,7 @@ export function MessagesUI({
               <tr className="text-gray-400 border-b border-gray-800 text-xs font-semibold uppercase tracking-wider">
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colAgency}</th>
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colClient}</th>
-                <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colContent}</th>
+                <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colChannel}</th>
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colType}</th>
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colTime}</th>
               </tr>
@@ -436,7 +489,8 @@ export function MessagesUI({
                 </tr>
               ) : (
                 paginatedMessages.map((msg) => {
-                  const isIncoming = msg.sender === 'incoming';
+                  const isIncoming = msg.sender === 'incoming' || msg.sender === 'customer';
+                  const chBadge = getChannelBadge(msg.channel);
 
                   return (
                     <tr key={msg.id} className="hover:bg-gray-800/35 transition-colors">
@@ -448,19 +502,17 @@ export function MessagesUI({
                         </span>
                       </td>
 
-                      {/* Client (Tenant) Name */}
+                      {/* Client (Tenant) Name (Pure name - strictly no phone number to satisfy privacy requirements) */}
                       <td className={`py-4 px-3 font-semibold text-white ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <div className="flex flex-col">
-                          <span className="text-sm font-bold text-gray-200">{msg.tenant_name}</span>
-                          <span className="text-xs text-gray-500 font-mono mt-0.5">{msg.session_id}</span>
-                        </div>
+                        <span className="text-sm font-bold text-gray-200">{msg.tenant_name}</span>
                       </td>
 
-                      {/* Message Content (Truncated gracefully) */}
-                      <td className={`py-4 px-3 text-gray-300 max-w-md ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <div className="truncate text-sm" title={msg.text}>
-                          {msg.text || '—'}
-                        </div>
+                      {/* Channel Badge (WhatsApp green, FB blue, Insta purple) */}
+                      <td className={`py-4 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${chBadge.className}`}>
+                          {chBadge.icon}
+                          <span>{chBadge.label}</span>
+                        </span>
                       </td>
 
                       {/* Type Badge (Incoming/Outgoing) */}
