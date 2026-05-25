@@ -50,7 +50,16 @@ export default async function MasterAdminAgenciesPage() {
             .order('created_at', { ascending: false })
         )
       ),
-      withTimeout(Promise.resolve(supabase.from('plans').select('*')))
+      withTimeout(
+        Promise.resolve(
+          supabase
+            .from('plans')
+            .select('*')
+            .in('intended_for', ['agency', 'both'])
+            .eq('is_active', true)
+            .order('price_monthly', { ascending: true })
+        )
+      )
     ]);
 
     user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;

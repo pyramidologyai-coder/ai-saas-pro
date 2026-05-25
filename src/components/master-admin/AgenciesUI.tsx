@@ -433,19 +433,14 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.planType}</label>
               <select value={newAgency.plan_slug} onChange={e => setNewAgency({...newAgency, plan_slug: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none', cursor: 'pointer' }}>
-                {plans.map(p => (
-                  <option key={p.id} value={p.slug} style={{ background: '#0f172a', color: '#f8fafc' }}>
-                    {p.name} ({p.intended_for === 'agency' ? (currentLang === 'ar' ? 'وكالة' : 'Agency') : p.intended_for === 'business' ? (currentLang === 'ar' ? 'عميل مباشر' : 'Business') : (currentLang === 'ar' ? 'كلاهما' : 'Both')}) - ${p.price_monthly}/m
-                  </option>
-                ))}
-                {plans.length === 0 && (
-                  <>
-                    <option value="starter">Starter</option>
-                    <option value="growth">Growth</option>
-                    <option value="pro">Pro</option>
-                    <option value="vip">VIP</option>
-                  </>
-                )}
+                {plans
+                  .filter(p => p.intended_for === 'agency' || p.intended_for === 'both')
+                  .map(p => (
+                    <option key={p.id} value={p.slug} style={{ background: '#0f172a', color: '#f8fafc' }}>
+                      {p.name} - ${p.price_monthly}/mo
+                    </option>
+                  ))
+                }
               </select>
             </div>
           </div>
