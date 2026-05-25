@@ -30,10 +30,10 @@ const ACTION_LABELS: Record<string, { ar: string; en: string; fr: string }> = {
   'PLAN_DEACTIVATED': { ar: 'تعطيل باقة', en: 'Plan Deactivated', fr: 'Forfait Désactivé' },
   'PLAN_PRICING_UPDATED': { ar: 'تعديل سعر', en: 'Price Updated', fr: 'Prix Mis à Jour' },
   'AGENCY_CREATED': { ar: 'إضافة وكالة', en: 'Agency Created', fr: 'Agence Créée' },
-  'AGENCY_SUSPENDED_CASCADE': { ar: 'تعطيل وكالة', en: 'Agency Suspended', fr: 'Agence Suspendue' },
-  'AGENCY_ACTIVATED_CASCADE': { ar: 'تفعيل وكالة', en: 'Agency Activated', fr: 'Agence Activée' },
-  'SUSPEND_AGENCY': { ar: 'تعطيل وكالة', en: 'Suspend Agency', fr: 'Suspendre Agence' },
-  'ACTIVATE_AGENCY': { ar: 'تفعيل وكالة', en: 'Activate Agency', fr: 'Activer Agence' },
+  'AGENCY_SUSPENDED_CASCADE': { ar: 'تعطيل وكالة وعملاءها', en: 'Agency + Clients Suspended', fr: 'Agence + Clients Suspendus' },
+  'AGENCY_ACTIVATED_CASCADE': { ar: 'تفعيل وكالة وعملاءها', en: 'Agency + Clients Activated', fr: 'Agence + Clients Activés' },
+  'SUSPEND_AGENCY': { ar: 'تعطيل وكالة (API)', en: 'Suspend Agency (API)', fr: 'Suspendre (API)' },
+  'ACTIVATE_AGENCY': { ar: 'تفعيل وكالة (API)', en: 'Activate Agency (API)', fr: 'Activer (API)' },
   'MASTER_ADMIN_TOGGLE_TENANT': { ar: 'تعديل حالة عميل', en: 'Toggle Tenant', fr: 'Modifier Client' },
 };
 
@@ -374,7 +374,7 @@ export function LogsUI({ initialLogs = [] }: LogsUIProps) {
 
                       {/* Entity ID */}
                       <td className={`py-4 px-3 font-mono text-xs text-gray-400 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        {log.entity_id || '—'}
+                        {log.entity_id ? (log.entity_id.length > 8 ? `${log.entity_id.slice(0, 8)}...` : log.entity_id) : '—'}
                       </td>
 
                       {/* Performed By (Actor) */}
