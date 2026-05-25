@@ -31,44 +31,25 @@ export default async function MasterAdminMessagesPage() {
   );
 
   let redirectTarget: string | null = null;
-  let chatMessagesData: any[] = [];
+  let analyticsData: any = null;
   let conversationsData: any[] = [];
-  let totalMessagesToday = 0;
-  let activeConversationsCount = 0;
+  let chatMessagesData: any[] = [];
   let agencies: any[] = [];
   let tenants: any[] = [];
-
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const startOfTodayISO = startOfToday.toISOString();
 
   try {
     const [
       userRes,
       isMasterRes,
-      messagesRes,
+      analyticsRes,
       conversationsRes,
+      chatMessagesRes,
       agenciesRes,
       tenantsRes
     ] = await Promise.allSettled([
       withTimeout(supabase.auth.getUser()),
       withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role'))),
-      
-      withTimeout(Promise.resolve(
-        supabase
-          .from('chat_messages')
-          .select(`
-            id,
-            tenant_id,
-            channel,
-            sender,
-            created_at,
-            tenants ( name, agency_id, agencies ( name ) )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(100)
-      )),
-
+      withTimeout(Promise.resolve(supabase.rpc('get_channel_analytics', { p_days: 30 }))),
       withTimeout(Promise.resolve(
         supabase
           .from('conversations')
@@ -76,15 +57,18 @@ export default async function MasterAdminMessagesPage() {
             id,
             channel,
             customer_name,
-            is_ai_paused,
             last_message_time,
             tenant_id,
             tenants ( name, agency_id, agencies ( name ) )
           `)
           .order('last_message_time', { ascending: false })
-          .limit(50)
+          .limit(100)
       )),
-
+      withTimeout(Promise.resolve(
+        supabase
+          .from('chat_messages')
+          .select('id, conversation_id')
+      )),
       withTimeout(Promise.resolve(supabase.from('agencies').select('id, name'))),
       withTimeout(Promise.resolve(supabase.from('tenants').select('id, name, agency_id')))
     ]);
@@ -97,31 +81,19 @@ export default async function MasterAdminMessagesPage() {
     } else if (!isMaster) {
       redirectTarget = '/admin';
     } else {
-      // Parse Chat Messages
-      if (messagesRes.status === 'fulfilled' && messagesRes.value.data) {
-        chatMessagesData = messagesRes.value.data;
+      // Parse Analytics
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.data) {
+        analyticsData = analyticsRes.value.data;
       }
 
       // Parse Conversations
       if (conversationsRes.status === 'fulfilled' && conversationsRes.value.data) {
         conversationsData = conversationsRes.value.data;
-        activeConversationsCount = conversationsData.length;
       }
 
-      // Calculate Total Messages Today from fetched chat_messages or database count
-      const todayMsgsCountRes = await withTimeout(
-        Promise.resolve(
-          supabase
-            .from('chat_messages')
-            .select('id', { count: 'exact', head: true })
-            .gte('created_at', startOfTodayISO)
-        )
-      ).catch(() => ({ count: null }));
-
-      if (todayMsgsCountRes.count !== null) {
-        totalMessagesToday = todayMsgsCountRes.count;
-      } else {
-        totalMessagesToday = chatMessagesData.filter(m => new Date(m.created_at) >= startOfToday).length;
+      // Parse Chat Messages
+      if (chatMessagesRes.status === 'fulfilled' && chatMessagesRes.value.data) {
+        chatMessagesData = chatMessagesRes.value.data;
       }
 
       // Parse Agencies
@@ -146,35 +118,47 @@ export default async function MasterAdminMessagesPage() {
   // UUID Validation & Sanitization
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  const sanitizedMessages = chatMessagesData
-    .filter((m: any) => m.id && UUID_REGEX.test(m.id))
-    .map((m: any) => {
-      const tenantName = m.tenants?.name || 'مستأجر غير معروف';
-      const agencyId = m.tenants?.agency_id || null;
-      const agencyName = m.tenants?.agencies?.name || 'بدون وكالة';
-
-      return {
-        id: m.id,
-        tenant_id: m.tenant_id,
-        channel: m.channel || 'whatsapp',
-        sender: m.sender || 'incoming',
-        created_at: m.created_at,
-        tenant_name: tenantName,
-        agency_id: agencyId,
-        agency_name: agencyName
-      };
-    });
-
   const sanitizedAgencies = agencies.filter((a: any) => a.id && UUID_REGEX.test(a.id));
   const sanitizedTenants = tenants.filter((t: any) => t.id && UUID_REGEX.test(t.id));
 
+  // Compute Message Counts map
+  const messageCountsMap: Record<string, number> = {};
+  if (chatMessagesData) {
+    chatMessagesData.forEach((msg: any) => {
+      if (msg.conversation_id) {
+        messageCountsMap[msg.conversation_id] = (messageCountsMap[msg.conversation_id] || 0) + 1;
+      }
+    });
+  }
+
+  const sanitizedConversations = conversationsData
+    .filter((c: any) => c.id && UUID_REGEX.test(c.id))
+    .map((c: any) => {
+      const tenantName = c.tenants?.name || 'مستأجر غير معروف';
+      const agencyId = c.tenants?.agency_id || null;
+      const agencyName = c.tenants?.agencies?.name || 'بدون وكالة';
+      const count = messageCountsMap[c.id] || 0;
+
+      return {
+        id: c.id,
+        tenant_id: c.tenant_id,
+        channel: c.channel || 'whatsapp',
+        customer_name: c.customer_name || 'عميل غير معروف',
+        last_message_time: c.last_message_time,
+        tenant_name: tenantName,
+        agency_id: agencyId,
+        agency_name: agencyName,
+        message_count: count
+      };
+    });
+
   return (
     <MessagesUI
-      initialMessages={sanitizedMessages}
-      initialTotalMessagesToday={totalMessagesToday}
-      initialActiveConversations={activeConversationsCount}
+      initialAnalytics={analyticsData}
+      initialConversations={sanitizedConversations}
       agencies={sanitizedAgencies}
       tenants={sanitizedTenants}
     />
   );
 }
+
