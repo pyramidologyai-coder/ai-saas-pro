@@ -24,21 +24,22 @@ interface LogsUIProps {
 }
 
 const ACTION_LABELS: Record<string, { ar: string; en: string; fr: string }> = {
-  'agency_created': { ar: 'إضافة وكالة', en: 'Agency Created', fr: 'Agence Créée' },
-  'agency_suspended_cascade': { ar: 'تعطيل وكالة وعملاءها', en: 'Agency Suspended (Cascade)', fr: 'Agence Suspendue (Cascade)' },
-  'agency_activated_cascade': { ar: 'تفعيل وكالة وعملاءها', en: 'Agency Activated (Cascade)', fr: 'Agence Activée (Cascade)' },
-  'plan_created': { ar: 'إضافة باقة', en: 'Plan Created', fr: 'Forfait Créé' },
-  'plan_deleted': { ar: 'حذف باقة', en: 'Plan Deleted', fr: 'Forfait Supprimé' },
-  'plan_activated': { ar: 'تفعيل باقة', en: 'Plan Activated', fr: 'Forfait Activé' },
-  'plan_deactivated': { ar: 'تعطيل باقة', en: 'Plan Deactivated', fr: 'Forfait Désactivé' },
-  'plan_pricing_updated': { ar: 'تعديل سعر باقة', en: 'Plan Pricing Updated', fr: 'Prix Mis à Jour' },
-  'SUSPEND_AGENCY': { ar: 'تعطيل وكالة', en: 'Suspend Agency', fr: 'Agence Suspendue' },
-  'ACTIVATE_AGENCY': { ar: 'تفعيل وكالة', en: 'Activate Agency', fr: 'Agence Activée' },
-  'MASTER_ADMIN_TOGGLE_TENANT': { ar: 'تعديل حالة عميل', en: 'Toggle Tenant', fr: 'Client Modifié' },
+  'PLAN_CREATED': { ar: 'إضافة باقة', en: 'Plan Created', fr: 'Forfait Créé' },
+  'PLAN_DELETED': { ar: 'حذف باقة', en: 'Plan Deleted', fr: 'Forfait Supprimé' },
+  'PLAN_ACTIVATED': { ar: 'تفعيل باقة', en: 'Plan Activated', fr: 'Forfait Activé' },
+  'PLAN_DEACTIVATED': { ar: 'تعطيل باقة', en: 'Plan Deactivated', fr: 'Forfait Désactivé' },
+  'PLAN_PRICING_UPDATED': { ar: 'تعديل سعر', en: 'Price Updated', fr: 'Prix Mis à Jour' },
+  'AGENCY_CREATED': { ar: 'إضافة وكالة', en: 'Agency Created', fr: 'Agence Créée' },
+  'AGENCY_SUSPENDED_CASCADE': { ar: 'تعطيل وكالة', en: 'Agency Suspended', fr: 'Agence Suspendue' },
+  'AGENCY_ACTIVATED_CASCADE': { ar: 'تفعيل وكالة', en: 'Agency Activated', fr: 'Agence Activée' },
+  'SUSPEND_AGENCY': { ar: 'تعطيل وكالة', en: 'Suspend Agency', fr: 'Suspendre Agence' },
+  'ACTIVATE_AGENCY': { ar: 'تفعيل وكالة', en: 'Activate Agency', fr: 'Activer Agence' },
+  'MASTER_ADMIN_TOGGLE_TENANT': { ar: 'تعديل حالة عميل', en: 'Toggle Tenant', fr: 'Modifier Client' },
 };
 
 const getActionLabel = (action: string, lang: string) => {
-  const label = ACTION_LABELS[action];
+  const key = action.toUpperCase();
+  const label = ACTION_LABELS[key];
   if (!label) return action;
   return label[lang as keyof typeof label] || action;
 };
@@ -279,7 +280,7 @@ export function LogsUI({ initialLogs = [] }: LogsUIProps) {
 
         {/* Action Type filter */}
         <div className="lg:col-span-3 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
             <Filter size={15} />
           </div>
           <select
@@ -294,8 +295,8 @@ export function LogsUI({ initialLogs = [] }: LogsUIProps) {
           >
             <option value="">{d.filterActionType}</option>
             {uniqueActions.map(action => (
-              <option key={action} value={action} className="capitalize">
-                {action.toUpperCase()}
+              <option key={action} value={action}>
+                {getActionLabel(action, lang)}
               </option>
             ))}
           </select>
