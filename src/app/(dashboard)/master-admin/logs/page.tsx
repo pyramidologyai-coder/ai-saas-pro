@@ -97,6 +97,9 @@ export default async function SuperAdminLogsPage() {
     }
     return {
       ...log,
+      action: log.action_type || 'unknown', // ✅ الإصلاح
+      performed_by: log.actor_id || 'unknown', // ✅ map actor_id
+      details: cleanChanges, // ✅ map changes
       changes: cleanChanges
     };
   });
