@@ -23,6 +23,26 @@ interface LogsUIProps {
   initialLogs?: AuditLog[]
 }
 
+const ACTION_LABELS: Record<string, { ar: string; en: string; fr: string }> = {
+  'agency_created': { ar: 'إضافة وكالة', en: 'Agency Created', fr: 'Agence Créée' },
+  'agency_suspended_cascade': { ar: 'تعطيل وكالة وعملاءها', en: 'Agency Suspended (Cascade)', fr: 'Agence Suspendue (Cascade)' },
+  'agency_activated_cascade': { ar: 'تفعيل وكالة وعملاءها', en: 'Agency Activated (Cascade)', fr: 'Agence Activée (Cascade)' },
+  'plan_created': { ar: 'إضافة باقة', en: 'Plan Created', fr: 'Forfait Créé' },
+  'plan_deleted': { ar: 'حذف باقة', en: 'Plan Deleted', fr: 'Forfait Supprimé' },
+  'plan_activated': { ar: 'تفعيل باقة', en: 'Plan Activated', fr: 'Forfait Activé' },
+  'plan_deactivated': { ar: 'تعطيل باقة', en: 'Plan Deactivated', fr: 'Forfait Désactivé' },
+  'plan_pricing_updated': { ar: 'تعديل سعر باقة', en: 'Plan Pricing Updated', fr: 'Prix Mis à Jour' },
+  'SUSPEND_AGENCY': { ar: 'تعطيل وكالة', en: 'Suspend Agency', fr: 'Agence Suspendue' },
+  'ACTIVATE_AGENCY': { ar: 'تفعيل وكالة', en: 'Activate Agency', fr: 'Agence Activée' },
+  'MASTER_ADMIN_TOGGLE_TENANT': { ar: 'تعديل حالة عميل', en: 'Toggle Tenant', fr: 'Client Modifié' },
+};
+
+const getActionLabel = (action: string, lang: string) => {
+  const label = ACTION_LABELS[action];
+  if (!label) return action;
+  return label[lang as keyof typeof label] || action;
+};
+
 const DICTIONARY = {
   ar: {
     title: 'سجلات المراقبة والأمان',
@@ -339,7 +359,7 @@ export function LogsUI({ initialLogs = [] }: LogsUIProps) {
                       {/* Action Badge */}
                       <td className={`py-4 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getActionBadgeColor(log.action)}`}>
-                          {log.action}
+                          {getActionLabel(log.action, lang)}
                         </span>
                       </td>
 
