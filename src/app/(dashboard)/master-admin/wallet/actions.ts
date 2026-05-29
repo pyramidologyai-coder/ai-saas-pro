@@ -8,17 +8,14 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 async function checkMasterRole(supabase: any, userId: string): Promise<boolean> {
   try {
     const [verifyRes, isMasterRes] = await Promise.allSettled([
-      supabase.rpc('verify_master_admin_role'),
-      supabase.rpc('is_master_admin')
+      Promise.resolve(supabase.rpc('verify_master_admin_role')),
+      Promise.resolve(supabase.rpc('is_master_admin'))
     ]);
 
     const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : false;
     const fallbackData = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
 
-    if (verifyData || fallbackData) return true;
-
-    const { data: userSelect } = await supabase.auth.getUser();
-    return userSelect?.user?.user_metadata?.role === 'master_admin';
+    return !!(verifyData || fallbackData);
   } catch {
     return false;
   }
