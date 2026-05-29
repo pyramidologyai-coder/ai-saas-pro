@@ -154,12 +154,15 @@ export function WalletUI({
   agencies,
   initialLang
 }: WalletUIProps) {
+  const safeTransactions = Array.isArray(initialTransactions) ? initialTransactions : [];
+  const safeAgencies = Array.isArray(agencies) ? agencies : [];
+
   const router = useRouter();
   const [lang, setLang] = useState<'ar' | 'en' | 'fr'>(initialLang);
   const t = DICT[lang];
 
   const [summary, setSummary] = useState(initialSummary);
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>(safeTransactions);
 
   // Recharge Form State
   const [rechargeForm, setRechargeForm] = useState({
@@ -408,7 +411,7 @@ export function WalletUI({
                 }}
               >
                 <option value="" style={{ background: '#0f172a' }}>-- {t.selectAgency} --</option>
-                {agencies.map(a => (
+                {safeAgencies.map(a => (
                   <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name} ({a.contact_email})</option>
                 ))}
               </select>
@@ -527,7 +530,7 @@ export function WalletUI({
                 }}
               >
                 <option value="" style={{ background: '#0f172a' }}>{t.all}</option>
-                {agencies.map(a => (
+                {safeAgencies.map(a => (
                   <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name}</option>
                 ))}
               </select>

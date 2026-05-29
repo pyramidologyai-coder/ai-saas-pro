@@ -124,7 +124,10 @@ export default async function WalletPage({
 
     // Parse transactions or fetch directly if RPC is not deployed
     if (transactionsRes.status === 'fulfilled' && !transactionsRes.value.error && transactionsRes.value.data) {
-      transactions = transactionsRes.value.data;
+      const txData = transactionsRes.value.data;
+      transactions = Array.isArray(txData) 
+        ? txData 
+        : (txData?.transactions || []);
     } else {
       console.warn('get_wallet_transactions RPC is unavailable, performing server-side database query.');
       try {
