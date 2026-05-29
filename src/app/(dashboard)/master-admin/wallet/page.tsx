@@ -58,6 +58,7 @@ export default async function WalletPage({
   };
   let transactions: any[] = [];
   let agencies: any[] = [];
+  let directTenants: any[] = [];
 
   try {
     // 1. Verify User Authentication securely on the server
@@ -91,10 +92,18 @@ export default async function WalletPage({
 
   // 4. Retrieve database entities with strict timeouts and robust server-side fallbacks
   try {
-    const [summaryRes, transactionsRes, agenciesRes] = await Promise.allSettled([
+    const [summaryRes, transactionsRes, agenciesRes, directTenantsRes] = await Promise.allSettled([
       withTimeout(Promise.resolve(supabase.rpc('get_wallet_summary')), 5000),
       withTimeout(Promise.resolve(supabase.rpc('get_wallet_transactions')), 5000),
-      withTimeout(Promise.resolve(supabase.from('agencies').select('id, name, contact_email')), 5000)
+      withTimeout(Promise.resolve(supabase.from('agencies').select('id, name, contact_email')), 5000),
+      withTimeout(Promise.resolve(
+        supabase
+          .from('tenants')
+          .select('id, name, type, plan_type')
+          .is('agency_id', null)
+          .eq('status', 'active')
+          .order('name')
+      ), 5000)
     ]);
 
     // Parse summary or compute on-demand if RPC is not deployed
@@ -143,7 +152,8 @@ export default async function WalletPage({
             description,
             reference_id,
             created_at,
-            agency:agencies(name)
+            agency:agencies(name),
+            tenant:tenants(name)
           `)
           .order('created_at', { ascending: false });
 
@@ -152,6 +162,7 @@ export default async function WalletPage({
           agency_id: entry.agency_id,
           tenant_id: entry.tenant_id,
           agency_name: entry.agency?.name || null,
+          tenant_name: entry.tenant?.name || null,
           transaction_type: entry.transaction_type,
           credit: Number(entry.credit) || 0,
           debit: Number(entry.debit) || 0,
@@ -168,6 +179,11 @@ export default async function WalletPage({
     if (agenciesRes.status === 'fulfilled' && !agenciesRes.value.error && agenciesRes.value.data) {
       agencies = agenciesRes.value.data;
     }
+
+    // Parse direct tenants
+    if (directTenantsRes.status === 'fulfilled' && !directTenantsRes.value.error && directTenantsRes.value.data) {
+      directTenants = directTenantsRes.value.data;
+    }
   } catch (err) {
     console.error('Error fetching master admin wallet details:', err);
   }
@@ -180,6 +196,7 @@ export default async function WalletPage({
       initialSummary={summary} 
       initialTransactions={transactions} 
       agencies={agencies}
+      directTenants={directTenants}
       initialLang={lang} 
     />
   );

@@ -13,13 +13,14 @@ import {
   CheckCircle2, 
   AlertTriangle 
 } from 'lucide-react';
-import { addWalletCreditAction } from '@/app/(dashboard)/master-admin/wallet/actions';
+import { addWalletCreditAction, addTenantCreditAction } from '@/app/(dashboard)/master-admin/wallet/actions';
 
 interface Transaction {
   id: string;
   agency_id: string | null;
   tenant_id: string | null;
   agency_name: string | null;
+  tenant_name?: string | null;
   transaction_type: string;
   credit: number;
   debit: number;
@@ -43,6 +44,7 @@ interface WalletUIProps {
   };
   initialTransactions: Transaction[];
   agencies: Agency[];
+  directTenants?: any[];
   initialLang: 'ar' | 'en' | 'fr';
 }
 
@@ -78,7 +80,11 @@ const DICT = {
     typeSubscription: '💳 رسوم اشتراك',
     typeUsage: '⚡ استهلاك AI',
     typePayout: '📤 سحب أرباح',
-    typeRefund: '🔄 استرداد'
+    typeRefund: '🔄 استرداد',
+    tabAgency: '🏢 شحن وكالة شريكة',
+    tabTenant: '👤 شحن عميل مباشر',
+    selectTenant: 'اختر العميل المباشر',
+    successTenantMsg: 'تم شحن رصيد العميل المباشر بنجاح! 👤 ✓'
   },
   en: {
     title: 'Wallet & Ledger Management',
@@ -111,7 +117,11 @@ const DICT = {
     typeSubscription: '💳 Subscription',
     typeUsage: '⚡ AI Usage',
     typePayout: '📤 Payout',
-    typeRefund: '🔄 Refund'
+    typeRefund: '🔄 Refund',
+    tabAgency: '🏢 Recharge Agency Partner',
+    tabTenant: '👤 Recharge Direct Tenant',
+    selectTenant: 'Select Direct Tenant',
+    successTenantMsg: 'Direct tenant wallet recharged successfully! 👤 ✓'
   },
   fr: {
     title: 'Gestion du Portefeuille & Grand Livre',
@@ -144,7 +154,11 @@ const DICT = {
     typeSubscription: '💳 Abonnement',
     typeUsage: '⚡ Utilisation IA',
     typePayout: '📤 Paiement',
-    typeRefund: '🔄 Remboursement'
+    typeRefund: '🔄 Remboursement',
+    tabAgency: '🏢 Recharger le Partenaire',
+    tabTenant: '👤 Recharger le Client Direct',
+    selectTenant: 'Sélectionner le Client Direct',
+    successTenantMsg: 'Portefeuille du client direct rechargé avec succès! 👤 ✓'
   }
 };
 
@@ -152,15 +166,18 @@ export function WalletUI({
   initialSummary,
   initialTransactions,
   agencies,
+  directTenants,
   initialLang
 }: WalletUIProps) {
   const safeTransactions = Array.isArray(initialTransactions) ? initialTransactions : [];
   const safeAgencies = Array.isArray(agencies) ? agencies : [];
+  const safeDirectTenants = Array.isArray(directTenants) ? directTenants : [];
 
   const router = useRouter();
   const [lang, setLang] = useState<'ar' | 'en' | 'fr'>(initialLang);
   const t = DICT[lang];
 
+  const [activeFormTab, setActiveFormTab] = useState<'agency' | 'tenant'>('agency');
   const [summary, setSummary] = useState(initialSummary);
   const [transactions, setTransactions] = useState<Transaction[]>(safeTransactions);
 
@@ -187,7 +204,10 @@ export function WalletUI({
 
     const amountNum = parseFloat(rechargeForm.amount);
     if (!rechargeForm.agency_id) {
-      setError(isRtl ? 'يرجى اختيار الوكالة أولاً.' : 'Please select an agency.');
+      setError(activeFormTab === 'agency'
+        ? (isRtl ? 'يرجى اختيار الوكالة أولاً.' : 'Please select an agency.')
+        : (isRtl ? 'يرجى اختيار العميل أولاً.' : 'Please select a tenant.')
+      );
       return;
     }
     if (isNaN(amountNum) || amountNum <= 0) {
@@ -197,14 +217,23 @@ export function WalletUI({
 
     setLoadingRecharge(true);
     try {
-      const res = await addWalletCreditAction(
-        rechargeForm.agency_id,
-        amountNum,
-        rechargeForm.description
-      );
+      let res;
+      if (activeFormTab === 'agency') {
+        res = await addWalletCreditAction(
+          rechargeForm.agency_id,
+          amountNum,
+          rechargeForm.description
+        );
+      } else {
+        res = await addTenantCreditAction(
+          rechargeForm.agency_id, // contains selected tenantId
+          amountNum,
+          rechargeForm.description
+        );
+      }
 
       if (res.success) {
-        setSuccess(t.successMsg);
+        setSuccess(activeFormTab === 'agency' ? t.successMsg : t.successTenantMsg);
         
         // Optimistically update cards
         setSummary(prev => ({
@@ -352,6 +381,66 @@ export function WalletUI({
             {t.rechargeTitle}
           </h2>
 
+          {/* Premium Form Tab Switcher */}
+          <div style={{ 
+            display: 'flex', 
+            gap: '0.8rem', 
+            marginBottom: '1.5rem', 
+            borderBottom: '1px solid var(--glass-border)', 
+            paddingBottom: '0.8rem' 
+          }}>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFormTab('agency');
+                setRechargeForm({ agency_id: '', amount: '', description: '' });
+                setError(null);
+                setSuccess(null);
+              }}
+              style={{
+                background: activeFormTab === 'agency' ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                color: activeFormTab === 'agency' ? 'var(--accent-primary)' : 'var(--text-dim)',
+                border: activeFormTab === 'agency' ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <span>{t.tabAgency}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFormTab('tenant');
+                setRechargeForm({ agency_id: '', amount: '', description: '' });
+                setError(null);
+                setSuccess(null);
+              }}
+              style={{
+                background: activeFormTab === 'tenant' ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                color: activeFormTab === 'tenant' ? 'var(--accent-primary)' : 'var(--text-dim)',
+                border: activeFormTab === 'tenant' ? '1px solid var(--accent-primary)' : '1px solid transparent',
+                padding: '0.6rem 1.2rem',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s'
+              }}
+            >
+              <span>{t.tabTenant}</span>
+            </button>
+          </div>
+
           {success && (
             <div style={{ 
               background: 'rgba(16, 185, 129, 0.1)', 
@@ -390,10 +479,10 @@ export function WalletUI({
 
           <form onSubmit={handleRecharge} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.2rem', alignItems: 'end' }}>
             
-            {/* Dropdown Agency Selection */}
+            {/* Conditional Dropdown Selection */}
             <div>
               <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-dim)', fontWeight: '600', fontSize: '0.9rem' }}>
-                {t.selectAgency} <span style={{ color: '#ef4444' }}>*</span>
+                {activeFormTab === 'agency' ? t.selectAgency : t.selectTenant} <span style={{ color: '#ef4444' }}>*</span>
               </label>
               <select
                 value={rechargeForm.agency_id}
@@ -410,10 +499,17 @@ export function WalletUI({
                   cursor: 'pointer'
                 }}
               >
-                <option value="" style={{ background: '#0f172a' }}>-- {t.selectAgency} --</option>
-                {safeAgencies.map(a => (
-                  <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name} ({a.contact_email})</option>
-                ))}
+                <option value="" style={{ background: '#0f172a' }}>
+                  -- {activeFormTab === 'agency' ? t.selectAgency : t.selectTenant} --
+                </option>
+                {activeFormTab === 'agency' 
+                  ? safeAgencies.map(a => (
+                      <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name} ({a.contact_email})</option>
+                    ))
+                  : safeDirectTenants.map(dt => (
+                      <option key={dt.id} value={dt.id} style={{ background: '#0f172a' }}>{dt.name} ({dt.plan_type})</option>
+                    ))
+                }
               </select>
             </div>
 
@@ -581,10 +677,33 @@ export function WalletUI({
               {filteredTransactions.map((tx) => {
                 const amount = tx.credit > 0 ? tx.credit : -tx.debit;
                 const isCredit = tx.credit > 0;
+
+                // Defensive client-side lookup for tenant name in case tx.tenant_name is not filled yet
+                const matchingTenant = tx.tenant_id ? safeDirectTenants.find(t => t.id === tx.tenant_id) : null;
+                const finalTenantName = tx.tenant_name || matchingTenant?.name || null;
+
                 return (
                   <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: '0.2s' }}>
                     <td style={{ padding: '1.2rem', fontWeight: '600' }}>
-                      {tx.agency_name || (isRtl ? 'المنصة الرئيسية' : 'Master Platform')}
+                      {tx.agency_name ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(139, 92, 246, 0.15)', color: '#8b5cf6', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                            {isRtl ? 'وكالة' : 'Agency'}
+                          </span>
+                          <span>{tx.agency_name}</span>
+                        </div>
+                      ) : finalTenantName ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', background: 'rgba(249, 115, 22, 0.15)', color: 'var(--accent-primary)', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                            {isRtl ? 'عميل مباشر' : 'Direct Tenant'}
+                          </span>
+                          <span>{finalTenantName}</span>
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-dim)' }}>
+                          {isRtl ? 'المنصة الرئيسية' : 'Master Platform'}
+                        </span>
+                      )}
                     </td>
                     <td style={{ padding: '1.2rem', textAlign: 'center', fontSize: '0.9rem' }}>
                       {getTransactionTypeLabel(tx.transaction_type)}

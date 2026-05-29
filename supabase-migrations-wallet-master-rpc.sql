@@ -63,6 +63,7 @@ BEGIN
       w.agency_id,
       w.tenant_id,
       a.name as agency_name,
+      ten.name as tenant_name,
       w.transaction_type,
       w.credit,
       w.debit,
@@ -71,6 +72,7 @@ BEGIN
       w.created_at
     FROM wallet_ledger w
     LEFT JOIN agencies a ON w.agency_id = a.id
+    LEFT JOIN tenants ten ON w.tenant_id = ten.id
     ORDER BY w.created_at DESC
   ) t;
 
