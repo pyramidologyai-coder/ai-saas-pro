@@ -37,8 +37,9 @@ async function withTimeout<T>(
 export default async function WalletPage({
   searchParams
 }: {
-  searchParams: { lang?: string }
+  searchParams: Promise<{ lang?: string }>
 }) {
+  const resolvedSearchParams = await searchParams;
   const cookieStore = await cookies();
   const supabase = createRouteHandlerClient(
     { cookies: () => cookieStore as any },
@@ -170,7 +171,7 @@ export default async function WalletPage({
     console.error('Error fetching master admin wallet details:', err);
   }
 
-  const rawLang = searchParams?.lang ?? 'ar';
+  const rawLang = resolvedSearchParams?.lang ?? 'ar';
   const lang: Lang = VALID_LANGS.includes(rawLang as Lang) ? (rawLang as Lang) : 'ar';
 
   return (
