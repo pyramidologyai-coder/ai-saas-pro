@@ -185,6 +185,7 @@ const Sidebar = () => {
   const masterNavItems = [
     { icon: Home,          label: 'الرئيسية',          href: '/master-admin' },
     { icon: TrendingUp,    label: 'التحليل المالي',     href: '/master-admin/finance' },
+    { icon: Wallet,        label: 'إدارة المحافظ',      href: '/master-admin/wallet' },
     { icon: Building2,     label: 'الوكالات',           href: '/master-admin/agencies' },
     { icon: Users,         label: 'العملاء الكلي',      href: '/master-admin/clients' },
     { icon: Package,       label: 'إدارة الباقات',      href: '/master-admin/plans' },
@@ -363,7 +364,7 @@ const Sidebar = () => {
                 <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <Settings size={16} /> الإعدادات
                 </Link>
-                <Link href="/wallet" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                <Link href={isMasterAdmin ? "/master-admin/wallet" : "/wallet"} className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <Wallet size={16} /> المحفظة
                 </Link>
                 <div className={styles.dropdownDivider}></div>
