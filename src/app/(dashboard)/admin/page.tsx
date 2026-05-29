@@ -33,10 +33,7 @@ export default async function AdminPage() {
     // Ignore
   }
 
-  // Check metadata role as fallback
-  const isMasterMetadata = user.user_metadata?.role === 'master_admin';
-
-  if (isMaster || isMasterMetadata) {
+  if (isMaster) {
     redirect('/master-admin');
   }
 
