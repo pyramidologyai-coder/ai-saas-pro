@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { 
   Check, X, Edit2, Save, Loader2, Key, Activity, 
-  DollarSign, Users, Shield, Plus, Trash2, Info, Globe
+  DollarSign, Users, Shield, Plus, Trash2, Info, Globe, Archive
 } from 'lucide-react'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -40,6 +40,7 @@ interface Plan {
   reminder_credits: number
   intended_for?: 'agency' | 'business' | 'both'
   features?: PlanFeature[]
+  archived_at?: string | null
 }
 
 interface PlansUIProps {
@@ -92,7 +93,23 @@ const DICTIONARY = {
     loading: 'جاري التحميل...',
     unlimited: 'غير محدود',
     minutes: 'دقيقة',
-    vipNotice: 'ميزة حصرية: أصحاب هذه الباقة يمكنهم إضافة (API Keys) الخاصة بهم (مثل Meta Token و Gemini) للعمل بشكل مستقل تماماً.'
+    vipNotice: 'ميزة حصرية: أصحاب هذه الباقة يمكنهم إضافة (API Keys) الخاصة بهم (مثل Meta Token و Gemini) للعمل بشكل مستقل تماماً.',
+
+    // Archive Strings
+    archivePlan: 'أرشفة الباقة',
+    archivedBadge: 'مؤرشفة 📦',
+    confirmArchive: 'هل أنت متأكد من أرشفة هذه الباقة؟ لن يتمكن مشتركون جدد من الانضمام إليها، لكن المشتركين الحاليين لن يتأثروا.',
+    archiveWarningTitle: 'تنبيه قبل الأرشفة 📦',
+    agenciesCountLabel: 'الوكالات المشتركة حالياً:',
+    clientsCountLabel: 'العملاء المباشرون المتأثرون:',
+    archiveWarningText: 'تنبيه: الوكالات والعملاء الموجودين حالياً على الباقة سيبقون عليها دون أي تغيير — ولكن لن يتمكن أي مستخدم جديد من الاشتراك فيها مستقبلاً.',
+    confirmButton: 'تأكيد الأرشفة',
+    cancelButton: 'إلغاء',
+    successArchivePlan: 'تم أرشفة الباقة بنجاح ✓',
+    errorArchivePlan: 'حدث خطأ أثناء أرشفة الباقة',
+    filterActive: 'الباقات النشطة',
+    filterArchived: 'الباقات المؤرشفة',
+    filterAll: 'الكل'
   },
   en: {
     title: 'Platform Plans Management',
@@ -138,7 +155,23 @@ const DICTIONARY = {
     loading: 'Loading...',
     unlimited: 'Unlimited',
     minutes: 'min',
-    vipNotice: 'Exclusive feature: Users of this plan can bring their own API keys (Meta Token, Gemini API Key) to work fully autonomously.'
+    vipNotice: 'Exclusive feature: Users of this plan can bring their own API keys (Meta Token, Gemini API Key) to work fully autonomously.',
+
+    // Archive Strings
+    archivePlan: 'Archive Plan',
+    archivedBadge: 'Archived 📦',
+    confirmArchive: 'Are you sure you want to archive this plan? New subscribers won\'t be able to join, but existing subscribers will remain unaffected.',
+    archiveWarningTitle: 'Pre-Archive Warning 📦',
+    agenciesCountLabel: 'Agencies currently subscribed:',
+    clientsCountLabel: 'Affected direct clients:',
+    archiveWarningText: 'Notice: Existing agencies and clients will keep their plan without change, but no new users can subscribe to it in the future.',
+    confirmButton: 'Confirm Archive',
+    cancelButton: 'Cancel',
+    successArchivePlan: 'Plan archived successfully ✓',
+    errorArchivePlan: 'An error occurred while archiving the plan',
+    filterActive: 'Active Plans',
+    filterArchived: 'Archived Plans',
+    filterAll: 'All'
   },
   fr: {
     title: 'Gestion des Forfaits (Master)',
@@ -184,7 +217,23 @@ const DICTIONARY = {
     loading: 'Chargement...',
     unlimited: 'Illimité',
     minutes: 'min',
-    vipNotice: 'Fonctionnalité exclusive: Les utilisateurs de ce forfait peuvent ajouter leurs propres clés API (Meta, Gemini) pour travailler de manière autonome.'
+    vipNotice: 'Fonctionnalité exclusive: Les utilisateurs de ce forfait peuvent ajouter leurs propres clés API (Meta, Gemini) pour travailler de manière autonome.',
+
+    // Archive Strings
+    archivePlan: 'Archiver le forfait',
+    archivedBadge: 'Archivé 📦',
+    confirmArchive: 'Êtes-vous sûr de vouloir archiver ce forfait ? Aucun nouvel abonné ne pourra y adhérer, mais les abonnés existants ne seront pas affectés.',
+    archiveWarningTitle: 'Avertissement avant archivage 📦',
+    agenciesCountLabel: 'Agences actuellement abonnées :',
+    clientsCountLabel: 'Clients directs affectés :',
+    archiveWarningText: 'Remarque : Les agences et clients existants conserveront leur forfait sans changement, mais aucun nouvel utilisateur ne pourra s\'y abonner à l\'avenir.',
+    confirmButton: 'Confirmer l\'archivage',
+    cancelButton: 'Annuler',
+    successArchivePlan: 'Forfait archivé avec succès ✓',
+    errorArchivePlan: 'Une erreur est survenue lors de l\'archivage',
+    filterActive: 'Forfaits actifs',
+    filterArchived: 'Forfaits archivés',
+    filterAll: 'Tout'
   }
 } as const
 
@@ -222,6 +271,14 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
   const [newReminderCredits, setNewReminderCredits] = useState<number>(0)
   const [newIntendedFor, setNewIntendedFor] = useState<'agency' | 'business' | 'both'>('both')
   const [addingPlan, setAddingPlan] = useState(false)
+
+  // Archive & Filter States
+  const [filterMode, setFilterMode] = useState<'active' | 'archived' | 'all'>('active')
+  const [archivingPlan, setArchivingPlan] = useState<Plan | null>(null)
+  const [usageLoading, setUsageLoading] = useState(false)
+  const [usageData, setUsageData] = useState<{ agencies_count: number, tenants_count: number } | null>(null)
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false)
+  const [archivingInProgress, setArchivingInProgress] = useState(false)
 
   // Actions
   const handleToggleStatus = async (planId: string, currentStatus: boolean) => {
@@ -380,6 +437,62 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
     }
   }
 
+  const handleArchivePlanUsageCheck = async (plan: Plan) => {
+    if (!isValidUUID(plan.id)) return
+    setUsageLoading(true)
+    setArchivingPlan(plan)
+    
+    try {
+      const { data, error } = await supabase.rpc('get_plan_usage', {
+        p_plan_slug: plan.slug
+      })
+
+      if (error) {
+        console.error("Error checking plan usage:", error)
+        alert(d.errorSave)
+      } else {
+        setUsageData({
+          agencies_count: data?.agencies_count || 0,
+          tenants_count: data?.tenants_count || 0
+        })
+        setIsArchiveModalOpen(true)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setUsageLoading(false)
+    }
+  }
+
+  const confirmArchivePlan = async () => {
+    if (!archivingPlan) return
+    setArchivingInProgress(true)
+    
+    try {
+      const { data, error } = await supabase.rpc('archive_plan', {
+        p_plan_id: archivingPlan.id
+      })
+
+      if (error || (data && !data.success)) {
+        const errorMsg = error ? error.message : (data ? data.error : d.errorArchivePlan)
+        alert(d.errorArchivePlan + ': ' + errorMsg)
+      } else {
+        alert(d.successArchivePlan)
+        setPlans(prev => prev.map(p => 
+          p.id === archivingPlan.id ? { ...p, is_active: false, archived_at: new Date().toISOString() } : p
+        ))
+        setIsArchiveModalOpen(false)
+        setArchivingPlan(null)
+        setUsageData(null)
+        router.refresh()
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setArchivingInProgress(false)
+    }
+  }
+
   const renderFeatures = (features: PlanFeature[], slug: string) => {
     if (!features || features.length === 0) return (
       <div className="text-gray-500 text-xs">Default feature limits apply</div>
@@ -395,6 +508,12 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
       </ul>
     )
   }
+
+  const filteredPlans = plans.filter(p => {
+    if (filterMode === 'active') return !p.archived_at
+    if (filterMode === 'archived') return !!p.archived_at
+    return true
+  })
 
   return (
     <div dir={isRTL ? 'rtl' : 'ltr'} className="p-6 space-y-8 max-w-7xl mx-auto text-gray-100 min-h-screen">
@@ -449,6 +568,34 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
             {showAddForm ? d.cancel : d.addPlan}
           </button>
         </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex items-center gap-2 bg-gray-900/60 p-1.5 rounded-xl border border-gray-800 w-fit">
+        <button
+          onClick={() => setFilterMode('active')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            filterMode === 'active' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          {d.filterActive}
+        </button>
+        <button
+          onClick={() => setFilterMode('archived')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            filterMode === 'archived' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          {d.filterArchived}
+        </button>
+        <button
+          onClick={() => setFilterMode('all')}
+          className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+            filterMode === 'all' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          {d.filterAll}
+        </button>
       </div>
 
       {/* Add Plan Form Box */}
@@ -641,7 +788,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
 
       {/* Grid of Plans */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {plans.map((plan) => {
+        {filteredPlans.map((plan) => {
           const isEditing = editingId === plan.id
           const isVIP = plan.slug === 'vip'
           const isActive = plan.is_active
@@ -651,25 +798,32 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               key={plan.id}
               className={`
                 relative flex flex-col rounded-2xl border p-6 overflow-hidden
-                ${isActive ? 'bg-gray-800/80 border-gray-700' : 'bg-gray-900/50 border-gray-800 opacity-80'}
-                ${isVIP && isActive ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : ''}
+                ${plan.archived_at 
+                  ? 'bg-gray-900/40 border-gray-800 opacity-60 filter grayscale-[20%]' 
+                  : isActive 
+                    ? 'bg-gray-800/80 border-gray-700' 
+                    : 'bg-gray-900/50 border-gray-800 opacity-80'
+                }
+                ${isVIP && isActive && !plan.archived_at ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : ''}
                 transition-all duration-300 group
               `}
             >
               
-              {/* Delete Plan Button (Stealth Delete, visible on card hover) */}
-              <button
-                onClick={() => handleDeletePlan(plan.id)}
-                disabled={deletingPlanId === plan.id}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
-                title={d.deletePlan}
-              >
-                {deletingPlanId === plan.id ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <Trash2 size={14} />
-                )}
-              </button>
+              {/* Archive Plan Button (Stealth Archive, visible on card hover) */}
+              {!plan.archived_at && (
+                <button
+                  onClick={() => handleArchivePlanUsageCheck(plan)}
+                  disabled={usageLoading && archivingPlan?.id === plan.id}
+                  className="absolute top-4 right-4 p-1.5 rounded-lg bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-yellow-500/20"
+                  title={d.archivePlan}
+                >
+                  {usageLoading && archivingPlan?.id === plan.id ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Archive size={14} />
+                  )}
+                </button>
+              )}
 
               {/* Header: Name, intended_for, and Status Toggle */}
               <div className="flex justify-between items-start mb-6 pt-2">
@@ -678,12 +832,18 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                     {plan.name || plan.slug.toUpperCase()}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                    <div className="flex items-center gap-1">
-                      <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                      <span className="text-[11px] text-gray-400">
-                        {isActive ? d.isActive : d.isInactive}
+                    {plan.archived_at ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-650/20 text-gray-400 border border-gray-650/30 shadow-[0_0_8px_rgba(156,163,175,0.05)]">
+                        {d.archivedBadge}
                       </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                        <span className="text-[11px] text-gray-400">
+                          {isActive ? d.isActive : d.isInactive}
+                        </span>
+                      </div>
+                    )}
                     
                     {/* Color-coded Target Badges */}
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
@@ -702,25 +862,27 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   </div>
                 </div>
                 
-                <button
-                  onClick={() => handleToggleStatus(plan.id, plan.is_active)}
-                  disabled={togglingPlanId === plan.id}
-                  className={`
-                    p-2 rounded-lg text-sm transition-colors border shrink-0
-                    ${isActive 
-                      ? 'bg-red-500/10 text-red-400 border-red-500/15 hover:bg-red-500/20' 
-                      : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15 hover:bg-emerald-500/20'}
-                  `}
-                  title={isActive ? d.isInactive : d.isActive}
-                >
-                  {togglingPlanId === plan.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : isActive ? (
-                    <X size={14} />
-                  ) : (
-                    <Check size={14} />
-                  )}
-                </button>
+                {!plan.archived_at && (
+                  <button
+                    onClick={() => handleToggleStatus(plan.id, plan.is_active)}
+                    disabled={togglingPlanId === plan.id}
+                    className={`
+                      p-2 rounded-lg text-sm transition-colors border shrink-0
+                      ${isActive 
+                        ? 'bg-red-500/10 text-red-400 border-red-500/15 hover:bg-red-500/20' 
+                        : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/15 hover:bg-emerald-500/20'}
+                    `}
+                    title={isActive ? d.isInactive : d.isActive}
+                  >
+                    {togglingPlanId === plan.id ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : isActive ? (
+                      <X size={14} />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                  </button>
+                )}
               </div>
 
               {/* Pricing Section */}
@@ -779,13 +941,15 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                         ${plan.price_yearly} /yr
                       </div>
                     </div>
-                    <button 
-                      onClick={() => startEditing(plan)}
-                      className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-750 shrink-0"
-                      title={d.editPricing}
-                    >
-                      <Edit2 size={14} />
-                    </button>
+                    {!plan.archived_at && (
+                      <button 
+                        onClick={() => startEditing(plan)}
+                        className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-750 shrink-0"
+                        title={d.editPricing}
+                      >
+                        <Edit2 size={14} />
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -862,10 +1026,83 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         })}
       </div>
 
-      {plans.length === 0 && (
+      {filteredPlans.length === 0 && (
         <div className="text-center py-20 text-gray-500 border border-dashed border-gray-850 rounded-2xl">
           <Shield size={48} className="mx-auto mb-4 opacity-50 text-purple-500" />
           <p className="text-sm font-medium">{d.noPlans}</p>
+        </div>
+      )}
+
+      {/* Plan Usage Warning Modal */}
+      {isArchiveModalOpen && archivingPlan && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6 relative" dir={isRTL ? 'rtl' : 'ltr'}>
+            
+            {/* Title */}
+            <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
+              <div className="p-3 bg-yellow-500/10 rounded-2xl text-yellow-400">
+                <Archive size={24} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white">{d.archiveWarningTitle}</h3>
+                <p className="text-sm text-yellow-400 font-bold mt-1 uppercase tracking-wide">{archivingPlan.name}</p>
+              </div>
+            </div>
+
+            {/* Warning Message */}
+            <p className="text-gray-300 text-sm leading-relaxed">
+              {d.confirmArchive}
+            </p>
+
+            {/* Statistics */}
+            {usageData ? (
+              <div className="bg-gray-950/60 border border-gray-850 p-5 rounded-2xl space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">{d.agenciesCountLabel}</span>
+                  <span className="text-lg font-black text-white font-mono">{usageData.agencies_count}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-sm">{d.clientsCountLabel}</span>
+                  <span className="text-lg font-black text-white font-mono">{usageData.tenants_count}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center py-6">
+                <Loader2 className="animate-spin text-purple-500" size={32} />
+              </div>
+            )}
+
+            {/* Info notice */}
+            <div className="bg-purple-500/5 border border-purple-500/10 p-4 rounded-xl text-xs text-purple-300/80 leading-relaxed">
+              {d.archiveWarningText}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end pt-4 border-t border-gray-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsArchiveModalOpen(false)
+                  setArchivingPlan(null)
+                  setUsageData(null)
+                }}
+                disabled={archivingInProgress}
+                className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold transition-colors"
+              >
+                {d.cancelButton}
+              </button>
+              <button
+                type="button"
+                onClick={confirmArchivePlan}
+                disabled={archivingInProgress || !usageData}
+                className="px-6 py-2.5 bg-yellow-600 hover:bg-yellow-700 disabled:bg-yellow-800 text-white rounded-xl text-sm font-semibold flex items-center gap-2 shadow-lg transition-colors"
+              >
+                {archivingInProgress && <Loader2 size={14} className="animate-spin" />}
+                {d.confirmButton}
+              </button>
+            </div>
+
+          </div>
         </div>
       )}
 
