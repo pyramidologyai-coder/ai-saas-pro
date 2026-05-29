@@ -294,7 +294,7 @@ export function WalletUI({
             <TrendingUp color="#10b981" size={24} />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.2rem', color: '#10b981' }}>
-            ${summary.total_credited.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${(Number(summary?.total_credited) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{t.totalCredited}</div>
         </div>
@@ -305,7 +305,7 @@ export function WalletUI({
             <TrendingDown color="#ef4444" size={24} />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.2rem', color: '#ef4444' }}>
-            ${summary.total_debited.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${(Number(summary?.total_debited) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{t.totalSpent}</div>
         </div>
@@ -316,7 +316,7 @@ export function WalletUI({
             <DollarSign color="var(--accent-primary)" size={24} />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.2rem', color: 'var(--text-main)' }}>
-            ${summary.current_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            ${(Number(summary?.current_balance) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{t.currentBalance}</div>
         </div>
@@ -327,7 +327,7 @@ export function WalletUI({
             <Building2 color="#8b5cf6" size={24} />
           </div>
           <div style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '0.2rem', color: '#8b5cf6' }}>
-            {summary.agencies_count}
+            {Number(summary?.agencies_count) || 0}
           </div>
           <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem' }}>{t.totalAgencies}</div>
         </div>
