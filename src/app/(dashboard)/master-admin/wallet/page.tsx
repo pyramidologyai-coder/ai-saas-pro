@@ -75,9 +75,7 @@ export default async function WalletPage({
 
       const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : false;
       const fallbackData = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
-      const isMasterMeta = user.user_metadata?.role === 'master_admin';
-
-      if (!verifyData && !fallbackData && !isMasterMeta) {
+      if (!verifyData && !fallbackData) {
         redirectTarget = '/admin';
       }
     }
