@@ -61,7 +61,7 @@ export default async function WalletPage({
 
   try {
     // 1. Verify User Authentication securely on the server
-    const userRes = await withTimeout(supabase.auth.getUser(), 10000);
+    const userRes = await withTimeout(Promise.resolve(supabase.auth.getUser()), 10000);
     const user = userRes.data?.user;
 
     if (!user) {
@@ -69,8 +69,8 @@ export default async function WalletPage({
     } else {
       // 2. Verify Master Admin Role (using RPC checks and fallback user metadata checks)
       const [verifyRes, isMasterRes] = await Promise.allSettled([
-        withTimeout(supabase.rpc('verify_master_admin_role'), 5000),
-        withTimeout(supabase.rpc('is_master_admin'), 5000)
+        withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
+        withTimeout(Promise.resolve(supabase.rpc('is_master_admin')), 5000)
       ]);
 
       const verifyData = verifyRes.status === 'fulfilled' ? verifyRes.value.data : false;
@@ -92,9 +92,9 @@ export default async function WalletPage({
   // 4. Retrieve database entities with strict timeouts and robust server-side fallbacks
   try {
     const [summaryRes, transactionsRes, agenciesRes] = await Promise.allSettled([
-      withTimeout(supabase.rpc('get_wallet_summary'), 5000),
-      withTimeout(supabase.rpc('get_wallet_transactions'), 5000),
-      withTimeout(supabase.from('agencies').select('id, name, contact_email'), 5000)
+      withTimeout(Promise.resolve(supabase.rpc('get_wallet_summary')), 5000),
+      withTimeout(Promise.resolve(supabase.rpc('get_wallet_transactions')), 5000),
+      withTimeout(Promise.resolve(supabase.from('agencies').select('id, name, contact_email')), 5000)
     ]);
 
     // Parse summary or compute on-demand if RPC is not deployed
