@@ -124,6 +124,25 @@ export async function POST(req: Request) {
           stripe_invoice_id: stripeInvoiceId
         }]);
 
+      // 2126 Cyber Security & precision finance: Log dynamic transaction in wallet_ledger
+      try {
+        const agencyId = tenant?.agency_id || (tenant?.agency as any)?.id || null;
+        const planType = session.metadata?.planId || 'pro';
+        
+        await supabaseAdmin.from('wallet_ledger').insert({
+          agency_id: agencyId,
+          tenant_id: tenantId,
+          transaction_type: 'subscription_fee',
+          credit: (session.amount_total || 0) / 100, // convert cents to dollars
+          debit: 0,
+          description: `Stripe subscription payment - ${planType}`,
+          reference_id: session.payment_intent || session.id
+        });
+        console.log(`[FINANCE WALLET] Ledger record inserted successfully for Tenant: ${tenantId}`);
+      } catch (walletErr) {
+        console.error('[FINANCE WALLET ERROR] Failed to log to wallet_ledger:', walletErr);
+      }
+
       console.log(`[FINANCE SUCCESS] Tenant ${tenantId} successfully upgraded to ${purchasedPlan.toUpperCase()}. Invoice generated. Funds routed to: ${tenant.agency ? 'Agency' : 'Master Admin'}`);
     }
 
