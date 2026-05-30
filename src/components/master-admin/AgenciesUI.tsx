@@ -374,7 +374,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
           </div>
           <div>
             <div style={{ color: 'var(--text-dim)', fontSize: '0.9rem', fontWeight: 500 }}>{t.totalAgencies}</div>
-            <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '0.2rem', color: '#f8fafc' }}>{totalAgencies}</div>
+            <div style={{ fontSize: '2rem', fontWeight: 900, marginTop: '0.2rem', color: 'var(--text-main)' }}>{totalAgencies}</div>
           </div>
         </div>
 
@@ -412,31 +412,31 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
       {/* ADD AGENCY FORM */}
       {showAddForm && (
         <div style={{ background: 'var(--card-bg)', padding: '2.5rem', borderRadius: '32px', border: '1px solid var(--glass-border)', marginBottom: '2.5rem', boxShadow: '0 20px 50px rgba(0,0,0,0.3)', backdropFilter: 'blur(20px)' }}>
-          <h3 style={{ marginBottom: '2rem', fontSize: '1.35rem', fontWeight: 800, borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.8rem', color: '#f8fafc' }}>{t.newAgencyTitle}</h3>
+          <h3 style={{ marginBottom: '2rem', fontSize: '1.35rem', fontWeight: 800, borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.8rem', color: 'var(--text-main)' }}>{t.newAgencyTitle}</h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.agencyName}</label>
-              <input placeholder={t.agencyName} value={newAgency.name} onChange={e => setNewAgency({...newAgency, name: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
+              <input placeholder={t.agencyName} value={newAgency.name} onChange={e => setNewAgency({...newAgency, name: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'var(--bg-input)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.responsibleEmail}</label>
-              <input placeholder={t.responsibleEmail} type="email" value={newAgency.email} onChange={e => setNewAgency({...newAgency, email: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
+              <input placeholder={t.responsibleEmail} type="email" value={newAgency.email} onChange={e => setNewAgency({...newAgency, email: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'var(--bg-input)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.responsiblePhone}</label>
-              <input placeholder={t.responsiblePhone} type="tel" value={newAgency.whatsapp} onChange={e => setNewAgency({...newAgency, whatsapp: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
+              <input placeholder={t.responsiblePhone} type="tel" value={newAgency.whatsapp} onChange={e => setNewAgency({...newAgency, whatsapp: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'var(--bg-input)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.commissionRate}</label>
-              <input placeholder={t.commissionRate} type="number" min="0" max="50" value={newAgency.commission_rate} onChange={e => setNewAgency({...newAgency, commission_rate: parseInt(e.target.value) || 0})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
+              <input placeholder={t.commissionRate} type="number" min="0" max="50" value={newAgency.commission_rate} onChange={e => setNewAgency({...newAgency, commission_rate: parseInt(e.target.value) || 0})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'var(--bg-input)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <label style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600 }}>{t.planType}</label>
-              <select value={newAgency.plan_slug} onChange={e => setNewAgency({...newAgency, plan_slug: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none', cursor: 'pointer' }}>
+              <select value={newAgency.plan_slug} onChange={e => setNewAgency({...newAgency, plan_slug: e.target.value})} style={{ padding: '0.9rem 1.2rem', borderRadius: '14px', background: 'var(--bg-input)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', fontSize: '0.95rem', outline: 'none', cursor: 'pointer' }}>
                 {plans
                   .filter(p => p.intended_for === 'agency' || p.intended_for === 'both')
                   .map(p => (
-                    <option key={p.id} value={p.slug} style={{ background: '#0f172a', color: '#f8fafc' }}>
+                    <option key={p.id} value={p.slug} style={{ background: 'var(--bg-color)', color: 'var(--text-main)' }}>
                       {p.name} - ${p.price_monthly}/mo
                     </option>
                   ))
@@ -477,20 +477,20 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
               const isActive = a.subscription_status === 'active' || !a.subscription_status;
 
               return (
-                <tr key={a.id || i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'all 0.2s', alignSelf: 'center' }}>
+                <tr key={a.id || i} style={{ borderBottom: '1px solid var(--glass-border)', transition: 'all 0.2s', alignSelf: 'center' }}>
                   <td style={{ padding: '1.2rem 1rem', fontWeight: 600 }}>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                       <div style={{ background: 'rgba(99, 102, 241, 0.1)', padding: '0.75rem', borderRadius: '14px', display: 'flex', alignItems: 'center' }}>
                         <Briefcase size={20} color="#8b5cf6" /> 
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        <span style={{ fontSize: '1.05rem', color: '#f8fafc' }}>{a.name}</span>
+                        <span style={{ fontSize: '1.05rem', color: 'var(--text-main)' }}>{a.name}</span>
                         {a.contact_email && <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 400 }}>{a.contact_email}</span>}
                       </div>
                     </div>
                   </td>
-                  <td style={{ padding: '1.2rem 1rem', fontWeight: 700, fontSize: '1.05rem', color: '#f8fafc' }}>{a.tenants?.length || 0}</td>
-                  <td style={{ padding: '1.2rem 1rem', fontWeight: 700, fontSize: '1.05rem', color: '#f8fafc' }}>${revenue.toLocaleString()}</td>
+                  <td style={{ padding: '1.2rem 1rem', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>{a.tenants?.length || 0}</td>
+                  <td style={{ padding: '1.2rem 1rem', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>${revenue.toLocaleString()}</td>
                   <td style={{ padding: '1.2rem 1rem', color: '#10b981', fontWeight: 700, fontSize: '1.05rem' }}>{rate}%</td>
                   <td style={{ padding: '1.2rem 1rem', color: '#8b5cf6', fontWeight: 800, fontSize: '1.1rem' }}>${commission.toLocaleString()}</td>
                   <td style={{ padding: '1.2rem 1rem' }}>
@@ -530,7 +530,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                   <td style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>
                     <button 
                       onClick={() => setSelectedAgency(a)}
-                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.45rem 1rem', borderRadius: '10px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto', fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s' }}
+                      style={{ background: 'var(--hover-bg)', border: '1px solid var(--glass-border)', color: 'var(--text-main)', padding: '0.45rem 1rem', borderRadius: '10px', cursor: 'pointer', display: 'flex', gap: '0.4rem', alignItems: 'center', margin: 'auto', fontWeight: 600, fontSize: '0.85rem', transition: 'all 0.2s' }}
                     >
                       <ExternalLink size={14} /> {t.detailsCol}
                     </button>
@@ -551,10 +551,10 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
       {/* FULL DETAILS MODAL */}
       {selectedAgency && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1.5rem', backdropFilter: 'blur(16px)', animation: 'fadeIn 0.2s ease-out' }}>
-          <div style={{ background: '#090d16', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '32px', width: '100%', maxWidth: '650px', padding: '2.5rem', color: '#f8fafc', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }} dir={t.dir}>
+          <div style={{ background: 'var(--bg-space-surface)', border: '1px solid var(--glass-border)', borderRadius: '32px', width: '100%', maxWidth: '650px', padding: '2.5rem', color: 'var(--text-main)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', position: 'relative' }} dir={t.dir}>
             
             {/* Modal Header */}
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1.5rem', marginBottom: '1.5rem' }}>
               <div style={{ background: 'rgba(139, 92, 246, 0.1)', padding: '1rem', borderRadius: '20px', display: 'flex', alignItems: 'center' }}>
                 <Briefcase size={32} color="#8b5cf6" />
               </div>
@@ -567,7 +567,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
             {/* Modal Body Info Fields */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
               
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Mail size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.responsibleEmail}</div>
@@ -575,7 +575,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Phone size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.whatsapp}</div>
@@ -583,7 +583,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Building2 size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.plan}</div>
@@ -591,7 +591,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Percent size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.rateCol}</div>
@@ -599,7 +599,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Users size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.clientsCol}</div>
@@ -607,7 +607,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <MessageSquare size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.messagesUsed}</div>
@@ -615,7 +615,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Calendar size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.joinedDate}</div>
@@ -623,7 +623,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <div style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '16px', border: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                 <Calendar size={18} color="var(--text-dim)" />
                 <div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-dim)' }}>{t.endDate}</div>
@@ -634,7 +634,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
             </div>
 
             {/* Modal Footer Controls */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.5rem' }}>
               <button 
                 onClick={() => setSelectedAgency(null)}
                 style={{ background: 'linear-gradient(135deg, #8b5cf6, #6366f1)', color: '#ffffff', border: 'none', padding: '0.75rem 2.5rem', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.95rem', transition: 'all 0.2s', boxShadow: '0 8px 24px rgba(99, 102, 241, 0.3)' }}
