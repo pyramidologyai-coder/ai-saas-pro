@@ -164,9 +164,9 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'active') return { bg: 'bg-green-500/20', text: 'text-green-400', label: t.active };
-    if (status === 'suspended') return { bg: 'bg-red-500/20', text: 'text-red-400', label: t.suspended };
-    return { bg: 'bg-gray-500/20', text: 'text-gray-400', label: t.inactive };
+    if (status === 'active') return { bg: 'bg-[var(--success-bg)]', text: 'text-[var(--success-text)]', border: 'border-[var(--success-text)]/20', label: t.active };
+    if (status === 'suspended') return { bg: 'bg-[var(--cyber-red-glow)]', text: 'text-[var(--cyber-red)]', border: 'border-[var(--cyber-red)]/20', label: t.suspended };
+    return { bg: 'bg-[var(--bg-input)]', text: 'text-[var(--text-dim)]', border: 'border-[var(--glass-border)]', label: t.inactive };
   };
 
   const handleExport = () => {
@@ -208,11 +208,11 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
   };
 
   return (
-    <div dir={t.dir} className="p-6 space-y-6 text-white min-h-screen">
+    <div dir={t.dir} className="p-6 space-y-6 text-[var(--text-main)] min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-indigo-400">{t.title}</h1>
-          <p className="text-gray-400 text-sm mt-1">{filteredClients.length} {t.title}</p>
+          <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[var(--text-main)] to-indigo-400">{t.title}</h1>
+          <p className="text-[var(--text-dim)] text-sm mt-1">{filteredClients.length} {t.title}</p>
         </div>
         
         <div className="flex gap-2">
@@ -220,7 +220,7 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
             <button
               key={l}
               onClick={() => setLang(l)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${lang === l ? 'bg-indigo-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${lang === l ? 'bg-indigo-500 text-white' : 'bg-[var(--bg-input)] text-[var(--text-dim)] hover:bg-[var(--hover-bg)] border border-[var(--glass-border)]'}`}
             >
               {l.toUpperCase()}
             </button>
@@ -228,22 +228,22 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
         </div>
       </div>
 
-      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-4 flex flex-wrap gap-4 items-center">
-        <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-gray-800/80 px-3 py-2 rounded-xl border border-gray-700 focus-within:border-indigo-500 transition-colors">
-          <Search size={18} className="text-gray-400" />
+      <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-4 flex flex-wrap gap-4 items-center">
+        <div className="flex-1 min-w-[200px] flex items-center gap-2 bg-[var(--bg-input)] px-3 py-2 rounded-xl border border-[var(--glass-border)] focus-within:border-indigo-500 transition-colors">
+          <Search size={18} className="text-[var(--text-dim)]" />
           <input 
             type="text" 
             placeholder={t.searchPlaceholder} 
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-            className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-gray-500"
+            className="bg-transparent border-none outline-none text-sm w-full text-[var(--text-main)] placeholder-[var(--text-dim)]/50"
           />
         </div>
 
         <select 
           value={filterStatus} 
           onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-          className="bg-gray-800/80 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
+          className="bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-main)] text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
         >
           <option value="all">{t.allStatus}</option>
           <option value="active">{t.active}</option>
@@ -254,7 +254,7 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
         <select 
           value={filterPlan} 
           onChange={(e) => { setFilterPlan(e.target.value); setCurrentPage(1); }}
-          className="bg-gray-800/80 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
+          className="bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-main)] text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
         >
           <option value="all">{t.allPlans}</option>
           {uniquePlans.map(p => <option key={p} value={p}>{p}</option>)}
@@ -263,7 +263,7 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
         <select 
           value={filterAgency} 
           onChange={(e) => { setFilterAgency(e.target.value); setCurrentPage(1); }}
-          className="bg-gray-800/80 border border-gray-700 text-gray-300 text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
+          className="bg-[var(--bg-input)] border border-[var(--glass-border)] text-[var(--text-main)] text-sm rounded-xl px-4 py-2.5 outline-none min-w-[140px]"
         >
           <option value="all">{t.allAgencies}</option>
           {uniqueAgencies.map(a => <option key={a} value={a}>{a === 'Direct' ? t.direct : a}</option>)}
@@ -278,11 +278,11 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
         </button>
       </div>
 
-      <div className="bg-gray-900/50 border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-right whitespace-nowrap">
             <thead>
-              <tr className="border-b border-gray-800 bg-gray-800/30 text-gray-400">
+              <tr className="border-b border-[var(--glass-border)] bg-[var(--bg-input)] text-[var(--text-dim)]">
                 <th className={`py-4 px-4 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{t.name}</th>
                 <th className={`py-4 px-4 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{t.type}</th>
                 <th className={`py-4 px-4 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{t.plan}</th>
@@ -292,7 +292,7 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                 <th className={`py-4 px-4 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{t.messages}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800">
+            <tbody className="divide-y divide-[var(--glass-border)]">
               {paginatedClients.map(c => {
                 const status = getStatusBadge(c.status);
                 const isUnlimited = c.messages_limit === -1;
@@ -301,12 +301,12 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                 const percent = isUnlimited ? 0 : msgLimit > 0 ? Math.min((msgUsed / msgLimit) * 100, 100) : 0;
                 
                 return (
-                  <tr key={c.id} className="hover:bg-gray-800/30 transition-colors">
-                    <td className={`py-4 px-4 font-semibold text-white ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{c.name}</td>
-                    <td className={`py-4 px-4 text-gray-400 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{getTypeTranslation(c.type)}</td>
+                  <tr key={c.id} className="hover:bg-[var(--hover-bg)] transition-colors">
+                    <td className={`py-4 px-4 font-semibold text-[var(--text-main)] ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{c.name}</td>
+                    <td className={`py-4 px-4 text-[var(--text-dim)] ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>{getTypeTranslation(c.type)}</td>
                     <td className={`py-4 px-4 text-indigo-400 font-medium ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       {c.record_type === 'agency' ? (
-                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                        <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[var(--bg-input)] text-[var(--accent-secondary)] border border-[var(--accent-secondary)]/20">
                           {t.agencyBadge}
                         </span>
                       ) : (
@@ -314,26 +314,26 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                       )}
                     </td>
                     <td className={`py-4 px-4 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${status.bg} ${status.text}`}>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${status.bg} ${status.text} ${status.border || 'border-[var(--glass-border)]'}`}>
                         {status.label}
                       </span>
                     </td>
-                    <td className={`py-4 px-4 text-gray-300 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
+                    <td className={`py-4 px-4 text-[var(--text-dim)] ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       <div className="flex items-center gap-2">
-                        <Building2 size={14} className="text-gray-500 shrink-0" />
+                        <Building2 size={14} className="text-[var(--text-dim)] shrink-0" />
                         {c.record_type === 'agency' ? (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-[var(--bg-input)] text-[var(--accent-secondary)] border border-[var(--accent-secondary)]/20">
                             {t.agencyBadge}
                           </span>
                         ) : !c.agency_id ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-800 text-gray-400 border border-gray-700/50">
+                          <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-[var(--bg-input)] text-[var(--text-dim)] border border-[var(--glass-border)]">
                             {t.direct}
                           </span>
                         ) : (
                           <div className="flex flex-col">
-                            <span className="font-medium text-white">{c.agency_name}</span>
+                            <span className="font-medium text-[var(--text-main)]">{c.agency_name}</span>
                             {c.agency_status === 'suspended' && (
-                              <span className="text-[10px] font-bold bg-red-500/20 text-red-400 px-1.5 py-0.5 rounded border border-red-500/30 w-fit mt-1">
+                              <span className="text-[10px] font-bold bg-[var(--cyber-red-glow)] text-[var(--cyber-red)] px-1.5 py-0.5 rounded border border-[var(--cyber-red)]/20 w-fit mt-1">
                                 {t.suspendedReseller}
                               </span>
                             )}
@@ -341,18 +341,18 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
                         )}
                       </div>
                     </td>
-                    <td className={`py-4 px-4 text-gray-400 ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
+                    <td className={`py-4 px-4 text-[var(--text-dim)] ${t.dir === 'ltr' ? 'text-left' : 'text-right'}`}>
                       {c.end_date ? new Date(c.end_date).toLocaleDateString(lang === 'ar' ? 'ar-SA' : 'en-US') : '—'}
                     </td>
                     <td className={`py-4 px-4 ${t.dir === 'ltr' ? 'text-left' : 'text-right'} min-w-[150px]`}>
                       {isUnlimited ? (
-                         <span className="text-green-400 font-medium">∞</span>
+                         <span className="text-[var(--success-text)] font-medium">∞</span>
                       ) : (
                         <div className="flex items-center gap-3">
-                          <span className="text-xs text-gray-400 font-medium w-12">{msgUsed}/{msgLimit}</span>
-                          <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden flex-1">
+                          <span className="text-xs text-[var(--text-dim)] font-medium w-12">{msgUsed}/{msgLimit}</span>
+                          <div className="w-full h-1.5 bg-[var(--bg-input)] rounded-full overflow-hidden flex-1">
                             <div 
-                              className={`h-full rounded-full ${percent > 90 ? 'bg-red-500' : percent > 75 ? 'bg-orange-500' : 'bg-indigo-500'}`} 
+                              className={`h-full rounded-full ${percent > 90 ? 'bg-[var(--cyber-red)]' : percent > 75 ? 'bg-amber-500' : 'bg-[var(--accent-primary)]'}`} 
                               style={{ width: `${percent}%` }}
                             />
                           </div>
@@ -364,7 +364,7 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
               })}
               {paginatedClients.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                  <td colSpan={7} className="py-12 text-center text-[var(--text-dim)]">
                     {t.empty}
                   </td>
                 </tr>
@@ -374,22 +374,22 @@ export function ClientsUI({ initialClients }: { initialClients: ClientData[] }) 
         </div>
 
         {totalPages > 1 && (
-          <div className="p-4 border-t border-gray-800 flex items-center justify-between">
-            <span className="text-sm text-gray-500">
+          <div className="p-4 border-t border-[var(--glass-border)] flex items-center justify-between">
+            <span className="text-sm text-[var(--text-dim)]">
               {t.page} {currentPage} {t.of} {totalPages}
             </span>
             <div className="flex gap-2">
               <button 
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                className="p-2 rounded-lg bg-[var(--bg-input)] text-[var(--text-dim)] hover:bg-[var(--hover-bg)] border border-[var(--glass-border)] disabled:opacity-50 transition-colors"
               >
                 {t.dir === 'rtl' ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               </button>
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg bg-gray-800 text-gray-400 hover:bg-gray-700 disabled:opacity-50 transition-colors"
+                className="p-2 rounded-lg bg-[var(--bg-input)] text-[var(--text-dim)] hover:bg-[var(--hover-bg)] border border-[var(--glass-border)] disabled:opacity-50 transition-colors"
               >
                 {t.dir === 'rtl' ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
               </button>
