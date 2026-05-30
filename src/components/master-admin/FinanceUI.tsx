@@ -406,6 +406,14 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
         const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1
         const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
         matchesDate = invDate.getFullYear() === lastMonthYear && invDate.getMonth() === lastMonth
+      } else if (dateFilter === 'last_6_months') {
+        const sixMonthsAgo = new Date()
+        sixMonthsAgo.setMonth(now.getMonth() - 6)
+        matchesDate = invDate >= sixMonthsAgo
+      } else if (dateFilter === 'last_year') {
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(now.getFullYear() - 1)
+        matchesDate = invDate >= oneYearAgo
       }
     }
     
@@ -541,6 +549,63 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           >
             {d.langFr}
           </button>
+        </div>
+      </div>
+
+      {/* Premium Top Filter Bar (مستطيل التصفية الأفقي الطويل) */}
+      <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-sm text-emerald-400 font-bold">
+          <Filter size={16} />
+          <span>لوحة تصفية التقارير:</span>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto flex-1 max-w-4xl">
+          {/* Status Filter */}
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الحالة:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full"
+            >
+              <option value="all">كل الفواتير</option>
+              <option value="paid">مدفوعة</option>
+              <option value="pending">قيد الانتظار</option>
+              <option value="unpaid">غير مدفوعة</option>
+              <option value="refunded">مسترجعة</option>
+            </select>
+          </div>
+
+          {/* Date Range Filter */}
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الفترة:</span>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full"
+            >
+              <option value="all">كل الوقت (تراكمي)</option>
+              <option value="this_month">الشهر الحالي</option>
+              <option value="last_month">الشهر الماضي</option>
+              <option value="last_6_months">آخر 6 أشهر</option>
+              <option value="last_year">آخر سنة كاملة</option>
+            </select>
+          </div>
+
+          {/* Agency Filter */}
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد:</span>
+            <select
+              value={agencyFilter}
+              onChange={(e) => setAgencyFilter(e.target.value)}
+              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full font-sans"
+            >
+              <option value="all">كل الوكالات والشركاء</option>
+              {safeAgencies.map(agency => (
+                <option key={agency.id} value={agency.id}>{agency.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -959,6 +1024,8 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                   <option value="all">{d.filterAll}</option>
                   <option value="this_month">{d.thisMonth}</option>
                   <option value="last_month">{d.lastMonth}</option>
+                  <option value="last_6_months">{lang === 'ar' ? 'آخر 6 أشهر' : 'Last 6 Months'}</option>
+                  <option value="last_year">{lang === 'ar' ? 'آخر سنة كاملة' : 'Last Year'}</option>
                 </select>
               </div>
 
