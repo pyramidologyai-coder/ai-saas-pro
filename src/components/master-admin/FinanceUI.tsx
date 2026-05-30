@@ -1,11 +1,11 @@
 'use client'
 
-import React, { useState, useTransition, useEffect } from 'react'
+import React, { useState, useTransition, useEffect, useRef } from 'react'
 import {
   DollarSign, TrendingUp, TrendingDown,
   Building2, Users, Receipt, AlertCircle,
   TrendingUp as ProfitIcon, Landmark, RefreshCw,
-  Calendar, ShieldCheck, Filter, Award
+  Calendar, ShieldCheck, Filter, Award, Search, ChevronDown
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -282,8 +282,23 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
 
+  // Searchable Beneficiary Select state
+  const [recipientDropdownOpen, setRecipientDropdownOpen] = useState(false)
+  const [recipientSearchQuery, setRecipientSearchQuery] = useState('')
+  const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; name: string; type: 'agency' | 'tenant' } | null>(null)
+  
+  const recipientDropdownRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     setMounted(true)
+    
+    function handleClickOutside(event: MouseEvent) {
+      if (recipientDropdownRef.current && !recipientDropdownRef.current.contains(event.target as Node)) {
+        setRecipientDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [])
 
   const safeInvoices = Array.isArray(invoices) ? invoices : []
@@ -437,15 +452,17 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       }
     }
     
-    // Filter by name (searches across both agency and client name!)
-    let matchesBeneficiary = true
-    if (beneficiarySearch) {
-      const recipientName = getRecipientName(inv).toLowerCase()
-      matchesBeneficiary = recipientName.includes(beneficiarySearch.toLowerCase())
+    // Filter by Searchable Recipient selection (Agencies & Direct Clients)
+    let matchesRecipient = true
+    if (selectedRecipient) {
+      if (selectedRecipient.type === 'agency') {
+        matchesRecipient = inv.agency_id === selectedRecipient.id
+      } else {
+        matchesRecipient = inv.tenant_id === selectedRecipient.id
+      }
     }
     
-    const matchesAgency = agencyFilter === 'all' ? true : inv.agency_id === agencyFilter
-    return matchesStatus && matchesDate && matchesBeneficiary && matchesAgency
+    return matchesStatus && matchesDate && matchesRecipient
   })
 
   // Dynamic Recharts Data Aggregation
@@ -535,6 +552,37 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
     if (inv.tenants?.name) return `${inv.tenants.name} (${d.directTenant})`
     return d.directTenant
   }
+
+  const getUniqueRecipients = () => {
+    const list: Array<{ id: string; name: string; type: 'agency' | 'tenant' }> = []
+    const seen = new Set<string>()
+
+    // 1. Add all safeAgencies from the prop
+    safeAgencies.forEach(a => {
+      if (!seen.has(a.id)) {
+        seen.add(a.id)
+        list.push({ id: a.id, name: a.name, type: 'agency' })
+      }
+    })
+
+    // 2. Add all unique agencies or direct tenants from invoices
+    safeInvoices.forEach(inv => {
+      if (inv.agency_id && inv.agencies?.name) {
+        if (!seen.has(inv.agency_id)) {
+          seen.add(inv.agency_id)
+          list.push({ id: inv.agency_id, name: inv.agencies.name, type: 'agency' })
+        }
+      } else if (inv.tenant_id && inv.tenants?.name) {
+        if (!seen.has(inv.tenant_id)) {
+          seen.add(inv.tenant_id)
+          list.push({ id: inv.tenant_id, name: inv.tenants.name, type: 'tenant' })
+        }
+      }
+    })
+
+    return list
+  }
+  const uniqueRecipients = getUniqueRecipients()
 
   return (
     <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 space-y-6 text-gray-100 min-h-screen bg-gray-900">
@@ -647,16 +695,92 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
             </div>
           )}
 
-          {/* Beneficiary Search (بحث بالاسم) */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[200px] flex-1 sm:flex-none">
-            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد (بحث بالاسم):</span>
-            <input
-              type="text"
-              value={beneficiarySearch}
-              onChange={(e) => setBeneficiarySearch(e.target.value)}
-              placeholder="اكتب اسم الوكالة أو العميل..."
-              className="bg-transparent text-gray-200 text-xs outline-none w-full placeholder-gray-600 font-sans"
-            />
+          {/* Searchable Beneficiary Dropdown Select (المستفيد القابل للبحث) */}
+          <div className="relative min-w-[240px] flex-1 sm:flex-none" ref={recipientDropdownRef}>
+            <div className="flex items-center bg-gray-900/50 border border-gray-850 hover:border-emerald-500/50 transition-all rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50">
+              <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد:</span>
+              <button
+                type="button"
+                onClick={() => setRecipientDropdownOpen(!recipientDropdownOpen)}
+                className="flex justify-between items-center bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full text-right"
+              >
+                <span className="truncate flex-1">
+                  {selectedRecipient 
+                    ? `${selectedRecipient.name} (${selectedRecipient.type === 'agency' ? 'وكالة' : 'عميل مباشر'})` 
+                    : 'كل الوكالات والعملاء'
+                  }
+                </span>
+                <ChevronDown size={12} className="text-gray-500 shrink-0 mr-1" />
+              </button>
+            </div>
+
+            {recipientDropdownOpen && (
+              <div className="absolute z-50 mt-1.5 w-full bg-gray-900 border border-gray-800 rounded-xl shadow-2xl p-2 space-y-2 animate-fadeIn min-w-[260px] right-0">
+                {/* Search input field inside dropdown */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={recipientSearchQuery}
+                    onChange={(e) => setRecipientSearchQuery(e.target.value)}
+                    placeholder="اكتب للبحث..."
+                    className="w-full bg-gray-950 border border-gray-800 focus:border-emerald-500/50 rounded-lg p-2 pr-8 text-xs text-gray-200 outline-none placeholder-gray-650 font-sans"
+                    autoFocus
+                  />
+                  <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                </div>
+
+                {/* Options List */}
+                <div className="max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar">
+                  {/* Reset option */}
+                  <div
+                    onClick={() => {
+                      setSelectedRecipient(null);
+                      setRecipientDropdownOpen(false);
+                      setRecipientSearchQuery('');
+                    }}
+                    className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex items-center gap-2 ${
+                      !selectedRecipient ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                    }`}
+                  >
+                    <span>كل الوكالات والعملاء</span>
+                  </div>
+                  
+                  <div className="h-px bg-gray-800/80 my-1"></div>
+
+                  {/* Filtered unique recipients list */}
+                  {uniqueRecipients
+                    .filter(r => r.name.toLowerCase().includes(recipientSearchQuery.toLowerCase()))
+                    .map(r => {
+                      const isSelected = selectedRecipient?.id === r.id;
+                      return (
+                        <div
+                          key={r.id}
+                          onClick={() => {
+                            setSelectedRecipient(r);
+                            setRecipientDropdownOpen(false);
+                            setRecipientSearchQuery('');
+                          }}
+                          className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex justify-between items-center gap-2 ${
+                            isSelected ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                          }`}
+                        >
+                          <span className="truncate">{r.name}</span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            r.type === 'agency' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/15' : 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
+                          }`}>
+                            {r.type === 'agency' ? 'وكالة' : 'عميل'}
+                          </span>
+                        </div>
+                      )
+                    })
+                  }
+
+                  {uniqueRecipients.filter(r => r.name.toLowerCase().includes(recipientSearchQuery.toLowerCase())).length === 0 && (
+                    <div className="text-center py-4 text-gray-650 text-xs">لا توجد نتائج مطابقة.</div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1041,7 +1165,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
             </div>
 
             {/* Filter controls row */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 p-3 bg-gray-900/50 rounded-xl border border-gray-800/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-900/50 rounded-xl border border-gray-800/50">
               
               {/* Filter by Status */}
               <div className="space-y-1">
@@ -1078,24 +1202,6 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                   <option value="last_month">{d.lastMonth}</option>
                   <option value="last_6_months">{lang === 'ar' ? 'آخر 6 أشهر' : 'Last 6 Months'}</option>
                   <option value="last_year">{lang === 'ar' ? 'آخر سنة كاملة' : 'Last Year'}</option>
-                </select>
-              </div>
-
-              {/* Filter by Agency */}
-              <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center gap-1">
-                  <Building2 size={10} />
-                  {d.filterAgency}
-                </label>
-                <select
-                  value={agencyFilter}
-                  onChange={(e) => setAgencyFilter(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700/50 text-gray-200 rounded-lg p-2 text-xs outline-none cursor-pointer hover:border-emerald-500/50 transition-colors"
-                >
-                  <option value="all">{d.filterAll}</option>
-                  {safeAgencies.map(agency => (
-                    <option key={agency.id} value={agency.id}>{agency.name}</option>
-                  ))}
                 </select>
               </div>
 
