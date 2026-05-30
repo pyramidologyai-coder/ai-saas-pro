@@ -409,42 +409,42 @@ export function SettingsUI({
   }
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-6 space-y-8 max-w-7xl mx-auto text-gray-100 min-h-screen">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-6 space-y-8 max-w-7xl mx-auto text-[var(--text-main)] min-h-screen bg-[var(--bg-color)]">
       
       {/* Header section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-gray-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[var(--glass-border)]">
         <div>
-          <h1 className="text-3xl font-black text-white flex items-center gap-3">
-            <Shield className="text-purple-500" size={32} />
+          <h1 className="text-3xl font-black text-[var(--text-main)] flex items-center gap-3">
+            <Shield className="text-[var(--accent-primary)]" size={32} />
             {d.title}
           </h1>
-          <p className="text-gray-400 mt-2 text-sm max-w-2xl leading-relaxed">
+          <p className="text-[var(--text-dim)] mt-2 text-sm max-w-2xl leading-relaxed">
             {d.subtitle}
           </p>
         </div>
 
         {/* Language selector */}
-        <div className="flex items-center gap-2 bg-gray-800/80 p-1 rounded-xl border border-gray-700/50 self-end md:self-auto">
+        <div className="flex items-center gap-2 bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--glass-border)] self-end md:self-auto">
           <button
             onClick={() => startTransition(() => setLang('ar'))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'ar' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              lang === 'ar' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             العربية
           </button>
           <button
             onClick={() => startTransition(() => setLang('en'))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'en' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              lang === 'en' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             English
           </button>
           <button
             onClick={() => startTransition(() => setLang('fr'))}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'fr' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              lang === 'fr' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             Français
@@ -453,13 +453,13 @@ export function SettingsUI({
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-gray-850 gap-2">
+      <div className="flex border-b border-[var(--glass-border)] gap-2">
         <button
           onClick={() => setActiveTab('platform')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 ${
+          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'platform' 
-              ? 'border-purple-500 text-purple-400' 
-              : 'border-transparent text-gray-400 hover:text-white hover:border-gray-700'
+              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]' 
+              : 'border-transparent text-[var(--text-dim)] hover:text-[var(--text-main)] hover:border-[var(--glass-border)]'
           }`}
         >
           <Settings size={18} />
@@ -468,10 +468,10 @@ export function SettingsUI({
 
         <button
           onClick={() => setActiveTab('security')}
-          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 ${
+          className={`px-6 py-3 font-semibold text-sm border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === 'security' 
-              ? 'border-purple-500 text-purple-400' 
-              : 'border-transparent text-gray-400 hover:text-white hover:border-gray-700'
+              ? 'border-[var(--accent-primary)] text-[var(--accent-primary)]' 
+              : 'border-transparent text-[var(--text-dim)] hover:text-[var(--text-main)] hover:border-[var(--glass-border)]'
           }`}
         >
           <Lock size={18} />
@@ -486,21 +486,21 @@ export function SettingsUI({
         {/* TAB 1: Platform Settings */}
         {/* ======================================================== */}
         {activeTab === 'platform' && (
-          <div className="bg-gray-850/40 border border-gray-800/80 rounded-2xl p-6 md:p-8 space-y-6 max-w-4xl">
+          <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 md:p-8 space-y-6 max-w-4xl shadow-sm">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Settings className="text-purple-400" size={22} />
+              <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                <Settings className="text-[var(--accent-primary)]" size={22} />
                 {d.platformSectionTitle}
               </h2>
-              <p className="text-gray-400 text-sm mt-1">{d.platformSectionDesc}</p>
+              <p className="text-[var(--text-dim)] text-sm mt-1">{d.platformSectionDesc}</p>
             </div>
 
             {platformMessage && (
               <div 
                 className={`p-4 rounded-xl border flex items-start gap-3 ${
                   platformMessage.type === 'success' 
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                    ? 'bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-bg)]' 
+                    : 'bg-[var(--error-bg)] text-[var(--error-text)] border-[var(--error-bg)]'
                 }`}
               >
                 <Info size={18} className="shrink-0 mt-0.5" />
@@ -513,31 +513,31 @@ export function SettingsUI({
                 
                 {/* Platform Name */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-300 block">{d.platformName}</label>
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.platformName}</label>
                   <input
                     type="text"
                     value={platformName}
                     onChange={(e) => setPlatformName(e.target.value)}
                     required
-                    className="w-full bg-gray-900 border border-gray-850 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm"
                   />
                 </div>
 
                 {/* Currency - Read-only $ only */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-300 block flex items-center gap-1.5">
+                  <label className="text-sm font-semibold text-[var(--text-main)] block flex items-center gap-1.5">
                     {d.currency}
-                    <span className="text-xs text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/15">
+                    <span className="text-xs text-[var(--accent-primary)] bg-[var(--bg-input)] px-2 py-0.5 rounded-full border border-[var(--glass-border)]">
                       Fixed
                     </span>
                   </label>
                   <div className="relative">
-                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-gray-400`} />
+                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-[var(--text-dim)]`} />
                     <input
                       type="text"
                       value={`${currency} ($)`}
                       disabled
-                      className="w-full bg-gray-950/80 border border-gray-850 rounded-xl px-4 py-3 text-gray-400 outline-none cursor-not-allowed text-sm font-bold disabled:opacity-80 relative"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-dim)] outline-none cursor-not-allowed text-sm font-bold opacity-70 relative"
                       style={{ paddingLeft: isRTL ? '1rem' : '2.5rem', paddingRight: isRTL ? '2.5rem' : '1rem' }}
                     />
                   </div>
@@ -545,7 +545,7 @@ export function SettingsUI({
 
                 {/* Default Commission Rate */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-300 block">{d.defaultCommission}</label>
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.defaultCommission}</label>
                   <input
                     type="number"
                     min="0"
@@ -553,35 +553,35 @@ export function SettingsUI({
                     value={agencyPercentage}
                     onChange={(e) => setAgencyPercentage(Number(e.target.value))}
                     required
-                    className="w-full bg-gray-900 border border-gray-850 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-mono"
                   />
                 </div>
 
                 {/* Trial Period in Days */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-300 block">{d.trialPeriod}</label>
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.trialPeriod}</label>
                   <input
                     type="number"
                     min="0"
                     value={trialPeriodDays}
                     onChange={(e) => setTrialPeriodDays(Number(e.target.value))}
                     required
-                    className="w-full bg-gray-900 border border-gray-850 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-mono"
                   />
                 </div>
 
                 {/* Agency Base Fee */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-300 block">{d.baseFee}</label>
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.baseFee}</label>
                   <div className="relative">
-                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-gray-400`} />
+                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-[var(--text-dim)]`} />
                     <input
                       type="number"
                       min="0"
                       value={agencyBaseFee}
                       onChange={(e) => setAgencyBaseFee(Number(e.target.value))}
                       required
-                      className="w-full bg-gray-900 border border-gray-850 rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all text-sm font-mono"
+                      className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-mono"
                       style={{ paddingLeft: isRTL ? '1rem' : '2.5rem', paddingRight: isRTL ? '2.5rem' : '1rem' }}
                     />
                   </div>
@@ -593,7 +593,7 @@ export function SettingsUI({
                 <button
                   type="submit"
                   disabled={savingPlatform}
-                  className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800/80 text-white rounded-xl px-6 py-3 font-semibold flex items-center gap-2 transition-all shadow-lg hover:shadow-purple-500/10 text-sm"
+                  className="bg-[var(--accent-primary)] hover:opacity-90 disabled:opacity-50 text-white rounded-xl px-6 py-3 font-semibold flex items-center gap-2 transition-all shadow-md text-sm cursor-pointer"
                 >
                   {savingPlatform ? (
                     <>
@@ -616,13 +616,13 @@ export function SettingsUI({
         {/* TAB 3: Security */}
         {/* ======================================================== */}
         {activeTab === 'security' && (
-          <div className="bg-gray-850/40 border border-gray-800/80 rounded-2xl p-6 md:p-8 space-y-6 max-w-4xl">
+          <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 md:p-8 space-y-6 max-w-4xl shadow-sm">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Lock className="text-purple-400" size={22} />
+              <h2 className="text-xl font-bold text-[var(--text-main)] flex items-center gap-2">
+                <Lock className="text-[var(--accent-primary)]" size={22} />
                 {d.securitySectionTitle}
               </h2>
-              <p className="text-gray-400 text-sm mt-1">{d.securitySectionDesc}</p>
+              <p className="text-[var(--text-dim)] text-sm mt-1">{d.securitySectionDesc}</p>
             </div>
 
             <div className="space-y-4">
@@ -630,49 +630,49 @@ export function SettingsUI({
               {/* Failed Logins Alert Widget */}
               <div className={`p-5 rounded-2xl border flex items-start gap-4 ${
                 failedLoginsCount > 0 
-                  ? 'bg-red-500/10 text-red-400 border-red-500/20' 
-                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                  ? 'bg-[var(--error-bg)] text-[var(--error-text)] border-[var(--error-bg)]' 
+                  : 'bg-[var(--success-bg)] text-[var(--success-text)] border-[var(--success-bg)]'
               }`}>
                 <div className={`p-3 rounded-xl shrink-0 ${
-                  failedLoginsCount > 0 ? 'bg-red-500/10' : 'bg-emerald-500/10'
+                  failedLoginsCount > 0 ? 'bg-[var(--error-bg)] opacity-80' : 'bg-[var(--success-bg)] opacity-80'
                 }`}>
                   {failedLoginsCount > 0 ? (
-                    <ShieldAlert size={24} className="text-red-400" />
+                    <ShieldAlert size={24} className="text-[var(--error-text)]" />
                   ) : (
-                    <Shield size={24} className="text-emerald-400" />
+                    <Shield size={24} className="text-[var(--success-text)]" />
                   )}
                 </div>
                 <div className="space-y-1">
-                  <h4 className="font-bold text-white text-base">
+                  <h4 className="font-bold text-[var(--text-main)] text-base">
                     {d.failedLogins}: <span className="font-mono">{failedLoginsCount}</span>
                   </h4>
-                  <p className="text-xs text-gray-400 leading-relaxed">
+                  <p className="text-xs text-[var(--text-dim)] leading-relaxed">
                     {d.failedLoginsDesc}
                   </p>
                 </div>
               </div>
 
               {/* Profiles Metadata details */}
-              <div className="bg-gray-900/60 border border-gray-850 rounded-2xl p-6 space-y-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2 flex items-center gap-2">
-                  <Info size={16} className="text-purple-400" />
+              <div className="bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-2xl p-6 space-y-4 shadow-sm">
+                <h3 className="text-sm font-bold text-[var(--text-main)] uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <Info size={16} className="text-[var(--accent-primary)]" />
                   {d.securityInfo}
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
                   
                   {/* Master ID */}
-                  <div className="space-y-1 border-b border-gray-850 pb-3 md:border-none md:pb-0">
-                    <span className="text-gray-400 block text-xs font-semibold uppercase">{d.masterAdminId}</span>
-                    <span className="font-mono text-white text-xs select-all bg-gray-950 px-2 py-1 rounded border border-gray-850 block w-full mt-1">
+                  <div className="space-y-1 border-b border-[var(--glass-border)] pb-3 md:border-none md:pb-0">
+                    <span className="text-[var(--text-dim)] block text-xs font-semibold uppercase">{d.masterAdminId}</span>
+                    <span className="font-mono text-[var(--text-main)] text-xs select-all bg-[var(--bg-color)] px-2 py-1 rounded border border-[var(--glass-border)] block w-full mt-1">
                       {user?.id || '—'}
                     </span>
                   </div>
 
                   {/* Last Login Date */}
                   <div className="space-y-1">
-                    <span className="text-gray-400 block text-xs font-semibold uppercase">{d.lastSignIn}</span>
-                    <span className="text-white font-medium block mt-1">
+                    <span className="text-[var(--text-dim)] block text-xs font-semibold uppercase">{d.lastSignIn}</span>
+                    <span className="text-[var(--text-main)] font-medium block mt-1">
                       {formatTimestamp(user?.last_sign_in_at)}
                     </span>
                   </div>
