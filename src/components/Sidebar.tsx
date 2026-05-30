@@ -85,18 +85,34 @@ const Sidebar = () => {
 
       if (finalSession) {
         setUserEmail(finalSession.user.email || '');
-        setIsMasterAdmin(finalSession.user.user_metadata?.role === 'master_admin');
+        const isMaster = finalSession.user.user_metadata?.role === 'master_admin';
+        setIsMasterAdmin(isMaster);
 
-        // 1. Fetch Active Tenant and All Tenants
-        const activeTenant = await getActiveTenant(finalSession.user);
-        const allTenantsList = await getAllTenants(finalSession.user);
-        setTenants(allTenantsList);
-
-        if (activeTenant) {
-          setBusinessName(activeTenant.name);
-          setTenantType(activeTenant.type);
+        if (isMaster) {
+          // Fetch platform name from platform_settings
+          const { data: platformSettings } = await supabase
+            .from('platform_settings')
+            .select('platform_name')
+            .limit(1)
+            .maybeSingle();
+          if (platformSettings?.platform_name) {
+            setBusinessName(platformSettings.platform_name);
+          } else {
+            setBusinessName('Ash Agent');
+          }
         } else {
-          setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
+          // 1. Fetch Active Tenant and All Tenants
+          const activeTenant = await getActiveTenant(finalSession.user);
+          const allTenantsList = await getAllTenants(finalSession.user);
+          setTenants(allTenantsList);
+
+          if (activeTenant) {
+            setBusinessName(activeTenant.name);
+            setTenantType(activeTenant.type);
+          } else {
+            setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
+            setBusinessName('مساحة عمل افتراضية');
+          }
         }
 
         // 2. Default User Role
@@ -114,6 +130,19 @@ const Sidebar = () => {
       }
     }
     loadUserData();
+  }, []);
+
+  useEffect(() => {
+    const handlePlatformNameUpdate = (e: Event) => {
+      const customEvent = e as CustomEvent<string>;
+      if (customEvent.detail) {
+        setBusinessName(customEvent.detail);
+      }
+    };
+    window.addEventListener('platform-name-updated', handlePlatformNameUpdate);
+    return () => {
+      window.removeEventListener('platform-name-updated', handlePlatformNameUpdate);
+    };
   }, []);
 
   useEffect(() => {
@@ -183,7 +212,7 @@ const Sidebar = () => {
 
   // ─── Master Admin menu ────────────────────────────────────────────────────
   const masterNavItems = [
-    { icon: Home,          label: 'الرئيسية',          href: '/master-admin' },
+    { icon: Home,          label: 'الرئيسية',          href: '/master-admin/overview' },
     { icon: TrendingUp,    label: 'التحليل المالي',     href: '/master-admin/finance' },
     { icon: Wallet,        label: 'إدارة المحافظ',      href: '/master-admin/wallet' },
     { icon: Building2,     label: 'الوكالات',           href: '/master-admin/agencies' },
@@ -335,42 +364,11 @@ const Sidebar = () => {
 
         {isDropdownOpen && (
           <div className={styles.workspaceDropdown}>
-            {/* WORKSPACE SWITCHER */}
-            <div style={{ padding: '0.5rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 600 }}>مساحات العمل الخاصة بك</div>
-              {tenants.map((t) => (
-                <div
-                  key={t.id}
-                  className={styles.dropdownItem}
-                  onClick={() => {
-                    localStorage.setItem('active_tenant_id', t.id);
-                    window.location.reload();
-                  }}
-                  style={{ background: t.name === businessName ? 'var(--accent-primary-transparent)' : 'transparent', fontWeight: t.name === businessName ? 600 : 400 }}
-                >
-                  <Building2 size={16} /> {t.name}
-                </div>
-              ))}
-              <Link href="/onboarding" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)} style={{ color: 'var(--accent-primary)', marginTop: '0.25rem' }}>
-                <Plus size={16} /> إضافة نشاط جديد
-              </Link>
+            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', marginBottom: '0.5rem' }}>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{businessName}</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>{userEmail}</div>
             </div>
-
-            {userRole === 'admin' && (
-              <>
-                <Link href="/reports" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
-                  <BarChart3 size={16} /> التقارير
-                </Link>
-                <Link href={isMasterAdmin ? "/master-admin/settings" : "/settings"} className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
-                  <Settings size={16} /> الإعدادات
-                </Link>
-                <Link href={isMasterAdmin ? "/master-admin/wallet" : "/wallet"} className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
-                  <Wallet size={16} /> المحفظة
-                </Link>
-                <div className={styles.dropdownDivider}></div>
-              </>
-            )}
-            <div className={styles.dropdownItem} onClick={handleLogout} style={{ color: '#ef4444' }}>
+            <div className={styles.dropdownItem} onClick={handleLogout} style={{ color: '#ef4444', margin: '0.25rem 0' }}>
               <LogOut size={16} /> تسجيل الخروج
             </div>
           </div>

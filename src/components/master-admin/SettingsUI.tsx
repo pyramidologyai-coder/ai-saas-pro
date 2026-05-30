@@ -369,6 +369,7 @@ export function SettingsUI({
         }
       } else {
         setPlatformMessage({ text: d.successSave, type: 'success' })
+        window.dispatchEvent(new CustomEvent('platform-name-updated', { detail: platformName }));
       }
 
       router.refresh()
