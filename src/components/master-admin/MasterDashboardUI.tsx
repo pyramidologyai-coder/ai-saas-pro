@@ -312,16 +312,16 @@ export function MasterDashboardUI({
           bg-black/60 flex items-center
           justify-center z-50
           backdrop-blur-sm">
-          <div className="bg-gray-800
+          <div className="bg-[var(--card-bg)]
             rounded-xl p-6 max-w-sm w-full
-            mx-4 border border-gray-700
+            mx-4 border border-[var(--glass-border)]
             shadow-2xl">
-            <h3 className="text-white
+            <h3 className="text-[var(--text-main)]
               font-semibold text-lg mb-2"
               dir="rtl">
               تأكيد التعطيل
             </h3>
-            <p className="text-gray-400
+            <p className="text-[var(--text-dim)]
               text-sm mb-4"
               dir="rtl">
               هل أنت متأكد من تعطيل هذه الوكالة؟
@@ -345,9 +345,9 @@ export function MasterDashboardUI({
                 }}
                 disabled={!!suspending}
                 className="px-4 py-2
-                  rounded-lg bg-gray-700
-                  text-gray-300
-                  hover:bg-gray-600
+                  rounded-lg bg-[var(--bg-input)]
+                  text-[var(--text-dim)]
+                  hover:bg-[var(--hover-bg)]
                   text-sm transition-colors
                   disabled:opacity-50">
                 إلغاء
@@ -471,22 +471,22 @@ export function MasterDashboardUI({
 
         {/* نمو الوكالات */}
         <div className="rounded-xl p-4 border
-          bg-gray-800/50 border-gray-700/50
+          bg-[var(--card-bg)] border-[var(--glass-border)]
           space-y-2">
-          <span className="text-gray-400 text-sm">
+          <span className="text-[var(--text-dim)] text-sm">
             نمو الوكالات
           </span>
           {renderGrowth(agenciesGrowth)}
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--text-secondary)]">
             مقارنة بالشهر الماضي
           </span>
         </div>
 
         {/* معدل الاستخدام */}
         <div className="rounded-xl p-4 border
-          bg-gray-800/50 border-gray-700/50
+          bg-[var(--card-bg)] border-[var(--glass-border)]
           space-y-2">
-          <span className="text-gray-400 text-sm">
+          <span className="text-[var(--text-dim)] text-sm">
             معدل الاستخدام
           </span>
           <span className={`text-2xl font-bold ${
@@ -498,7 +498,7 @@ export function MasterDashboardUI({
           }`}>
             {safeUsageRate}%
           </span>
-          <div className="w-full bg-gray-700
+          <div className="w-full bg-[var(--bg-input)]
             rounded-full h-2">
             <div
               className={`h-2 rounded-full
@@ -516,58 +516,58 @@ export function MasterDashboardUI({
 
         {/* وكالات تنتهي */}
         <div className={`rounded-xl p-4 border
-          bg-gray-800/50 space-y-2 ${
+          bg-[var(--card-bg)] space-y-2 ${
           expiringCount > 0
             ? 'border-red-500/30'
-            : 'border-gray-700/50'
+            : 'border-[var(--glass-border)]'
         }`}>
           <div className="flex items-center gap-2">
             <Clock size={16} className={
               expiringCount > 0
                 ? 'text-red-400'
-                : 'text-gray-400'
+                : 'text-[var(--text-dim)]'
             }/>
-            <span className="text-gray-400 text-sm">
+            <span className="text-[var(--text-dim)] text-sm">
               وكالات تنتهي قريباً
             </span>
           </div>
           <span className={`text-2xl font-bold ${
             expiringCount > 0
               ? 'text-red-400'
-              : 'text-gray-400'
+              : 'text-[var(--text-dim)]'
           }`}>
             {expiringCount}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--text-secondary)]">
             خلال 7 أيام
           </span>
         </div>
 
         {/* عملاء 80% */}
         <div className={`rounded-xl p-4 border
-          bg-gray-800/50 space-y-2 ${
+          bg-[var(--card-bg)] space-y-2 ${
           highUsageCount > 0
             ? 'border-orange-500/30'
-            : 'border-gray-700/50'
+            : 'border-[var(--glass-border)]'
         }`}>
           <div className="flex items-center gap-2">
             <Activity size={16} className={
               highUsageCount > 0
                 ? 'text-orange-400'
-                : 'text-gray-400'
+                : 'text-[var(--text-dim)]'
             }/>
-            <span className="text-gray-400 text-sm">
+            <span className="text-[var(--text-dim)] text-sm">
               استهلاك عالي
             </span>
           </div>
           <span className={`text-2xl font-bold ${
             highUsageCount > 0
               ? 'text-orange-400'
-              : 'text-gray-400'
+              : 'text-[var(--text-dim)]'
           }`}>
             {highUsageCount}
           </span>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-[var(--text-secondary)]">
             وصلوا 80% من الرصيد
           </span>
         </div>
@@ -575,11 +575,11 @@ export function MasterDashboardUI({
 
       {/* جدول الوكالات */}
       <div className="rounded-xl border
-        bg-gray-800/50 border-gray-700/50 p-4">
+        bg-[var(--card-bg)] border-[var(--glass-border)] p-4">
         <div className="flex justify-between
           items-center mb-4">
           <h3 className="text-lg font-semibold
-            text-white">
+            text-[var(--text-main)]">
             أحدث الوكالات
           </h3>
           <Link
@@ -596,8 +596,8 @@ export function MasterDashboardUI({
             items-center justify-center
             py-12 gap-3">
             <Building2 size={48}
-              className="text-gray-600"/>
-            <p className="text-gray-500 text-sm">
+              className="text-[var(--text-secondary)]"/>
+            <p className="text-[var(--text-secondary)] text-sm">
               لا توجد وكالات بعد
             </p>
           </div>
@@ -605,8 +605,8 @@ export function MasterDashboardUI({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-gray-400
-                  border-b border-gray-700">
+                <tr className="text-[var(--text-dim)]
+                  border-b border-[var(--glass-border)]">
                   <th className="text-right
                     py-3 px-2 font-medium">
                     اسم الوكالة
@@ -654,8 +654,8 @@ export function MasterDashboardUI({
                   return (
                     <tr key={agency.id}
                       className="border-b
-                        border-gray-800
-                        hover:bg-gray-700/30
+                        border-[var(--glass-border)]
+                        hover:bg-[var(--hover-bg)]
                         transition-colors">
 
                       <td className="py-3 px-2">
@@ -671,7 +671,7 @@ export function MasterDashboardUI({
                             aria-hidden="true">
                             {firstChar}
                           </div>
-                          <span className="text-white
+                          <span className="text-[var(--text-main)]
                             truncate max-w-[120px]">
                             {agency.name}
                           </span>
@@ -692,7 +692,7 @@ export function MasterDashboardUI({
                       <td className="py-3 px-2
                         text-center">
                         <span className="font-semibold
-                          text-white">
+                          text-[var(--text-main)]">
                           {formatNumber(
                             agency.tenants_count
                           )}
@@ -711,7 +711,7 @@ export function MasterDashboardUI({
                       </td>
 
                       <td className="py-3 px-2
-                        text-gray-400">
+                        text-[var(--text-dim)]">
                         {formatDate(
                           agency.created_at
                         )}
