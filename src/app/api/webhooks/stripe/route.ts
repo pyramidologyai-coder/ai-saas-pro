@@ -113,20 +113,23 @@ export async function POST(req: Request) {
         throw updateError;
       }
 
-      // Generate Invoice Record for Tax Compliance
+      // Generate Invoice Record for Tax Compliance (utilizing newly added schema columns)
+      const agencyId = tenant?.agency_id || (tenant?.agency as any)?.id || null;
       await supabaseAdmin
         .from('invoices')
         .insert([{
           tenant_id: tenantId,
+          agency_id: agencyId,
           amount: (session.amount_total || 0) / 100, // convert cents to dollars
           currency: session.currency || 'usd',
           status: 'paid',
-          stripe_invoice_id: stripeInvoiceId
+          stripe_invoice_id: stripeInvoiceId,
+          plan_type: purchasedPlan,
+          paid_at: new Date().toISOString()
         }]);
 
       // 2126 Cyber Security & precision finance: Log dynamic transaction in wallet_ledger
       try {
-        const agencyId = tenant?.agency_id || (tenant?.agency as any)?.id || null;
         const planType = session.metadata?.planId || 'pro';
         
         await supabaseAdmin.from('wallet_ledger').insert({
