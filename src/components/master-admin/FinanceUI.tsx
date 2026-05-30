@@ -316,12 +316,40 @@ export function FinanceUI({ initialData, invoices = [], agencies = [] }: Finance
   const suspendedAgenciesCount = initialData?.suspended_agencies_count ?? initialData?.suspendedAgenciesCount ?? 0
   const activeClientsCount = initialData?.active_clients_count ?? initialData?.activeClientsCount ?? 0
   
-  const rawRevenueByPlan = initialData?.revenue_by_plan ?? initialData?.revenueByPlan ?? [
-    { name: 'starter', label: 'Starter ($49)', value: 0 },
-    { name: 'growth', label: 'Growth ($99)', value: 0 },
-    { name: 'pro', label: 'Pro ($199)', value: 0 },
-    { name: 'vip', label: 'VIP ($399)', value: 0 }
-  ]
+  // Dynamic Plan Revenue Calculation (completely automatic when a plan is deleted or added)
+  const getDynamicRevenueByPlan = () => {
+    const planMap: Record<string, number> = {}
+    
+    safeInvoices.forEach(inv => {
+      if (inv.status !== 'paid') return
+      const planName = inv.plan_type || 'unassigned'
+      planMap[planName] = (planMap[planName] || 0) + (Number(inv.amount) || 0)
+    })
+    
+    // Ensure the 4 core plans are initialized with at least 0 to maintain initial layout
+    const corePlans = ['starter', 'growth', 'pro', 'vip']
+    corePlans.forEach(cp => {
+      if (!(cp in planMap)) {
+        planMap[cp] = 0
+      }
+    })
+
+    return Object.entries(planMap).map(([name, value]) => {
+      let label = name.charAt(0).toUpperCase() + name.slice(1)
+      if (name === 'starter') label = 'Starter ($49)'
+      else if (name === 'growth') label = 'Growth ($99)'
+      else if (name === 'pro') label = 'Pro ($199)'
+      else if (name === 'vip') label = 'VIP ($399)'
+      
+      return {
+        name,
+        label,
+        value
+      }
+    }).sort((a, b) => b.value - a.value)
+  }
+
+  const rawRevenueByPlan = getDynamicRevenueByPlan()
 
   const d = DICTIONARY[lang]
   const isRtl = lang === 'ar'
