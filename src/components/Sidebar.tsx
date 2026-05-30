@@ -361,7 +361,7 @@ const Sidebar = () => {
                 <Link href="/reports" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <BarChart3 size={16} /> التقارير
                 </Link>
-                <Link href="/settings" className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
+                <Link href={isMasterAdmin ? "/master-admin/settings" : "/settings"} className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
                   <Settings size={16} /> الإعدادات
                 </Link>
                 <Link href={isMasterAdmin ? "/master-admin/wallet" : "/wallet"} className={styles.dropdownItem} onClick={() => setIsDropdownOpen(false)}>
