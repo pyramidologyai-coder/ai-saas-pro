@@ -14,6 +14,7 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 import { addWalletCreditAction, addTenantCreditAction } from '@/app/(dashboard)/master-admin/wallet/actions';
+import * as XLSX from 'xlsx';
 
 interface Transaction {
   id: string;
@@ -173,6 +174,9 @@ export function WalletUI({
   const safeAgencies = Array.isArray(agencies) ? agencies : [];
   const safeDirectTenants = Array.isArray(directTenants) ? directTenants : [];
 
+  // Temporary console.log to debug dropdown select arrays
+  console.log('WalletUI: agencies =', safeAgencies, 'directTenants =', safeDirectTenants);
+
   const router = useRouter();
   const [lang, setLang] = useState<'ar' | 'en' | 'fr'>(initialLang);
   const t = DICT[lang];
@@ -280,6 +284,26 @@ export function WalletUI({
     return matchesAgency && matchesType;
   });
 
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredTransactions.map(t => {
+      // Find tenant name defensively
+      const matchingTenant = t.tenant_id ? safeDirectTenants.find(dt => dt.id === t.tenant_id) : null;
+      const finalTenantName = t.tenant_name || matchingTenant?.name || null;
+
+      return {
+        'الوكالة / العميل': t.agency_name || finalTenantName || (isRtl ? 'المنصة الرئيسية' : 'Master Platform'),
+        'نوع العملية': getTransactionTypeLabel(t.transaction_type),
+        'المبلغ ($)': t.credit > 0 ? t.credit : -t.debit,
+        'الوصف': t.description,
+        'المرجع': t.reference_id || '-',
+        'التاريخ': new Date(t.created_at).toLocaleDateString('ar-EG')
+      };
+    }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'المعاملات');
+    XLSX.writeFile(wb, `wallet_transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   return (
     <div style={{ padding: '2rem', color: 'var(--text-main)', direction: isRtl ? 'rtl' : 'ltr' }}>
       
@@ -294,7 +318,7 @@ export function WalletUI({
         </div>
 
         {/* Language switch controls */}
-        <div style={{ display: 'flex', gap: '0.5rem', background: 'rgba(255,255,255,0.03)', padding: '0.3rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--bg-input)', padding: '0.3rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
           {(['ar', 'en', 'fr'] as const).map(l => (
             <button
               key={l}
@@ -321,7 +345,7 @@ export function WalletUI({
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
         
         {/* Total Credited */}
-        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <TrendingUp color="#10b981" size={24} />
           </div>
@@ -332,7 +356,7 @@ export function WalletUI({
         </div>
 
         {/* Total Spent */}
-        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <TrendingDown color="#ef4444" size={24} />
           </div>
@@ -343,7 +367,7 @@ export function WalletUI({
         </div>
 
         {/* Current Balance */}
-        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <DollarSign color="var(--accent-primary)" size={24} />
           </div>
@@ -354,7 +378,7 @@ export function WalletUI({
         </div>
 
         {/* Total Agencies */}
-        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ background: 'var(--card-bg)', padding: '1.6rem', borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
             <Building2 color="#8b5cf6" size={24} />
           </div>
@@ -374,7 +398,7 @@ export function WalletUI({
           borderRadius: '28px', 
           border: '1px solid var(--glass-border)', 
           padding: '2rem',
-          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
+          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
         }}>
           <h2 style={{ fontSize: '1.4rem', fontWeight: '850', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <PlusCircle size={22} color="var(--accent-primary)" />
@@ -398,7 +422,7 @@ export function WalletUI({
                 setSuccess(null);
               }}
               style={{
-                background: activeFormTab === 'agency' ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                background: activeFormTab === 'agency' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
                 color: activeFormTab === 'agency' ? 'var(--accent-primary)' : 'var(--text-dim)',
                 border: activeFormTab === 'agency' ? '1px solid var(--accent-primary)' : '1px solid transparent',
                 padding: '0.6rem 1.2rem',
@@ -423,7 +447,7 @@ export function WalletUI({
                 setSuccess(null);
               }}
               style={{
-                background: activeFormTab === 'tenant' ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                background: activeFormTab === 'tenant' ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
                 color: activeFormTab === 'tenant' ? 'var(--accent-primary)' : 'var(--text-dim)',
                 border: activeFormTab === 'tenant' ? '1px solid var(--accent-primary)' : '1px solid transparent',
                 padding: '0.6rem 1.2rem',
@@ -492,22 +516,26 @@ export function WalletUI({
                   padding: '0.85rem', 
                   borderRadius: '12px', 
                   border: '1px solid var(--glass-border)', 
-                  background: 'rgba(255,255,255,0.03)', 
+                  background: 'var(--bg-input)', 
                   color: 'var(--text-main)',
                   fontSize: '0.95rem',
                   outline: 'none',
                   cursor: 'pointer'
                 }}
               >
-                <option value="" style={{ background: '#0f172a' }}>
+                <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
                   -- {activeFormTab === 'agency' ? t.selectAgency : t.selectTenant} --
                 </option>
                 {activeFormTab === 'agency' 
                   ? safeAgencies.map(a => (
-                      <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name} ({a.contact_email})</option>
+                      <option key={a.id} value={a.id} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                        {a.name} ({a.contact_email})
+                      </option>
                     ))
                   : safeDirectTenants.map(dt => (
-                      <option key={dt.id} value={dt.id} style={{ background: '#0f172a' }}>{dt.name} ({dt.plan_type})</option>
+                      <option key={dt.id} value={dt.id} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                        {dt.name} ({dt.plan_type})
+                      </option>
                     ))
                 }
               </select>
@@ -530,7 +558,7 @@ export function WalletUI({
                   padding: '0.85rem', 
                   borderRadius: '12px', 
                   border: '1px solid var(--glass-border)', 
-                  background: 'rgba(255,255,255,0.03)', 
+                  background: 'var(--bg-input)', 
                   color: 'var(--text-main)',
                   fontSize: '0.95rem',
                   outline: 'none',
@@ -555,7 +583,7 @@ export function WalletUI({
                   padding: '0.85rem', 
                   borderRadius: '12px', 
                   border: '1px solid var(--glass-border)', 
-                  background: 'rgba(255,255,255,0.03)', 
+                  background: 'var(--bg-input)', 
                   color: 'var(--text-main)',
                   fontSize: '0.95rem',
                   outline: 'none'
@@ -578,7 +606,7 @@ export function WalletUI({
                   fontSize: '0.95rem',
                   fontWeight: 'bold',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(249, 115, 22, 0.2)',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
                   opacity: loadingRecharge ? 0.7 : 1,
                   transition: 'all 0.2s'
                 }}
@@ -598,7 +626,7 @@ export function WalletUI({
         borderRadius: '28px', 
         border: '1px solid var(--glass-border)', 
         padding: '2rem',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1)'
       }}>
         
         {/* Table Title and Filters */}
@@ -606,11 +634,11 @@ export function WalletUI({
           <h2 style={{ fontSize: '1.4rem', fontWeight: '850', margin: 0 }}>{t.transactionsTitle}</h2>
           
           {/* Filters controls */}
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
             
             {/* Filter by Agency */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}><Search size={14} /></span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}><Search size={14} /></span>
               <select
                 value={agencyFilter}
                 onChange={(e) => setAgencyFilter(e.target.value)}
@@ -618,16 +646,16 @@ export function WalletUI({
                   padding: '0.5rem 1rem',
                   borderRadius: '10px',
                   border: '1px solid var(--glass-border)',
-                  background: 'rgba(0,0,0,0.4)',
+                  background: 'var(--bg-input)',
                   color: 'var(--text-main)',
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   outline: 'none'
                 }}
               >
-                <option value="" style={{ background: '#0f172a' }}>{t.all}</option>
+                <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.all}</option>
                 {safeAgencies.map(a => (
-                  <option key={a.id} value={a.id} style={{ background: '#0f172a' }}>{a.name}</option>
+                  <option key={a.id} value={a.id} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{a.name}</option>
                 ))}
               </select>
             </div>
@@ -641,21 +669,43 @@ export function WalletUI({
                   padding: '0.5rem 1rem',
                   borderRadius: '10px',
                   border: '1px solid var(--glass-border)',
-                  background: 'rgba(0,0,0,0.4)',
+                  background: 'var(--bg-input)',
                   color: 'var(--text-main)',
                   fontSize: '0.85rem',
                   cursor: 'pointer',
                   outline: 'none'
                 }}
               >
-                <option value="" style={{ background: '#0f172a' }}>{t.allTypes}</option>
-                <option value="deposit" style={{ background: '#0f172a' }}>{t.typeDeposit}</option>
-                <option value="subscription_fee" style={{ background: '#0f172a' }}>{t.typeSubscription}</option>
-                <option value="ai_usage_fee" style={{ background: '#0f172a' }}>{t.typeUsage}</option>
-                <option value="payout" style={{ background: '#0f172a' }}>{t.typePayout}</option>
-                <option value="refund" style={{ background: '#0f172a' }}>{t.typeRefund}</option>
+                <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.allTypes}</option>
+                <option value="deposit" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.typeDeposit}</option>
+                <option value="subscription_fee" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.typeSubscription}</option>
+                <option value="ai_usage_fee" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.typeUsage}</option>
+                <option value="payout" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.typePayout}</option>
+                <option value="refund" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{t.typeRefund}</option>
               </select>
             </div>
+
+            {/* Export Excel Button */}
+            <button
+              onClick={handleExportExcel}
+              style={{
+                padding: '0.5rem 1.2rem',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'var(--accent-primary)',
+                color: 'white',
+                fontSize: '0.85rem',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                transition: 'all 0.2s',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+              }}
+            >
+              <span>{lang === 'ar' ? 'تصدير Excel 📊' : lang === 'fr' ? 'Exporter Excel 📊' : 'Export to Excel 📊'}</span>
+            </button>
 
           </div>
         </div>
@@ -683,7 +733,7 @@ export function WalletUI({
                 const finalTenantName = tx.tenant_name || matchingTenant?.name || null;
 
                 return (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: '0.2s' }}>
+                  <tr key={tx.id} style={{ borderBottom: '1px solid var(--glass-border)', transition: '0.2s' }}>
                     <td style={{ padding: '1.2rem', fontWeight: '600' }}>
                       {tx.agency_name ? (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
