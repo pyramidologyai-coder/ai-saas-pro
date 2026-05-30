@@ -54,7 +54,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Name required');
   END IF;
 
-  IF p_contact_email !~ '^[^@]+@[^@]+\\.[^@]+$' THEN
+  IF p_contact_email !~ '^[^@]+@[^@]+\.[^@]+$' THEN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid email');
   END IF;
 
@@ -62,8 +62,15 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Invalid commission rate');
   END IF;
 
-  IF NOT EXISTS (SELECT 1 FROM plans WHERE slug = p_plan_type AND is_active = true) THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Invalid plan');
+  -- ✅ تأكد إن الباقة للوكالات + مش منتهية
+  IF NOT EXISTS (
+    SELECT 1 FROM plans 
+    WHERE slug = p_plan_type 
+    AND is_active = true
+    AND intended_for IN ('agency', 'both')
+    AND (expires_at IS NULL OR expires_at > now())
+  ) THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid or expired plan for agency');
   END IF;
 
   INSERT INTO agencies (
