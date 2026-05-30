@@ -39,6 +39,11 @@ interface Agency {
   subscription_status: string
 }
 
+interface Plan {
+  name: string
+  price_monthly?: number
+}
+
 interface PlanRevenue {
   name: string
   label: string
@@ -69,6 +74,7 @@ interface FinanceUIProps {
   } | null
   invoices?: Invoice[]
   agencies?: Agency[]
+  plans?: Plan[]
 }
 
 const DICTIONARY = {
@@ -263,7 +269,7 @@ const DICTIONARY = {
   }
 } as const
 
-export function FinanceUI({ initialData, invoices = [], agencies = [] }: FinanceUIProps) {
+export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [] }: FinanceUIProps) {
   const [lang, setLang] = useState<Lang>('ar')
   const [isPending, startTransition] = useTransition()
   const [mounted, setMounted] = useState(false)
@@ -279,6 +285,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [] }: Finance
 
   const safeInvoices = Array.isArray(invoices) ? invoices : []
   const safeAgencies = Array.isArray(agencies) ? agencies : []
+  const safePlans = Array.isArray(plans) ? plans : []
 
   // Dynamic KPI Calculations
   const calculatedTotalRevenue = safeInvoices
@@ -320,26 +327,42 @@ export function FinanceUI({ initialData, invoices = [], agencies = [] }: Finance
   const getDynamicRevenueByPlan = () => {
     const planMap: Record<string, number> = {}
     
+    // 1. Initialize all active plans from database plans table with 0 revenue
+    safePlans.forEach(p => {
+      planMap[p.name.toLowerCase()] = 0
+    })
+    
+    // 2. Sum paid invoices revenue grouped by plan_type
     safeInvoices.forEach(inv => {
       if (inv.status !== 'paid') return
-      const planName = inv.plan_type || 'unassigned'
+      const planName = (inv.plan_type || 'unassigned').toLowerCase()
       planMap[planName] = (planMap[planName] || 0) + (Number(inv.amount) || 0)
     })
     
-    // Ensure the 4 core plans are initialized with at least 0 to maintain initial layout
-    const corePlans = ['starter', 'growth', 'pro', 'vip']
-    corePlans.forEach(cp => {
-      if (!(cp in planMap)) {
-        planMap[cp] = 0
-      }
-    })
+    // If safePlans is empty (fallback to protect initial layout), populate the 4 default ones
+    if (safePlans.length === 0) {
+      const corePlans = ['starter', 'growth', 'pro', 'vip']
+      corePlans.forEach(cp => {
+        if (!(cp in planMap)) {
+          planMap[cp] = 0
+        }
+      })
+    }
 
     return Object.entries(planMap).map(([name, value]) => {
-      let label = name.charAt(0).toUpperCase() + name.slice(1)
-      if (name === 'starter') label = 'Starter ($49)'
-      else if (name === 'growth') label = 'Growth ($99)'
-      else if (name === 'pro') label = 'Pro ($199)'
-      else if (name === 'vip') label = 'VIP ($399)'
+      // Look up plan in the database plans array
+      const dbPlan = safePlans.find(p => p.name.toLowerCase() === name)
+      const price = dbPlan?.price_monthly
+      
+      let label = dbPlan
+        ? `${dbPlan.name} ($${price})`
+        : name.charAt(0).toUpperCase() + name.slice(1)
+        
+      // Keep beautiful labels for default tiers
+      if (name === 'starter' && !dbPlan) label = 'Starter ($49)'
+      else if (name === 'growth' && !dbPlan) label = 'Growth ($99)'
+      else if (name === 'pro' && !dbPlan) label = 'Pro ($199)'
+      else if (name === 'vip' && !dbPlan) label = 'VIP ($399)'
       
       return {
         name,
