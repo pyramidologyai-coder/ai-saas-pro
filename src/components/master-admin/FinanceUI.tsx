@@ -50,6 +50,12 @@ interface PlanRevenue {
   value: number
 }
 
+interface Tenant {
+  id: string
+  name: string
+  created_at?: string
+}
+
 interface FinanceUIProps {
   initialData?: {
     total_revenue?: number
@@ -75,6 +81,7 @@ interface FinanceUIProps {
   invoices?: Invoice[]
   agencies?: Agency[]
   plans?: Plan[]
+  tenants?: Tenant[]
 }
 
 const DICTIONARY = {
@@ -269,7 +276,7 @@ const DICTIONARY = {
   }
 } as const
 
-export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [] }: FinanceUIProps) {
+export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [], tenants = [] }: FinanceUIProps) {
   const [lang, setLang] = useState<Lang>('ar')
   const [isPending, startTransition] = useTransition()
   const [mounted, setMounted] = useState(false)
@@ -304,6 +311,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const safeInvoices = Array.isArray(invoices) ? invoices : []
   const safeAgencies = Array.isArray(agencies) ? agencies : []
   const safePlans = Array.isArray(plans) ? plans : []
+  const safeTenants = Array.isArray(tenants) ? tenants : []
 
   // Dynamic KPI Calculations
   const calculatedTotalRevenue = safeInvoices
@@ -565,7 +573,15 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       }
     })
 
-    // 2. Add all unique agencies or direct tenants from invoices
+    // 2. Add all safeTenants from the prop
+    safeTenants.forEach(t => {
+      if (!seen.has(t.id)) {
+        seen.add(t.id)
+        list.push({ id: t.id, name: t.name, type: 'tenant' })
+      }
+    })
+
+    // 3. Add all unique agencies or direct tenants from invoices
     safeInvoices.forEach(inv => {
       if (inv.agency_id && inv.agencies?.name) {
         if (!seen.has(inv.agency_id)) {
@@ -733,7 +749,8 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                 <div className="max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar">
                   {/* Reset option */}
                   <div
-                    onClick={() => {
+                    onMouseDown={(e) => {
+                      e.preventDefault();
                       setSelectedRecipient(null);
                       setRecipientDropdownOpen(false);
                       setRecipientSearchQuery('');
@@ -755,7 +772,8 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                       return (
                         <div
                           key={r.id}
-                          onClick={() => {
+                          onMouseDown={(e) => {
+                            e.preventDefault();
                             setSelectedRecipient(r);
                             setRecipientDropdownOpen(false);
                             setRecipientSearchQuery('');

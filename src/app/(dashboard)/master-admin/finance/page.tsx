@@ -42,9 +42,10 @@ export default async function SuperAdminFinancePage() {
   let invoices: any[] = [];
   let agencies: any[] = [];
   let plans: any[] = [];
+  let tenants: any[] = [];
 
   try {
-    const [userRes, isMasterRes, financeRes, invoicesRes, agenciesRes, plansRes] = await Promise.allSettled([
+    const [userRes, isMasterRes, financeRes, invoicesRes, agenciesRes, plansRes, tenantsRes] = await Promise.allSettled([
       withTimeout(supabase.auth.getUser(), 10000),
       withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
       withTimeout(supabase.rpc('get_financial_overview'), 10000),
@@ -79,6 +80,12 @@ export default async function SuperAdminFinancePage() {
         supabase
           .from('plans')
           .select('name, price_monthly')
+      ), 10000),
+      withTimeout(Promise.resolve(
+        supabase
+          .from('tenants')
+          .select('id, name, created_at')
+          .order('name', { ascending: true })
       ), 10000)
     ]);
 
@@ -88,6 +95,7 @@ export default async function SuperAdminFinancePage() {
     invoices = invoicesRes.status === 'fulfilled' && !invoicesRes.value.error ? (invoicesRes.value.data || []) : [];
     agencies = agenciesRes.status === 'fulfilled' && !agenciesRes.value.error ? (agenciesRes.value.data || []) : [];
     plans = plansRes.status === 'fulfilled' && !plansRes.value.error ? (plansRes.value.data || []) : [];
+    tenants = tenantsRes.status === 'fulfilled' && !tenantsRes.value.error ? (tenantsRes.value.data || []) : [];
 
     if (!user) {
       redirectTarget = '/auth';
@@ -109,5 +117,5 @@ export default async function SuperAdminFinancePage() {
     financialData = cleanData;
   }
 
-  return <FinanceUI initialData={financialData} invoices={invoices} agencies={agencies} plans={plans} />;
+  return <FinanceUI initialData={financialData} invoices={invoices} agencies={agencies} plans={plans} tenants={tenants} />;
 }
