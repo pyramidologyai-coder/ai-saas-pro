@@ -39,17 +39,48 @@ export default async function SuperAdminFinancePage() {
 
   let redirectTarget: string | null = null;
   let financialData: any = null;
+  let invoices: any[] = [];
+  let agencies: any[] = [];
 
   try {
-    const [userRes, isMasterRes, financeRes] = await Promise.allSettled([
+    const [userRes, isMasterRes, financeRes, invoicesRes, agenciesRes] = await Promise.allSettled([
       withTimeout(supabase.auth.getUser(), 10000),
       withTimeout(Promise.resolve(supabase.rpc('verify_master_admin_role')), 5000),
-      withTimeout(supabase.rpc('get_financial_overview'), 10000)
+      withTimeout(supabase.rpc('get_financial_overview'), 10000),
+      withTimeout(Promise.resolve(
+        supabase
+          .from('invoices')
+          .select(`
+            id,
+            invoice_number,
+            amount,
+            currency,
+            status,
+            invoice_type,
+            plan_type,
+            created_at,
+            paid_at,
+            tenant_id,
+            agency_id,
+            tenants ( name ),
+            agencies ( name )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100)
+      ), 10000),
+      withTimeout(Promise.resolve(
+        supabase
+          .from('agencies')
+          .select('id, name, plan_type, created_at, subscription_status')
+          .order('created_at', { ascending: true })
+      ), 10000)
     ]);
 
     const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
     financialData = financeRes.status === 'fulfilled' && financeRes.value.data ? financeRes.value.data : null;
+    invoices = invoicesRes.status === 'fulfilled' && !invoicesRes.value.error ? (invoicesRes.value.data || []) : [];
+    agencies = agenciesRes.status === 'fulfilled' && !agenciesRes.value.error ? (agenciesRes.value.data || []) : [];
 
     if (!user) {
       redirectTarget = '/auth';
@@ -71,5 +102,5 @@ export default async function SuperAdminFinancePage() {
     financialData = cleanData;
   }
 
-  return <FinanceUI initialData={financialData} />;
+  return <FinanceUI initialData={financialData} invoices={invoices} agencies={agencies} />;
 }
