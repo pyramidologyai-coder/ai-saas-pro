@@ -265,7 +265,7 @@ export function MasterOverviewUI({
                 </div>
                 <div className="text-left space-y-1">
                   <span className="text-sm font-black text-purple-400 font-mono block">{plan.agencies_count || 0} وكالة</span>
-                  <span className="text-[11px] text-gray-500 font-mono">{formatCurrency(plan.revenue || 0)} شهرياً</span>
+                  <span className="text-[11px] text-gray-500 font-mono">{formatCurrency(plan.price_monthly || 0)} / شهرياً</span>
                 </div>
               </div>
             ))}
