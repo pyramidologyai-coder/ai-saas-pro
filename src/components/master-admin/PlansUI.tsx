@@ -520,16 +520,16 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
   })
 
   return (
-    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-6 space-y-8 max-w-7xl mx-auto text-gray-100 min-h-screen">
+    <div dir={isRTL ? 'rtl' : 'ltr'} className="p-6 space-y-8 max-w-7xl mx-auto text-[var(--text-main)] min-h-screen">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-gray-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-[var(--glass-border)]">
         <div>
-          <h1 className="text-3xl font-black text-white flex items-center gap-3">
+          <h1 className="text-3xl font-black text-[var(--text-main)] flex items-center gap-3">
             <Shield className="text-purple-500" size={32} />
             {d.title}
           </h1>
-          <p className="text-gray-400 mt-2 text-sm max-w-2xl leading-relaxed">
+          <p className="text-[var(--text-dim)] mt-2 text-sm max-w-2xl leading-relaxed">
             {d.subtitle}
           </p>
         </div>
@@ -537,11 +537,11 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         {/* Action Buttons & Language selector */}
         <div className="flex flex-wrap items-center gap-4 self-end md:self-auto">
           {/* Language selector */}
-          <div className="flex items-center gap-2 bg-gray-800/85 p-1 rounded-xl border border-gray-700/50">
+          <div className="flex items-center gap-2 bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--glass-border)]">
             <button
               onClick={() => startTransition(() => setLang('ar'))}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                lang === 'ar' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                lang === 'ar' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
               }`}
             >
               العربية
@@ -549,7 +549,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
             <button
               onClick={() => startTransition(() => setLang('en'))}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                lang === 'en' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                lang === 'en' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
               }`}
             >
               English
@@ -557,7 +557,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
             <button
               onClick={() => startTransition(() => setLang('fr'))}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                lang === 'fr' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+                lang === 'fr' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
               }`}
             >
               Français
@@ -575,11 +575,11 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-2 bg-gray-900/60 p-1.5 rounded-xl border border-gray-800 w-fit">
+      <div className="flex items-center gap-2 bg-[var(--bg-input)] p-1.5 rounded-xl border border-[var(--glass-border)] w-fit">
         <button
           onClick={() => setFilterMode('active')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-            filterMode === 'active' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            filterMode === 'active' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
           }`}
         >
           {d.filterActive}
@@ -587,7 +587,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         <button
           onClick={() => setFilterMode('archived')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-            filterMode === 'archived' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            filterMode === 'archived' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
           }`}
         >
           {d.filterArchived}
@@ -595,7 +595,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         <button
           onClick={() => setFilterMode('all')}
           className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
-            filterMode === 'all' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+            filterMode === 'all' ? 'bg-purple-600 text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-bright)]'
           }`}
         >
           {d.filterAll}
@@ -604,8 +604,8 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
 
       {/* Add Plan Form Box */}
       {showAddForm && (
-        <div className="bg-gray-850/60 border border-purple-500/20 rounded-2xl p-6 md:p-8 max-w-4xl animate-fade-in shadow-[0_0_20px_rgba(168,85,247,0.03)]">
-          <h3 className="text-lg font-bold text-purple-400 mb-6 flex items-center gap-2 border-b border-gray-800 pb-3">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 md:p-8 max-w-4xl animate-fade-in shadow-[var(--glow)]">
+          <h3 className="text-lg font-bold text-purple-400 mb-6 flex items-center gap-2 border-b border-[var(--glass-border)] pb-3">
             <Plus size={20} />
             {d.addPlan}
           </h3>
@@ -615,33 +615,33 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               
               {/* Name */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.planName}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.planName}</label>
                 <input
                   type="text"
                   value={newPlanName}
                   onChange={(e) => setNewPlanName(e.target.value)}
                   placeholder="e.g. Enterprise"
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm"
                 />
               </div>
 
               {/* Slug */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.planSlug}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.planSlug}</label>
                 <input
                   type="text"
                   value={newPlanSlug}
                   onChange={(e) => setNewPlanSlug(e.target.value)}
                   placeholder="e.g. enterprise"
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                 />
               </div>
 
               {/* Commission Rate */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.commissionRate}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.commissionRate}</label>
                 <input
                   type="number"
                   min="0"
@@ -649,13 +649,13 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   value={newCommissionRate}
                   onChange={(e) => setNewCommissionRate(Number(e.target.value))}
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                 />
               </div>
 
               {/* Monthly Price */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.monthlyPrice}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.monthlyPrice}</label>
                 <div className="relative">
                   <DollarSign size={14} className={`absolute ${isRTL ? 'left-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-500`} />
                   <input
@@ -664,14 +664,14 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                     value={newPriceMonthly}
                     onChange={(e) => setNewPriceMonthly(Number(e.target.value))}
                     required
-                    className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-8 pr-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl pl-8 pr-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                   />
                 </div>
               </div>
 
               {/* Yearly Price */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.yearlyPrice}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.yearlyPrice}</label>
                 <div className="relative">
                   <DollarSign size={14} className={`absolute ${isRTL ? 'left-3' : 'left-3'} top-1/2 -translate-y-1/2 text-gray-500`} />
                   <input
@@ -680,68 +680,68 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                     value={newPriceYearly}
                     onChange={(e) => setNewPriceYearly(Number(e.target.value))}
                     required
-                    className="w-full bg-gray-900 border border-gray-800 rounded-xl pl-8 pr-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl pl-8 pr-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                   />
                 </div>
               </div>
 
               {/* Messages Limit */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.pMessagesLimit}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.pMessagesLimit}</label>
                 <input
                   type="number"
                   min="-1"
                   value={newMessagesLimit}
                   onChange={(e) => setNewMessagesLimit(Number(e.target.value))}
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                 />
               </div>
 
               {/* Voice Minutes Limit */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.pVoiceMinutesLimit}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.pVoiceMinutesLimit}</label>
                 <input
                   type="number"
                   min="-1"
                   value={newVoiceLimit}
                   onChange={(e) => setNewVoiceLimit(Number(e.target.value))}
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                 />
               </div>
 
               {/* Reminder Credits */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.pReminderCredits}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.pReminderCredits}</label>
                 <input
                   type="number"
                   min="0"
                   value={newReminderCredits}
                   onChange={(e) => setNewReminderCredits(Number(e.target.value))}
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono"
                 />
               </div>
 
               {/* Intended For */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">{d.intendedFor}</label>
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">{d.intendedFor}</label>
                 <select
                   value={newIntendedFor}
                   onChange={(e) => setNewIntendedFor(e.target.value as any)}
                   required
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm"
                 >
-                  <option value="both">{d.optionBoth}</option>
-                  <option value="agency">{d.optionAgency}</option>
-                  <option value="business">{d.optionBusiness}</option>
+                  <option value="both" style={{ background: 'var(--bg-color)', color: 'var(--text-main)' }}>{d.optionBoth}</option>
+                  <option value="agency" style={{ background: 'var(--bg-color)', color: 'var(--text-main)' }}>{d.optionAgency}</option>
+                  <option value="business" style={{ background: 'var(--bg-color)', color: 'var(--text-main)' }}>{d.optionBusiness}</option>
                 </select>
               </div>
 
               {/* Expiry Date */}
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-gray-300 block">
+                <label className="text-xs font-semibold text-[var(--text-dim)] block">
                   {lang === 'ar' ? 'تاريخ انتهاء الباقة (اختياري)' : lang === 'fr' ? 'Date d\'expiration (optionnel)' : 'Expiry Date (Optional)'}
                 </label>
                 <input
@@ -749,7 +749,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   value={newExpiresAt || ''}
                   onChange={(e) => setNewExpiresAt(e.target.value || null)}
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono scheme-dark"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-2.5 text-[var(--text-main)] outline-none focus:border-purple-500 transition-all text-sm font-mono scheme-dark"
                 />
               </div>
 
@@ -764,7 +764,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   onChange={(e) => setNewReminderEnabled(e.target.checked)}
                   className="accent-purple-500 w-4 h-4 cursor-pointer"
                 />
-                <label htmlFor="newReminderEnabled" className="text-xs text-gray-300 cursor-pointer">
+                <label htmlFor="newReminderEnabled" className="text-xs text-[var(--text-dim)] cursor-pointer">
                   {d.reminderEnabled}
                 </label>
               </div>
@@ -777,17 +777,17 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   onChange={(e) => setNewVoiceReminderEnabled(e.target.checked)}
                   className="accent-purple-500 w-4 h-4 cursor-pointer"
                 />
-                <label htmlFor="newVoiceReminderEnabled" className="text-xs text-gray-300 cursor-pointer">
+                <label htmlFor="newVoiceReminderEnabled" className="text-xs text-[var(--text-dim)] cursor-pointer">
                   {d.voiceReminderEnabled}
                 </label>
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end border-t border-gray-800 pt-4">
+            <div className="flex gap-3 justify-end border-t border-[var(--glass-border)] pt-4">
               <button
                 type="button"
                 onClick={() => setShowAddForm(false)}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-sm"
+                className="px-4 py-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-lg text-sm transition-colors"
               >
                 {d.cancel}
               </button>
@@ -817,10 +817,10 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               className={`
                 relative flex flex-col rounded-2xl border p-6 overflow-hidden
                 ${plan.archived_at 
-                  ? 'bg-gray-900/40 border-gray-800 opacity-60 filter grayscale-[20%]' 
+                  ? 'bg-[var(--card-bg)]/40 border-[var(--glass-border)] opacity-60 filter grayscale-[20%]' 
                   : isActive 
-                    ? 'bg-gray-800/80 border-gray-700' 
-                    : 'bg-gray-900/50 border-gray-800 opacity-80'
+                    ? 'bg-[var(--card-bg)] border-[var(--glass-border)] shadow-[var(--glow)]' 
+                    : 'bg-[var(--card-bg)]/60 border-[var(--glass-border)] opacity-80'
                 }
                 ${isVIP && isActive && !plan.archived_at ? 'border-purple-500/50 shadow-[0_0_15px_rgba(168,85,247,0.15)]' : ''}
                 transition-all duration-300 group
@@ -846,18 +846,18 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               {/* Header: Name, intended_for, and Status Toggle */}
               <div className="flex justify-between items-start mb-6 pt-2">
                 <div>
-                  <h3 className={`text-xl font-bold uppercase ${isVIP ? 'text-purple-400' : 'text-white'}`}>
+                  <h3 className={`text-xl font-bold uppercase ${isVIP ? 'text-purple-400' : 'text-[var(--text-main)]'}`}>
                     {plan.name || plan.slug.toUpperCase()}
                   </h3>
                   <div className="flex flex-wrap items-center gap-2 mt-1.5">
                     {plan.archived_at ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-650/20 text-gray-400 border border-gray-650/30 shadow-[0_0_8px_rgba(156,163,175,0.05)]">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-gray-650/20 text-[var(--text-dim)] border border-gray-650/30 shadow-[0_0_8px_rgba(156,163,175,0.05)]">
                         {d.archivedBadge}
                       </span>
                     ) : (
                       <div className="flex items-center gap-1">
                         <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-                        <span className="text-[11px] text-gray-400">
+                        <span className="text-[11px] text-[var(--text-dim)]">
                           {isActive ? d.isActive : d.isInactive}
                         </span>
                       </div>
@@ -915,30 +915,30 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               </div>
 
               {/* Pricing Section */}
-              <div className="mb-6 p-4 rounded-xl bg-gray-900/60 border border-gray-850">
+              <div className="mb-6 p-4 rounded-xl bg-[var(--bg-input)] border border-[var(--glass-border)]">
                 {isEditing ? (
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[10px] text-gray-500 mb-1 block uppercase font-bold tracking-wider">{d.monthlyPrice}</label>
+                      <label className="text-[10px] text-[var(--text-dim)] mb-1 block uppercase font-bold tracking-wider">{d.monthlyPrice}</label>
                       <div className="relative">
-                        <DollarSign size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <DollarSign size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
                         <input 
                           type="number"
                           value={editPriceMonthly}
                           onChange={(e) => setEditPriceMonthly(Number(e.target.value))}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-3 py-1.5 text-white outline-none focus:border-purple-500 text-sm font-mono"
+                          className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-lg pl-7 pr-3 py-1.5 text-[var(--text-main)] outline-none focus:border-purple-500 text-sm font-mono"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="text-[10px] text-gray-500 mb-1 block uppercase font-bold tracking-wider">{d.yearlyPrice}</label>
+                      <label className="text-[10px] text-[var(--text-dim)] mb-1 block uppercase font-bold tracking-wider">{d.yearlyPrice}</label>
                       <div className="relative">
-                        <DollarSign size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        <DollarSign size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)]" />
                         <input 
                           type="number"
                           value={editPriceYearly}
                           onChange={(e) => setEditPriceYearly(Number(e.target.value))}
-                          className="w-full bg-gray-800 border border-gray-700 rounded-lg pl-7 pr-3 py-1.5 text-white outline-none focus:border-purple-500 text-sm font-mono"
+                          className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-lg pl-7 pr-3 py-1.5 text-[var(--text-main)] outline-none focus:border-purple-500 text-sm font-mono"
                         />
                       </div>
                     </div>
@@ -953,7 +953,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                       </button>
                       <button 
                         onClick={() => setEditingId(null)}
-                        className="px-3 bg-gray-850 hover:bg-gray-800 text-white rounded-lg py-1.5 text-xs"
+                        className="px-3 bg-[var(--hover-bg)] hover:bg-[var(--bg-input)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-lg py-1.5 text-xs transition-colors"
                       >
                         {d.cancel}
                       </button>
@@ -963,17 +963,17 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   <div className="flex justify-between items-center group">
                     <div>
                       <div className="flex items-baseline gap-0.5">
-                        <span className="text-2xl font-black text-white font-mono">${plan.price_monthly}</span>
-                        <span className="text-gray-500 text-xs">/m</span>
+                        <span className="text-2xl font-black text-[var(--text-main)] font-mono">${plan.price_monthly}</span>
+                        <span className="text-[var(--text-dim)] text-xs">/m</span>
                       </div>
-                      <div className="text-xs text-gray-400 mt-0.5 font-mono">
+                      <div className="text-xs text-[var(--text-dim)] mt-0.5 font-mono">
                         ${plan.price_yearly} /yr
                       </div>
                     </div>
                     {!plan.archived_at && (
                       <button 
                         onClick={() => startEditing(plan)}
-                        className="p-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg border border-gray-750 shrink-0"
+                        className="p-2 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-lg shrink-0 transition-colors"
                         title={d.editPricing}
                       >
                         <Edit2 size={14} />
@@ -987,36 +987,36 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
               <div className="space-y-4 flex-1">
                 
                 {/* Stats */}
-                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-900/30 rounded-xl border border-gray-850/60 text-xs">
+                <div className="grid grid-cols-2 gap-3 p-3 bg-[var(--bg-input)]/50 rounded-xl border border-[var(--glass-border)] text-xs">
                   <div className="flex flex-col">
-                    <span className="text-gray-500 flex items-center gap-1 mb-0.5"><Users size={12}/> Agencies</span>
-                    <span className="font-semibold text-white font-mono">{plan.agencies_count || 0}</span>
+                    <span className="text-[var(--text-dim)] flex items-center gap-1 mb-0.5"><Users size={12}/> Agencies</span>
+                    <span className="font-semibold text-[var(--text-main)] font-mono">{plan.agencies_count || 0}</span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-500 flex items-center gap-1 mb-0.5"><Activity size={12}/> Revenue</span>
+                    <span className="text-[var(--text-dim)] flex items-center gap-1 mb-0.5"><Activity size={12}/> Revenue</span>
                     <span className="font-semibold text-emerald-400 font-mono">${plan.revenue || 0}</span>
                   </div>
                 </div>
 
                 {/* Threshold limits list */}
-                <div className="space-y-2.5 border-t border-gray-800 pt-3.5 text-[13px]">
+                <div className="space-y-2.5 border-t border-[var(--glass-border)] pt-3.5 text-[13px]">
                   
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">{d.messagesLimit}</span>
-                    <span className="font-bold font-mono text-white">
+                    <span className="text-[var(--text-dim)]">{d.messagesLimit}</span>
+                    <span className="font-bold font-mono text-[var(--text-main)]">
                       {plan.messages_limit === -1 ? d.unlimited : plan.messages_limit.toLocaleString()}
                     </span>
                   </div>
 
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">{d.voiceMinutesLimit}</span>
-                    <span className="font-bold font-mono text-white">
+                    <span className="text-[var(--text-dim)]">{d.voiceMinutesLimit}</span>
+                    <span className="font-bold font-mono text-[var(--text-main)]">
                       {plan.voice_minutes_limit === -1 ? d.unlimited : `${plan.voice_minutes_limit} ${d.minutes}`}
                     </span>
                   </div>
 
                   {/* Guaranteed commission_rate fetched from database via RPC */}
-                  <div className="flex justify-between items-center border-t border-gray-850/50 pt-2 text-xs">
+                  <div className="flex justify-between items-center border-t border-[var(--glass-border)] pt-2 text-xs">
                     <span className="text-purple-400/90 font-medium flex items-center gap-1">
                       <Info size={12} className="text-purple-400" />
                       {d.commissionRate}
@@ -1030,7 +1030,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
 
               </div>
 
-              <div className="h-px w-full bg-gray-800 my-4" />
+              <div className="h-px w-full bg-[var(--glass-border)] my-4" />
 
               {/* VIP Notice */}
               {isVIP && (
@@ -1044,7 +1044,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
 
               {/* Feature Flags */}
               <div className="mt-2">
-                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                <h4 className="text-xs font-semibold text-[var(--text-dim)] uppercase tracking-wider mb-2">
                   صلاحيات الباقة (Feature Flags)
                 </h4>
                 {renderFeatures(plan.features || [], plan.slug)}
@@ -1056,7 +1056,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
       </div>
 
       {filteredPlans.length === 0 && (
-        <div className="text-center py-20 text-gray-500 border border-dashed border-gray-850 rounded-2xl">
+        <div className="text-center py-20 text-[var(--text-dim)] border border-dashed border-[var(--glass-border)] rounded-2xl">
           <Shield size={48} className="mx-auto mb-4 opacity-50 text-purple-500" />
           <p className="text-sm font-medium">{d.noPlans}</p>
         </div>
@@ -1065,34 +1065,34 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
       {/* Plan Usage Warning Modal */}
       {isArchiveModalOpen && archivingPlan && (
         <div className="fixed inset-0 bg-black/85 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6 relative" dir={isRTL ? 'rtl' : 'ltr'}>
+          <div className="bg-[var(--bg-space-surface)] border border-[var(--glass-border)] rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6 relative" dir={isRTL ? 'rtl' : 'ltr'}>
             
             {/* Title */}
-            <div className="flex items-center gap-3 border-b border-gray-800 pb-4">
+            <div className="flex items-center gap-3 border-b border-[var(--glass-border)] pb-4">
               <div className="p-3 bg-yellow-500/10 rounded-2xl text-yellow-400">
                 <Archive size={24} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white">{d.archiveWarningTitle}</h3>
+                <h3 className="text-xl font-black text-[var(--text-main)]">{d.archiveWarningTitle}</h3>
                 <p className="text-sm text-yellow-400 font-bold mt-1 uppercase tracking-wide">{archivingPlan.name}</p>
               </div>
             </div>
 
             {/* Warning Message */}
-            <p className="text-gray-300 text-sm leading-relaxed">
+            <p className="text-[var(--text-dim)] text-sm leading-relaxed">
               {d.confirmArchive}
             </p>
 
             {/* Statistics */}
             {usageData ? (
-              <div className="bg-gray-950/60 border border-gray-850 p-5 rounded-2xl space-y-4">
+              <div className="bg-[var(--bg-input)] border border-[var(--glass-border)] p-5 rounded-2xl space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">{d.agenciesCountLabel}</span>
-                  <span className="text-lg font-black text-white font-mono">{usageData.agencies_count}</span>
+                  <span className="text-[var(--text-dim)] text-sm">{d.agenciesCountLabel}</span>
+                  <span className="text-lg font-black text-[var(--text-main)] font-mono">{usageData.agencies_count}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-sm">{d.clientsCountLabel}</span>
-                  <span className="text-lg font-black text-white font-mono">{usageData.tenants_count}</span>
+                  <span className="text-[var(--text-dim)] text-sm">{d.clientsCountLabel}</span>
+                  <span className="text-lg font-black text-[var(--text-main)] font-mono">{usageData.tenants_count}</span>
                 </div>
               </div>
             ) : (
@@ -1107,7 +1107,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-3 justify-end pt-4 border-t border-gray-800">
+            <div className="flex gap-3 justify-end pt-4 border-t border-[var(--glass-border)]">
               <button
                 type="button"
                 onClick={() => {
@@ -1116,7 +1116,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                   setUsageData(null)
                 }}
                 disabled={archivingInProgress}
-                className="px-5 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-semibold transition-colors"
+                className="px-5 py-2.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] text-[var(--text-main)] border border-[var(--glass-border)] rounded-xl text-sm font-semibold transition-colors"
               >
                 {d.cancelButton}
               </button>
