@@ -3,19 +3,15 @@
 import React, { useState, useTransition } from 'react';
 import {
   Search,
-  Calendar,
-  MessageSquare,
   Clock,
   ChevronLeft,
   ChevronRight,
   Filter,
-  User,
   Activity,
-  Layers,
-  CheckCircle,
   Megaphone,
   Percent,
-  Users
+  Users,
+  CheckCircle
 } from 'lucide-react';
 
 type Lang = 'ar' | 'en' | 'fr';
@@ -230,41 +226,57 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
     }
   };
 
-  // Get status badge colors
-  const getStatusBadge = (status: string) => {
+  // Get dynamic status badge styles
+  const getStatusBadgeStyle = (status: string) => {
     const st = status.toLowerCase();
     if (st === 'sent') {
-      return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15';
+      return {
+        background: 'var(--success-bg, rgba(16, 185, 129, 0.1))',
+        color: 'var(--success-text, #10b981)',
+        border: '1px solid rgba(16, 185, 129, 0.2)'
+      };
     }
     if (st === 'scheduled') {
-      return 'bg-blue-500/10 text-blue-400 border border-blue-500/15';
+      return {
+        background: 'var(--bg-input, rgba(59, 130, 246, 0.08))',
+        color: 'var(--accent-primary, #6366f1)',
+        border: '1px solid var(--glass-border, rgba(99, 102, 241, 0.2))'
+      };
     }
     if (st === 'failed') {
-      return 'bg-red-500/10 text-red-400 border border-red-500/15';
+      return {
+        background: 'var(--cyber-red-glow, rgba(239, 68, 68, 0.1))',
+        color: 'var(--cyber-red, #ef4444)',
+        border: '1px solid rgba(239, 68, 68, 0.2)'
+      };
     }
-    return 'bg-gray-500/10 text-gray-400 border border-gray-500/15';
+    return {
+      background: 'var(--hover-bg, rgba(156, 163, 175, 0.1))',
+      color: 'var(--text-dim, #9ca3af)',
+      border: '1px solid var(--glass-border, rgba(156, 163, 175, 0.2))'
+    };
   };
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 space-y-6 text-gray-100 min-h-screen bg-gray-900">
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 space-y-6 min-h-screen text-[var(--text-main)] bg-[var(--bg-color)]">
       
       {/* Header section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-gray-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-[var(--glass-border)]">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-            <Megaphone className="text-purple-400" size={32} />
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-main)] flex items-center gap-3">
+            <Megaphone className="text-[var(--accent-primary)]" size={32} />
             {d.title}
           </h1>
-          <p className="text-gray-400 mt-1 max-w-2xl text-sm">
+          <p className="text-[var(--text-dim)] mt-1 max-w-2xl text-sm">
             {d.subtitle}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-800/80 p-1 rounded-xl border border-gray-700/50 self-end md:self-auto">
+        <div className="flex items-center gap-2 bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--glass-border)] self-end md:self-auto">
           <button
             onClick={() => startTransition(() => setLang('ar'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'ar' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'ar' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langAr}
@@ -272,7 +284,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
           <button
             onClick={() => startTransition(() => setLang('en'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'en' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'en' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langEn}
@@ -280,7 +292,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
           <button
             onClick={() => startTransition(() => setLang('fr'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'fr' ? 'bg-purple-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'fr' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langFr}
@@ -291,56 +303,56 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
       {/* KPI Cards Section */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Card 1: Total Campaigns */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-800/40 p-6 rounded-2xl border border-gray-700/50 backdrop-blur-sm shadow-xl flex items-center justify-between">
+        <div className="relative overflow-hidden bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--glass-border)] backdrop-blur-sm shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{d.kpiTotalCampaigns}</p>
-            <h3 className="text-3xl font-extrabold text-white">{totalCampaigns.toLocaleString()}</h3>
+            <p className="text-xs font-bold text-[var(--text-dim)] uppercase tracking-wider">{d.kpiTotalCampaigns}</p>
+            <h3 className="text-3xl font-extrabold text-[var(--text-main)]">{totalCampaigns.toLocaleString()}</h3>
           </div>
-          <div className="p-3 bg-purple-500/10 rounded-xl border border-purple-500/20 text-purple-400">
+          <div className="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--glass-border)] text-[var(--accent-primary)]">
             <Megaphone size={24} />
           </div>
         </div>
 
         {/* Card 2: Sent Campaigns */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-800/40 p-6 rounded-2xl border border-gray-700/50 backdrop-blur-sm shadow-xl flex items-center justify-between">
+        <div className="relative overflow-hidden bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--glass-border)] backdrop-blur-sm shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{d.kpiSentCampaigns}</p>
-            <h3 className="text-3xl font-extrabold text-white">{sentCampaigns.toLocaleString()}</h3>
+            <p className="text-xs font-bold text-[var(--text-dim)] uppercase tracking-wider">{d.kpiSentCampaigns}</p>
+            <h3 className="text-3xl font-extrabold text-[var(--text-main)]">{sentCampaigns.toLocaleString()}</h3>
           </div>
-          <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/20 text-emerald-400">
+          <div className="p-3 bg-[var(--success-bg)] rounded-xl border border-[var(--success-bg)] text-[var(--success-text)]">
             <CheckCircle size={24} />
           </div>
         </div>
 
         {/* Card 3: Total Recipients */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-800/40 p-6 rounded-2xl border border-gray-700/50 backdrop-blur-sm shadow-xl flex items-center justify-between">
+        <div className="relative overflow-hidden bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--glass-border)] backdrop-blur-sm shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{d.kpiTotalRecipients}</p>
-            <h3 className="text-3xl font-extrabold text-white">{totalRecipients.toLocaleString()}</h3>
+            <p className="text-xs font-bold text-[var(--text-dim)] uppercase tracking-wider">{d.kpiTotalRecipients}</p>
+            <h3 className="text-3xl font-extrabold text-[var(--text-main)]">{totalRecipients.toLocaleString()}</h3>
           </div>
-          <div className="p-3 bg-blue-500/10 rounded-xl border border-blue-500/20 text-blue-400">
+          <div className="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--glass-border)] text-blue-500">
             <Users size={24} />
           </div>
         </div>
 
         {/* Card 4: Success Rate % */}
-        <div className="relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-800/40 p-6 rounded-2xl border border-gray-700/50 backdrop-blur-sm shadow-xl flex items-center justify-between">
+        <div className="relative overflow-hidden bg-[var(--card-bg)] p-6 rounded-2xl border border-[var(--glass-border)] backdrop-blur-sm shadow-sm flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{d.kpiSuccessRate}</p>
-            <h3 className="text-3xl font-extrabold text-white">{successRate}</h3>
+            <p className="text-xs font-bold text-[var(--text-dim)] uppercase tracking-wider">{d.kpiSuccessRate}</p>
+            <h3 className="text-3xl font-extrabold text-[var(--text-main)]">{successRate}</h3>
           </div>
-          <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20 text-amber-400">
+          <div className="p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--glass-border)] text-amber-500">
             <Percent size={24} />
           </div>
         </div>
       </div>
 
       {/* Filters bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center bg-gray-850/30 p-4 rounded-2xl border border-gray-800/50">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-center bg-[var(--card-bg)] p-4 rounded-2xl border border-[var(--glass-border)] shadow-sm">
         
         {/* Search */}
         <div className="lg:col-span-6 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-[var(--text-dim)] pointer-events-none`}>
             <Search size={16} />
           </div>
           <input
@@ -351,15 +363,15 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
+            className={`w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl py-2 ${
               isRtl ? 'pr-10 pl-4' : 'pl-10 pr-4'
-            } text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all`}
+            } text-sm text-[var(--text-main)] placeholder-[var(--text-dim)] focus:outline-none focus:border-[var(--accent-primary)] transition-all`}
           />
         </div>
 
         {/* Agency Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-[var(--text-dim)] pointer-events-none`}>
             <Filter size={15} />
           </div>
           <select
@@ -368,13 +380,13 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               setAgencyFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
+            className={`w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
+            } text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-all appearance-none cursor-pointer`}
           >
-            <option value="">{d.filterAgency}</option>
+            <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterAgency}</option>
             {agenciesList.map((agency) => (
-              <option key={agency.id} value={agency.id}>
+              <option key={agency.id} value={agency.id} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
                 {agency.name}
               </option>
             ))}
@@ -383,7 +395,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
 
         {/* Status Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-[var(--text-dim)] pointer-events-none`}>
             <Activity size={15} />
           </div>
           <select
@@ -392,21 +404,21 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
+            className={`w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
+            } text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-all appearance-none cursor-pointer`}
           >
-            <option value="">{d.filterStatus}</option>
-            <option value="sent">{d.filterStatusSent}</option>
-            <option value="scheduled">{d.filterStatusScheduled}</option>
-            <option value="draft">{d.filterStatusDraft}</option>
-            <option value="failed">{d.filterStatusFailed}</option>
+            <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterStatus}</option>
+            <option value="sent" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterStatusSent}</option>
+            <option value="scheduled" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterStatusScheduled}</option>
+            <option value="draft" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterStatusDraft}</option>
+            <option value="failed" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterStatusFailed}</option>
           </select>
         </div>
 
         {/* Type Filter */}
         <div className="lg:col-span-2 relative">
-          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-gray-500 pointer-events-none`}>
+          <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? 'right-3' : 'left-3'} text-[var(--text-dim)] pointer-events-none`}>
             <Megaphone size={15} />
           </div>
           <select
@@ -415,13 +427,13 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               setTypeFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className={`w-full bg-gray-800 border border-gray-700/60 rounded-xl py-2 ${
+            className={`w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl py-2 ${
               isRtl ? 'pr-9 pl-3 text-right' : 'pl-9 pr-3 text-left'
-            } text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all appearance-none cursor-pointer`}
+            } text-sm text-[var(--text-main)] focus:outline-none focus:border-[var(--accent-primary)] transition-all appearance-none cursor-pointer`}
           >
-            <option value="">{d.filterType}</option>
+            <option value="" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterType}</option>
             {typeOptions.map((t) => (
-              <option key={t} value={t} className="capitalize">
+              <option key={t} value={t} className="capitalize" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
                 {t.toUpperCase()}
               </option>
             ))}
@@ -431,12 +443,12 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
       </div>
 
       {/* Campaigns Table Container */}
-      <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 overflow-hidden">
+      <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-4 overflow-hidden shadow-sm">
         
         <div className="overflow-x-auto min-h-[400px]">
           <table className="w-full text-sm text-right border-collapse">
             <thead>
-              <tr className="text-gray-400 border-b border-gray-800 text-xs font-semibold uppercase tracking-wider">
+              <tr className="text-[var(--text-dim)] border-b border-[var(--glass-border)] text-xs font-semibold uppercase tracking-wider">
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colCampaignName}</th>
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colAgency}</th>
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colClient}</th>
@@ -448,66 +460,69 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
                 <th className={`pb-3 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>{d.colDate}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/50">
+            <tbody className="divide-y divide-[var(--glass-border)]">
               {paginatedCampaigns.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-24 text-center text-gray-500 text-sm font-medium">
+                  <td colSpan={9} className="py-24 text-center text-[var(--text-dim)] text-sm font-medium">
                     {d.noCampaigns}
                   </td>
                 </tr>
               ) : (
                 paginatedCampaigns.map((camp) => {
                   return (
-                    <tr key={camp.id} className="hover:bg-gray-800/35 transition-colors">
+                    <tr key={camp.id} className="hover:bg-[var(--hover-bg)] transition-colors">
                       
                       {/* Campaign Name */}
-                      <td className={`py-4 px-3 font-semibold text-white ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <span className="text-sm font-bold text-gray-200">{camp.name}</span>
+                      <td className={`py-4 px-3 font-semibold text-[var(--text-main)] ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <span className="text-sm font-bold text-[var(--text-main)]">{camp.name}</span>
                       </td>
 
                       {/* Agency Name */}
-                      <td className={`py-4 px-3 text-gray-300 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <span className="bg-gray-700/50 border border-gray-600/40 px-2.5 py-1 rounded-lg text-xs">
+                      <td className={`py-4 px-3 text-[var(--text-main)] ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <span className="bg-[var(--bg-input)] border border-[var(--glass-border)] px-2.5 py-1 rounded-lg text-xs">
                           {camp.agency_name}
                         </span>
                       </td>
 
                       {/* Client (Tenant) Name */}
-                      <td className={`py-4 px-3 text-gray-300 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <span className="text-sm font-medium text-gray-200">{camp.tenant_name}</span>
+                      <td className={`py-4 px-3 text-[var(--text-main)] ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <span className="text-sm font-medium text-[var(--text-main)]">{camp.tenant_name}</span>
                       </td>
 
                       {/* Channel Type */}
-                      <td className={`py-4 px-3 text-gray-300 font-mono text-xs uppercase ${isRtl ? 'text-right' : 'text-left'}`}>
+                      <td className={`py-4 px-3 text-[var(--text-main)] font-mono text-xs uppercase ${isRtl ? 'text-right' : 'text-left'}`}>
                         {camp.type}
                       </td>
 
                       {/* Status Badge */}
                       <td className={`py-4 px-3 ${isRtl ? 'text-right' : 'text-left'}`}>
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${getStatusBadge(camp.status)}`}>
+                        <span 
+                          style={getStatusBadgeStyle(camp.status)}
+                          className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider"
+                        >
                           {camp.status}
                         </span>
                       </td>
 
                       {/* Recipients Count */}
-                      <td className="py-4 px-3 text-center font-mono text-sm text-gray-300 font-semibold">
+                      <td className="py-4 px-3 text-center font-mono text-sm text-[var(--text-main)] font-semibold">
                         {(camp.recipients_count || 0).toLocaleString()}
                       </td>
 
                       {/* Sent Count */}
-                      <td className="py-4 px-3 text-center font-mono text-sm text-emerald-400 font-bold">
+                      <td className="py-4 px-3 text-center font-mono text-sm text-emerald-500 dark:text-emerald-400 font-bold">
                         {(camp.sent_count || 0).toLocaleString()}
                       </td>
 
                       {/* Failed Count */}
-                      <td className="py-4 px-3 text-center font-mono text-sm text-red-400 font-semibold">
+                      <td className="py-4 px-3 text-center font-mono text-sm text-red-500 dark:text-red-400 font-semibold">
                         {(camp.failed_count || 0).toLocaleString()}
                       </td>
 
                       {/* Created At Date */}
-                      <td className={`py-4 px-3 text-gray-300 font-medium ${isRtl ? 'text-right' : 'text-left'}`}>
+                      <td className={`py-4 px-3 text-[var(--text-main)] font-medium ${isRtl ? 'text-right' : 'text-left'}`}>
                         <div className="flex items-center gap-2">
-                          <Clock size={13} className="text-gray-500" />
+                          <Clock size={13} className="text-[var(--text-dim)]" />
                           <span>{formatTimestamp(camp.created_at)}</span>
                         </div>
                       </td>
@@ -522,7 +537,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
 
         {/* Pagination controls bar */}
         {filteredCampaigns.length > ITEMS_PER_PAGE && (
-          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-gray-800 mt-4 text-xs text-gray-400">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-[var(--glass-border)] mt-4 text-xs text-[var(--text-dim)]">
             <div>
               {d.pageOf.replace('{current}', String(currentPage)).replace('{total}', String(totalPages))}
             </div>
@@ -531,7 +546,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               <button
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1.5 bg-gray-850 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-gray-700/50 text-white font-semibold transition-all flex items-center gap-1"
+                className="px-3 py-1.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-[var(--glass-border)] text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer"
               >
                 <ChevronLeft size={14} />
                 {d.prev}
@@ -539,7 +554,7 @@ export function MasterMarketingUI({ campaigns = [], agencies = [] }: MarketingUI
               <button
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1.5 bg-gray-850 hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-gray-700/50 text-white font-semibold transition-all flex items-center gap-1"
+                className="px-3 py-1.5 bg-[var(--bg-input)] hover:bg-[var(--hover-bg)] disabled:opacity-40 disabled:cursor-not-allowed rounded-lg border border-[var(--glass-border)] text-[var(--text-main)] font-semibold transition-all flex items-center gap-1 cursor-pointer"
               >
                 {d.next}
                 <ChevronRight size={14} />
