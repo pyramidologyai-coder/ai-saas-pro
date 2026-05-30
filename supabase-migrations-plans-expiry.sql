@@ -1,6 +1,20 @@
 -- Migration: Update add_plan and create_agency with expires_at validation and intended_for logic
 
--- 1. Ensure columns exist on plans table
+-- 1. Clean up old function overloads (Drop outdated add_plan signatures)
+DROP FUNCTION IF EXISTS public.add_plan(
+  text, text, numeric, numeric, 
+  integer, numeric, numeric, 
+  boolean, boolean, integer
+);
+
+DROP FUNCTION IF EXISTS public.add_plan(
+  text, text, numeric, numeric, 
+  integer, numeric, numeric, 
+  boolean, boolean, integer, 
+  timestamptz
+);
+
+-- 2. Ensure columns exist on plans table
 ALTER TABLE plans 
 ADD COLUMN IF NOT EXISTS expires_at timestamptz DEFAULT NULL;
 
