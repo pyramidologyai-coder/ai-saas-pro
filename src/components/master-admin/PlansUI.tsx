@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { 
   Check, X, Edit2, Save, Loader2, Key, Activity, 
-  DollarSign, Users, Shield, Plus, Trash2, Info, Globe, Archive
+  DollarSign, Users, Shield, Plus, Trash2, Info, Globe, Archive, Calendar
 } from 'lucide-react'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -41,6 +41,7 @@ interface Plan {
   intended_for?: 'agency' | 'business' | 'both'
   features?: PlanFeature[]
   archived_at?: string | null
+  expires_at?: string | null
 }
 
 interface PlansUIProps {
@@ -270,6 +271,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
   const [newVoiceReminderEnabled, setNewVoiceReminderEnabled] = useState(false)
   const [newReminderCredits, setNewReminderCredits] = useState<number>(0)
   const [newIntendedFor, setNewIntendedFor] = useState<'agency' | 'business' | 'both'>('both')
+  const [newExpiresAt, setNewExpiresAt] = useState<string | null>(null)
   const [addingPlan, setAddingPlan] = useState(false)
 
   // Archive & Filter States
@@ -362,7 +364,8 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         p_intended_for: newIntendedFor,
         p_reminder_enabled: newReminderEnabled,
         p_voice_reminder_enabled: newVoiceReminderEnabled,
-        p_reminder_credits: newReminderCredits
+        p_reminder_credits: newReminderCredits,
+        p_expires_at: newExpiresAt
       })
 
       if (error || (data && !data.success)) {
@@ -384,6 +387,7 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
         setNewVoiceReminderEnabled(false)
         setNewReminderCredits(0)
         setNewIntendedFor('both')
+        setNewExpiresAt(null)
 
         // Reload plans
         const [plansRes, statsRes] = await Promise.all([
@@ -735,6 +739,20 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                 </select>
               </div>
 
+              {/* Expiry Date */}
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-gray-300 block">
+                  {lang === 'ar' ? 'تاريخ انتهاء الباقة (اختياري)' : lang === 'fr' ? 'Date d\'expiration (optionnel)' : 'Expiry Date (Optional)'}
+                </label>
+                <input
+                  type="date"
+                  value={newExpiresAt || ''}
+                  onChange={(e) => setNewExpiresAt(e.target.value || null)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-2.5 text-white outline-none focus:border-purple-500 transition-all text-sm font-mono scheme-dark"
+                />
+              </div>
+
             </div>
 
             <div className="flex gap-4 items-center pt-2">
@@ -859,6 +877,17 @@ export function PlansUI({ initialPlans, initialLang }: PlansUIProps) {
                         ? (isRTL ? '🩺 عميل مباشر' : '🩺 Business Direct')
                         : (isRTL ? '🌐 كلاهما' : '🌐 Both')}
                     </span>
+
+                    {/* Expiry Calendar Badge */}
+                    {plan.expires_at && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/15 flex items-center gap-1 shadow-[0_0_8px_rgba(234,179,8,0.05)]">
+                        <Calendar size={10} className="shrink-0" />
+                        <span>
+                          {isRTL ? 'ينتهي: ' : 'Expires: '}
+                          {new Date(plan.expires_at).toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')}
+                        </span>
+                      </span>
+                    )}
                   </div>
                 </div>
                 
