@@ -278,6 +278,9 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<string>('all')
   const [agencyFilter, setAgencyFilter] = useState<string>('all')
+  const [beneficiarySearch, setBeneficiarySearch] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>('')
+  const [endDate, setEndDate] = useState<string>('')
 
   useEffect(() => {
     setMounted(true)
@@ -414,11 +417,35 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
         const oneYearAgo = new Date()
         oneYearAgo.setFullYear(now.getFullYear() - 1)
         matchesDate = invDate >= oneYearAgo
+      } else if (dateFilter === 'custom') {
+        const start = startDate ? new Date(startDate) : null
+        const end = endDate ? new Date(endDate) : null
+        
+        if (start && end) {
+          start.setHours(0, 0, 0, 0)
+          const endOfDay = new Date(end)
+          endOfDay.setHours(23, 59, 59, 999)
+          matchesDate = invDate >= start && invDate <= endOfDay
+        } else if (start) {
+          start.setHours(0, 0, 0, 0)
+          matchesDate = invDate >= start
+        } else if (end) {
+          const endOfDay = new Date(end)
+          endOfDay.setHours(23, 59, 59, 999)
+          matchesDate = invDate <= endOfDay
+        }
       }
     }
     
+    // Filter by name (searches across both agency and client name!)
+    let matchesBeneficiary = true
+    if (beneficiarySearch) {
+      const recipientName = getRecipientName(inv).toLowerCase()
+      matchesBeneficiary = recipientName.includes(beneficiarySearch.toLowerCase())
+    }
+    
     const matchesAgency = agencyFilter === 'all' ? true : inv.agency_id === agencyFilter
-    return matchesStatus && matchesDate && matchesAgency
+    return matchesStatus && matchesDate && matchesBeneficiary && matchesAgency
   })
 
   // Dynamic Recharts Data Aggregation
@@ -553,15 +580,15 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       </div>
 
       {/* Premium Top Filter Bar (مستطيل التصفية الأفقي الطويل) */}
-      <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-lg backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-sm text-emerald-400 font-bold">
+      <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-start shadow-lg backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-sm text-emerald-400 font-bold shrink-0">
           <Filter size={16} />
           <span>لوحة تصفية التقارير:</span>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full md:w-auto flex-1 max-w-4xl">
+        <div className="flex flex-wrap gap-3 items-center w-full justify-start">
           {/* Status Filter */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[140px]">
             <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الحالة:</span>
             <select
               value={statusFilter}
@@ -577,7 +604,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           </div>
 
           {/* Date Range Filter */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[140px]">
             <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الفترة:</span>
             <select
               value={dateFilter}
@@ -589,22 +616,47 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
               <option value="last_month">الشهر الماضي</option>
               <option value="last_6_months">آخر 6 أشهر</option>
               <option value="last_year">آخر سنة كاملة</option>
+              <option value="custom">📅 تحديد مخصص...</option>
             </select>
           </div>
 
-          {/* Agency Filter */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
-            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد:</span>
-            <select
-              value={agencyFilter}
-              onChange={(e) => setAgencyFilter(e.target.value)}
-              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full font-sans"
-            >
-              <option value="all">كل الوكالات والشركاء</option>
-              {safeAgencies.map(agency => (
-                <option key={agency.id} value={agency.id}>{agency.name}</option>
-              ))}
-            </select>
+          {/* Custom Date Pickers (ظهور الكالندر عند التحديد المخصص) */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 animate-fadeIn">
+              {/* Start Date */}
+              <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+                <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">من:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-[125px] scheme-dark"
+                />
+              </div>
+
+              {/* End Date */}
+              <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
+                <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">إلى:</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-[125px] scheme-dark"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Beneficiary Search (بحث بالاسم) */}
+          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[200px] flex-1 sm:flex-none">
+            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد (بحث بالاسم):</span>
+            <input
+              type="text"
+              value={beneficiarySearch}
+              onChange={(e) => setBeneficiarySearch(e.target.value)}
+              placeholder="اكتب اسم الوكالة أو العميل..."
+              className="bg-transparent text-gray-200 text-xs outline-none w-full placeholder-gray-600 font-sans"
+            />
           </div>
         </div>
       </div>
