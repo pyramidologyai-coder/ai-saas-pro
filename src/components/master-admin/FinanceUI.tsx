@@ -4,15 +4,14 @@ import React, { useState, useTransition, useEffect, useRef } from 'react'
 import {
   DollarSign, TrendingUp, TrendingDown,
   Building2, Users, Receipt, AlertCircle,
-  TrendingUp as ProfitIcon, Landmark, RefreshCw,
-  Calendar, ShieldCheck, Filter, Award, Search, ChevronDown
+  Landmark, RefreshCw, Calendar, ShieldCheck,
+  Filter, Award, Search, ChevronDown
 } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, BarChart, Bar, Legend, Cell
+  LineChart, Line, BarChart, Bar, Cell
 } from 'recharts'
 
-// Dictionary type definition
 type Lang = 'ar' | 'en' | 'fr'
 
 interface Invoice {
@@ -100,15 +99,12 @@ const DICTIONARY = {
     agenciesActiveSuspendedSub: 'حالة اشتراكات الوكالات الشريكة',
     activeClients: 'العملاء المباشرين النشطين',
     activeClientsSub: 'الأعمال المستقلة المشتركة بالمنصة',
-    
-    // New KPIs
     mrr: 'العائد الشهري المتكرر (MRR)',
     mrrSub: 'إجمالي الاشتراكات النشطة شهرياً',
     arr: 'العائد السنوي المتكرر (ARR)',
     arrSub: 'تقدير الإيراد السنوي المتوقع',
     arpa: 'متوسط الإيراد لكل وكالة (ARPA)',
     arpaSub: 'إجمالي الإيرادات ÷ عدد الوكالات',
-
     revenueByPlan: 'توزيع الإيرادات حسب الباقة',
     revenueByPlanSub: 'تحليل الإيرادات التراكمية لكل فئة اشتراك',
     invoicesTable: 'جدول الفواتير التفصيلي',
@@ -131,16 +127,12 @@ const DICTIONARY = {
     noInvoices: 'لا توجد فواتير مطابقة لخيارات التصفية حالياً.',
     directTenant: 'عميل مباشر 👤',
     unknown: 'غير معروف',
-
-    // Filters
     filterStatus: 'تصفية بالحالة',
     filterDate: 'نطاق التاريخ',
     filterAgency: 'تصفية حسب الوكالة',
     thisMonth: 'الشهر الحالي',
     lastMonth: 'الشهر الماضي',
     allTime: 'كل الوقت',
-
-    // Charts
     chartMRRTitle: 'إيرادات الـ MRR التاريخية - آخر 12 شهر',
     chartMRRSub: 'توزيع المدفوعات والاشتراكات الفعلية شهرياً',
     chartGrowthTitle: 'منحنى تزايد ونمو الوكالات الشريكة',
@@ -163,15 +155,12 @@ const DICTIONARY = {
     agenciesActiveSuspendedSub: 'Status of agency subscriptions',
     activeClients: 'Active Direct Tenants',
     activeClientsSub: 'Direct subscribed businesses',
-
-    // New KPIs
     mrr: 'Monthly Recurring Revenue (MRR)',
     mrrSub: 'Total active monthly subscriptions',
     arr: 'Annual Recurring Revenue (ARR)',
     arrSub: 'Projected annual revenue estimate',
     arpa: 'Avg Revenue Per Agency (ARPA)',
     arpaSub: 'Total revenue ÷ active agencies count',
-
     revenueByPlan: 'Revenue by Subscription Plan',
     revenueByPlanSub: 'Cumulative revenue analysis for each tier',
     invoicesTable: 'Detailed Invoices Ledger',
@@ -194,16 +183,12 @@ const DICTIONARY = {
     noInvoices: 'No invoices match your filter criteria.',
     directTenant: 'Direct Tenant 👤',
     unknown: 'Unknown',
-
-    // Filters
     filterStatus: 'Filter by Status',
     filterDate: 'Date Range',
     filterAgency: 'Filter by Agency',
     thisMonth: 'This Month',
     lastMonth: 'Last Month',
     allTime: 'All Time',
-
-    // Charts
     chartMRRTitle: 'Historical MRR Revenue - Last 12 Months',
     chartMRRSub: 'Distribution of actual subscription payments by month',
     chartGrowthTitle: 'Cumulative Partner Agencies Growth Curve',
@@ -226,15 +211,12 @@ const DICTIONARY = {
     agenciesActiveSuspendedSub: 'Statut des abonnements d\'agences',
     activeClients: 'Clients Directs Actifs',
     activeClientsSub: 'Entreprises en direct activement abonnées',
-
-    // New KPIs
     mrr: 'Revenu Récurrent Mensuel (MRR)',
     mrrSub: 'Total des abonnements mensuels actifs',
     arr: 'Revenu Récurrent Annuel (ARR)',
     arrSub: 'Estimation du revenu annuel projeté',
     arpa: 'Revenu Moyen Par Agence (ARPA)',
     arpaSub: 'Revenu total ÷ nombre d\'agences',
-
     revenueByPlan: 'Revenu par Plan d\'Abonnement',
     revenueByPlanSub: 'Analyse des revenus cumulés pour chaque niveau',
     invoicesTable: 'Grand Livre des Factures',
@@ -257,16 +239,12 @@ const DICTIONARY = {
     noInvoices: 'Aucune facture ne correspond à vos critères.',
     directTenant: 'Client Direct 👤',
     unknown: 'Inconnu',
-
-    // Filters
     filterStatus: 'Filtrer par Statut',
     filterDate: 'Période',
     filterAgency: 'Filtrer par Agence',
     thisMonth: 'Ce Mois',
     lastMonth: 'Le Mois Dernier',
     allTime: 'Tout le Temps',
-
-    // Charts
     chartMRRTitle: 'Revenus MRR Historiques - 12 Derniers Mois',
     chartMRRSub: 'Distribution mensuelle des abonnements payés',
     chartGrowthTitle: 'Courbe de Croissance Cumulative des Agences',
@@ -284,7 +262,6 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   // Filters state
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [dateFilter, setDateFilter] = useState<string>('all')
-  const [agencyFilter, setAgencyFilter] = useState<string>('all')
   const [beneficiarySearch, setBeneficiarySearch] = useState<string>('')
   const [startDate, setStartDate] = useState<string>('')
   const [endDate, setEndDate] = useState<string>('')
@@ -601,25 +578,25 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const uniqueRecipients = getUniqueRecipients()
 
   return (
-    <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 space-y-6 text-gray-100 min-h-screen bg-gray-900">
+    <div dir={isRtl ? 'rtl' : 'ltr'} className="p-6 space-y-6 min-h-screen text-[var(--text-main)] bg-[var(--bg-color)]">
       
       {/* Header with language switcher */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-gray-800">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-[var(--glass-border)]">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-            <Landmark className="text-emerald-400" size={32} />
+          <h1 className="text-3xl font-extrabold tracking-tight text-[var(--text-main)] flex items-center gap-3">
+            <Landmark className="text-[var(--accent-primary)]" size={32} />
             {d.title}
           </h1>
-          <p className="text-gray-400 mt-1 max-w-2xl text-sm">
+          <p className="text-[var(--text-dim)] mt-1 max-w-2xl text-sm">
             {d.subtitle}
           </p>
         </div>
 
-        <div className="flex items-center gap-2 bg-gray-800/80 p-1 rounded-xl border border-gray-700/50 self-end md:self-auto">
+        <div className="flex items-center gap-2 bg-[var(--bg-input)] p-1 rounded-xl border border-[var(--glass-border)] self-end md:self-auto">
           <button
             onClick={() => startTransition(() => setLang('ar'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'ar' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'ar' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langAr}
@@ -627,7 +604,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           <button
             onClick={() => startTransition(() => setLang('en'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'en' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'en' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langEn}
@@ -635,7 +612,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           <button
             onClick={() => startTransition(() => setLang('fr'))}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              lang === 'fr' ? 'bg-emerald-500 text-white shadow-lg' : 'text-gray-400 hover:text-white'
+              lang === 'fr' ? 'bg-[var(--accent-primary)] text-white shadow-lg' : 'text-[var(--text-dim)] hover:text-[var(--text-main)]'
             }`}
           >
             {d.langFr}
@@ -644,43 +621,43 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       </div>
 
       {/* Premium Top Filter Bar (مستطيل التصفية الأفقي الطويل) */}
-      <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-4 flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-start shadow-lg backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-sm text-emerald-400 font-bold shrink-0">
+      <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-4 flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-start shadow-sm backdrop-blur-sm">
+        <div className="flex items-center gap-2 text-sm text-[var(--accent-primary)] font-bold shrink-0">
           <Filter size={16} />
-          <span>لوحة تصفية التقارير:</span>
+          <span>{isRtl ? 'لوحة تصفية التقارير:' : 'Filters Ledger Panel:'}</span>
         </div>
         
         <div className="flex flex-wrap gap-3 items-center w-full justify-start">
           {/* Status Filter */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[140px]">
-            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الحالة:</span>
+          <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)] transition-all min-w-[140px]">
+            <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'الحالة:' : 'Status:'}</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full"
+              className="bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-full border-none p-0 focus:ring-0"
             >
-              <option value="all">كل الفواتير</option>
-              <option value="paid">مدفوعة</option>
-              <option value="pending">قيد الانتظار</option>
-              <option value="unpaid">غير مدفوعة</option>
-              <option value="refunded">مسترجعة</option>
+              <option value="all" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{isRtl ? 'كل الفواتير' : 'All Invoices'}</option>
+              <option value="paid" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusPaid}</option>
+              <option value="pending" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusPending}</option>
+              <option value="unpaid" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusUnpaid}</option>
+              <option value="refunded" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusRefunded}</option>
             </select>
           </div>
 
           {/* Date Range Filter */}
-          <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all min-w-[140px]">
-            <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">الفترة:</span>
+          <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)] transition-all min-w-[140px]">
+            <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'الفترة:' : 'Range:'}</span>
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
-              className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full"
+              className="bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-full border-none p-0 focus:ring-0"
             >
-              <option value="all">كل الوقت (تراكمي)</option>
-              <option value="this_month">الشهر الحالي</option>
-              <option value="last_month">الشهر الماضي</option>
-              <option value="last_6_months">آخر 6 أشهر</option>
-              <option value="last_year">آخر سنة كاملة</option>
-              <option value="custom">📅 تحديد مخصص...</option>
+              <option value="all" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{isRtl ? 'كل الوقت (تراكمي)' : 'All Time (Cumulative)'}</option>
+              <option value="this_month" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.thisMonth}</option>
+              <option value="last_month" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.lastMonth}</option>
+              <option value="last_6_months" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{isRtl ? 'آخر 6 أشهر' : 'Last 6 Months'}</option>
+              <option value="last_year" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{isRtl ? 'آخر سنة كاملة' : 'Last Year'}</option>
+              <option value="custom" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>📅 {isRtl ? 'تحديد مخصص...' : 'Custom Range...'}</option>
             </select>
           </div>
 
@@ -688,24 +665,24 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           {dateFilter === 'custom' && (
             <div className="flex items-center gap-2 animate-fadeIn">
               {/* Start Date */}
-              <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
-                <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">من:</span>
+              <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)] transition-all">
+                <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'من:' : 'From:'}</span>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-[125px] scheme-dark"
+                  className="bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-[125px] scheme-dark border-none p-0 focus:ring-0"
                 />
               </div>
 
               {/* End Date */}
-              <div className="flex items-center bg-gray-900/50 border border-gray-850 rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50 transition-all">
-                <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">إلى:</span>
+              <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)] transition-all">
+                <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'إلى:' : 'To:'}</span>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className="bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-[125px] scheme-dark"
+                  className="bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-[125px] scheme-dark border-none p-0 focus:ring-0"
                 />
               </div>
             </div>
@@ -713,36 +690,36 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
 
           {/* Searchable Beneficiary Dropdown Select (المستفيد القابل للبحث) */}
           <div className="relative min-w-[240px] flex-1 sm:flex-none" ref={recipientDropdownRef}>
-            <div className="flex items-center bg-gray-900/50 border border-gray-850 hover:border-emerald-500/50 transition-all rounded-xl px-3 py-1.5 focus-within:border-emerald-500/50">
-              <span className="text-[11px] text-gray-500 font-bold whitespace-nowrap ml-2">المستفيد:</span>
+            <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] hover:border-[var(--accent-primary)] transition-all rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)]">
+              <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'المستفيد:' : 'Beneficiary:'}</span>
               <button
                 type="button"
                 onClick={() => setRecipientDropdownOpen(!recipientDropdownOpen)}
-                className="flex justify-between items-center bg-transparent text-gray-200 text-xs outline-none cursor-pointer w-full text-right"
+                className="flex justify-between items-center bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-full text-right border-none p-0"
               >
                 <span className="truncate flex-1">
                   {selectedRecipient 
-                    ? `${selectedRecipient.name} (${selectedRecipient.type === 'agency' ? 'وكالة' : 'عميل مباشر'})` 
-                    : 'كل الوكالات والعملاء'
+                    ? `${selectedRecipient.name} (${selectedRecipient.type === 'agency' ? (isRtl ? 'وكالة' : 'Agency') : (isRtl ? 'عميل مباشر' : 'Direct Tenant')})` 
+                    : (isRtl ? 'كل الوكالات والعملاء' : 'All Agencies & Clients')
                   }
                 </span>
-                <ChevronDown size={12} className="text-gray-500 shrink-0 mr-1" />
+                <ChevronDown size={12} className="text-[var(--text-dim)] shrink-0 mr-1" />
               </button>
             </div>
 
             {recipientDropdownOpen && (
-              <div className="absolute z-50 mt-1.5 w-full bg-gray-900 border border-gray-800 rounded-xl shadow-2xl p-2 space-y-2 animate-fadeIn min-w-[260px] right-0">
+              <div className="absolute z-50 mt-1.5 w-full bg-[var(--bg-space-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl p-2 space-y-2 animate-fadeIn min-w-[260px] right-0">
                 {/* Search input field inside dropdown */}
                 <div className="relative">
                   <input
                     type="text"
                     value={recipientSearchQuery}
                     onChange={(e) => setRecipientSearchQuery(e.target.value)}
-                    placeholder="اكتب للبحث..."
-                    className="w-full bg-gray-950 border border-gray-800 focus:border-emerald-500/50 rounded-lg p-2 pr-8 text-xs text-gray-200 outline-none placeholder-gray-650 font-sans"
+                    placeholder={isRtl ? 'اكتب للبحث...' : 'Search recipient...'}
+                    className="w-full bg-[var(--bg-color)] border border-[var(--glass-border)] focus:border-[var(--accent-primary)] rounded-lg p-2 pr-8 text-xs text-[var(--text-main)] outline-none placeholder-[var(--text-dim)] font-sans"
                     autoFocus
                   />
-                  <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                  <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] pointer-events-none" />
                 </div>
 
                 {/* Options List */}
@@ -756,13 +733,13 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                       setRecipientSearchQuery('');
                     }}
                     className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex items-center gap-2 ${
-                      !selectedRecipient ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                      !selectedRecipient ? 'bg-[var(--success-bg)] text-[var(--success-text)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-main)]'
                     }`}
                   >
-                    <span>كل الوكالات والعملاء</span>
+                    <span>{isRtl ? 'كل الوكالات والعملاء' : 'All Agencies & Clients'}</span>
                   </div>
                   
-                  <div className="h-px bg-gray-800/80 my-1"></div>
+                  <div className="h-px bg-[var(--glass-border)] my-1"></div>
 
                   {/* Filtered unique recipients list */}
                   {uniqueRecipients
@@ -779,14 +756,14 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                             setRecipientSearchQuery('');
                           }}
                           className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex justify-between items-center gap-2 ${
-                            isSelected ? 'bg-emerald-500/10 text-emerald-400 font-bold' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                            isSelected ? 'bg-[var(--success-bg)] text-[var(--success-text)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-main)]'
                           }`}
                         >
                           <span className="truncate">{r.name}</span>
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
                             r.type === 'agency' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/15' : 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
                           }`}>
-                            {r.type === 'agency' ? 'وكالة' : 'عميل'}
+                            {r.type === 'agency' ? (isRtl ? 'وكالة' : 'Agency') : (isRtl ? 'عميل' : 'Tenant')}
                           </span>
                         </div>
                       )
@@ -794,7 +771,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                   }
 
                   {uniqueRecipients.filter(r => r.name.toLowerCase().includes(recipientSearchQuery.toLowerCase())).length === 0 && (
-                    <div className="text-center py-4 text-gray-650 text-xs">لا توجد نتائج مطابقة.</div>
+                    <div className="text-center py-4 text-[var(--text-dim)] opacity-60 text-xs">{isRtl ? 'لا توجد نتائج مطابقة.' : 'No matches found.'}</div>
                   )}
                 </div>
               </div>
@@ -807,179 +784,179 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         
         {/* Card 1: Total Revenue */}
-        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/35 transition-all">
+        <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/5 border border-emerald-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.totalRevenue}</span>
-              <h3 className="text-3xl font-extrabold text-emerald-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.totalRevenue}</span>
+              <h3 className="text-3xl font-extrabold text-emerald-500 mt-2 tracking-tight">
                 {formatUSD(totalRevenue)}
               </h3>
             </div>
-            <div className="p-3 bg-emerald-500/15 rounded-xl text-emerald-400">
+            <div className="p-3 bg-emerald-500/15 rounded-xl text-emerald-500">
               <DollarSign size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <TrendingUp size={12} className="text-emerald-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <TrendingUp size={12} className="text-emerald-500" />
             {d.totalRevenueSub}
           </p>
         </div>
 
         {/* Card 2: This Month Revenue */}
-        <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-blue-500/35 transition-all">
+        <div className="bg-gradient-to-br from-blue-500/10 to-indigo-500/5 border border-blue-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-blue-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.thisMonthRevenue}</span>
-              <h3 className="text-3xl font-extrabold text-blue-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.thisMonthRevenue}</span>
+              <h3 className="text-3xl font-extrabold text-blue-500 mt-2 tracking-tight">
                 {formatUSD(thisMonthRevenue)}
               </h3>
             </div>
-            <div className="p-3 bg-blue-500/15 rounded-xl text-blue-400">
+            <div className="p-3 bg-blue-500/15 rounded-xl text-blue-500">
               <Landmark size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <Landmark size={12} className="text-blue-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <Landmark size={12} className="text-blue-500" />
             {d.thisMonthRevenueSub}
           </p>
         </div>
 
         {/* Card 3: Last Month Revenue */}
-        <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-purple-500/35 transition-all">
+        <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-purple-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.lastMonthRevenue}</span>
-              <h3 className="text-3xl font-extrabold text-purple-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.lastMonthRevenue}</span>
+              <h3 className="text-3xl font-extrabold text-purple-500 mt-2 tracking-tight">
                 {formatUSD(lastMonthRevenue)}
               </h3>
             </div>
-            <div className="p-3 bg-purple-500/15 rounded-xl text-purple-400">
+            <div className="p-3 bg-purple-500/15 rounded-xl text-purple-500">
               <Landmark size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <TrendingUp size={12} className="text-purple-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <TrendingUp size={12} className="text-purple-500" />
             {d.lastMonthRevenueSub}
           </p>
         </div>
 
         {/* New Card 4: MRR */}
-        <div className="bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-teal-500/35 transition-all">
+        <div className="bg-gradient-to-br from-teal-500/10 to-emerald-500/5 border border-teal-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-teal-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.mrr}</span>
-              <h3 className="text-3xl font-extrabold text-teal-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.mrr}</span>
+              <h3 className="text-3xl font-extrabold text-teal-500 mt-2 tracking-tight">
                 {formatUSD(calculatedMRR)}
               </h3>
             </div>
-            <div className="p-3 bg-teal-500/15 rounded-xl text-teal-400">
+            <div className="p-3 bg-teal-500/15 rounded-xl text-teal-500">
               <RefreshCw size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <Calendar size={12} className="text-teal-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <Calendar size={12} className="text-teal-500" />
             {d.mrrSub}
           </p>
         </div>
 
         {/* New Card 5: ARR */}
-        <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/5 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-indigo-500/35 transition-all">
+        <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/5 border border-indigo-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-indigo-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.arr}</span>
-              <h3 className="text-3xl font-extrabold text-indigo-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.arr}</span>
+              <h3 className="text-3xl font-extrabold text-indigo-500 mt-2 tracking-tight">
                 {formatUSD(calculatedARR)}
               </h3>
             </div>
-            <div className="p-3 bg-indigo-500/15 rounded-xl text-indigo-400">
+            <div className="p-3 bg-indigo-500/15 rounded-xl text-indigo-500">
               <TrendingUp size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <ShieldCheck size={12} className="text-indigo-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <ShieldCheck size={12} className="text-indigo-500" />
             {d.arrSub}
           </p>
         </div>
 
         {/* New Card 6: ARPA */}
-        <div className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-amber-500/35 transition-all">
+        <div className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border border-amber-500/20 rounded-2xl p-6 relative overflow-hidden group hover:border-amber-500/35 transition-all shadow-sm">
           <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl -mr-6 -mt-6"></div>
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.arpa}</span>
-              <h3 className="text-3xl font-extrabold text-amber-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.arpa}</span>
+              <h3 className="text-3xl font-extrabold text-amber-550 dark:text-amber-455 mt-2 tracking-tight">
                 {formatUSD(calculatedARPA)}
               </h3>
             </div>
-            <div className="p-3 bg-amber-500/15 rounded-xl text-amber-400">
+            <div className="p-3 bg-amber-500/15 rounded-xl text-amber-550">
               <Users size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
-            <Award size={12} className="text-amber-400" />
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
+            <Award size={12} className="text-amber-550" />
             {d.arpaSub}
           </p>
         </div>
 
         {/* Card 7: Invoices paid / pending */}
-        <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 relative overflow-hidden hover:border-gray-600/50 transition-all">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 relative overflow-hidden hover:border-[var(--glass-border)] transition-all shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.invoicesPaidPending}</span>
-              <h3 className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-                <span className="text-emerald-400">{paidInvoicesCount}</span>
-                <span className="text-gray-500 mx-2">/</span>
-                <span className="text-amber-400">{pendingInvoicesCount}</span>
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.invoicesPaidPending}</span>
+              <h3 className="text-3xl font-extrabold text-[var(--text-main)] mt-2 tracking-tight">
+                <span className="text-emerald-500">{paidInvoicesCount}</span>
+                <span className="text-[var(--text-dim)] opacity-40 mx-2">/</span>
+                <span className="text-amber-500">{pendingInvoicesCount}</span>
               </h3>
             </div>
-            <div className="p-3 bg-gray-700/50 rounded-xl text-gray-300">
+            <div className="p-3 bg-[var(--bg-input)] rounded-xl text-[var(--text-main)]">
               <Receipt size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
             {d.invoicesPaidPendingSub}
           </p>
         </div>
 
         {/* Card 8: Agencies active / suspended */}
-        <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 relative overflow-hidden hover:border-gray-600/50 transition-all">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 relative overflow-hidden hover:border-[var(--glass-border)] transition-all shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.agenciesActiveSuspended}</span>
-              <h3 className="text-3xl font-extrabold text-white mt-2 tracking-tight">
-                <span className="text-blue-400">{activeAgenciesCount}</span>
-                <span className="text-gray-500 mx-2">/</span>
-                <span className="text-red-400">{suspendedAgenciesCount}</span>
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.agenciesActiveSuspended}</span>
+              <h3 className="text-3xl font-extrabold text-[var(--text-main)] mt-2 tracking-tight">
+                <span className="text-blue-500">{activeAgenciesCount}</span>
+                <span className="text-[var(--text-dim)] opacity-40 mx-2">/</span>
+                <span className="text-red-500">{suspendedAgenciesCount}</span>
               </h3>
             </div>
-            <div className="p-3 bg-gray-700/50 rounded-xl text-gray-300">
+            <div className="p-3 bg-[var(--bg-input)] rounded-xl text-[var(--text-main)]">
               <Building2 size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
             {d.agenciesActiveSuspendedSub}
           </p>
         </div>
 
         {/* Card 9: Active Clients */}
-        <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 relative overflow-hidden hover:border-gray-600/50 transition-all">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 relative overflow-hidden hover:border-[var(--glass-border)] transition-all shadow-sm">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{d.activeClients}</span>
-              <h3 className="text-3xl font-extrabold text-cyan-400 mt-2 tracking-tight">
+              <span className="text-xs text-[var(--text-dim)] font-medium uppercase tracking-wider">{d.activeClients}</span>
+              <h3 className="text-3xl font-extrabold text-cyan-500 dark:text-cyan-455 mt-2 tracking-tight">
                 {activeClientsCount}
               </h3>
             </div>
-            <div className="p-3 bg-gray-700/50 rounded-xl text-gray-300">
+            <div className="p-3 bg-[var(--bg-input)] rounded-xl text-[var(--text-main)]">
               <Users size={20} />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4 flex items-center gap-1">
+          <p className="text-xs text-[var(--text-dim)] mt-4 flex items-center gap-1">
             {d.activeClientsSub}
           </p>
         </div>
@@ -990,13 +967,13 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: Historical MRR Area Chart */}
-        <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 flex flex-col justify-between">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
           <div>
-            <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-              <TrendingUp className="text-emerald-400" size={18} />
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+              <TrendingUp className="text-emerald-500" size={18} />
               {d.chartMRRTitle}
             </h3>
-            <p className="text-xs text-gray-400 mb-6">
+            <p className="text-xs text-[var(--text-dim)] mb-6">
               {d.chartMRRSub}
             </p>
           </div>
@@ -1011,18 +988,18 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" />
+                  <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={11} tickLine={false} />
+                  <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} />
                   <Tooltip 
-                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    contentStyle={{ background: 'var(--bg-space-surface)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
+                    labelStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
                   />
                   <Area type="monotone" dataKey="mrr" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorMRR)" />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[260px] flex items-center justify-center text-gray-500 text-sm">
+              <div className="h-[260px] flex items-center justify-center text-[var(--text-dim)] text-sm">
                 Loading charts...
               </div>
             )}
@@ -1030,13 +1007,13 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
         </div>
 
         {/* Chart 2: Cumulative Partner Agencies signup curve */}
-        <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 flex flex-col justify-between">
+        <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
           <div>
-            <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-              <Building2 className="text-blue-400" size={18} />
+            <h3 className="text-lg font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+              <Building2 className="text-blue-500" size={18} />
               {d.chartGrowthTitle}
             </h3>
-            <p className="text-xs text-gray-400 mb-6">
+            <p className="text-xs text-[var(--text-dim)] mb-6">
               {d.chartGrowthSub}
             </p>
           </div>
@@ -1045,18 +1022,18 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
             {mounted ? (
               <ResponsiveContainer width="100%" height={260}>
                 <LineChart data={agenciesGrowthData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} tickLine={false} />
-                  <YAxis stroke="#94a3b8" fontSize={11} tickLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" />
+                  <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={11} tickLine={false} />
+                  <YAxis stroke="var(--text-dim)" fontSize={11} tickLine={false} />
                   <Tooltip 
-                    contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                    contentStyle={{ background: 'var(--bg-space-surface)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
+                    labelStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
                   />
-                  <Line type="monotone" dataKey="agencies" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: '#0f172a' }} activeDot={{ r: 6 }} />
+                  <Line type="monotone" dataKey="agencies" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, strokeWidth: 2, fill: 'var(--bg-color)' }} activeDot={{ r: 6 }} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[260px] flex items-center justify-center text-gray-500 text-sm">
+              <div className="h-[260px] flex items-center justify-center text-[var(--text-dim)] text-sm">
                 Loading charts...
               </div>
             )}
@@ -1071,13 +1048,13 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
         <div className="lg:col-span-5 space-y-6 flex flex-col">
           
           {/* Recharts Chart 3: Top 5 Generating Agencies Bar Chart */}
-          <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 flex flex-col justify-between flex-1">
+          <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 flex flex-col justify-between flex-1 shadow-sm">
             <div>
-              <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                <Award className="text-purple-400" size={18} />
+              <h3 className="text-lg font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+                <Award className="text-purple-500" size={18} />
                 {d.chartTopAgenciesTitle}
               </h3>
-              <p className="text-xs text-gray-400 mb-6">
+              <p className="text-xs text-[var(--text-dim)] mb-6">
                 {d.chartTopAgenciesSub}
               </p>
             </div>
@@ -1087,12 +1064,12 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                 topAgenciesData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={topAgenciesData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} />
-                      <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" />
+                      <XAxis dataKey="name" stroke="var(--text-dim)" fontSize={10} tickLine={false} />
+                      <YAxis stroke="var(--text-dim)" fontSize={10} tickLine={false} />
                       <Tooltip 
-                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                        labelStyle={{ color: '#fff', fontWeight: 'bold' }}
+                        contentStyle={{ background: 'var(--bg-space-surface)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}
+                        labelStyle={{ color: 'var(--text-main)', fontWeight: 'bold' }}
                       />
                       <Bar dataKey="revenue" fill="#8b5cf6" radius={[6, 6, 0, 0]}>
                         {topAgenciesData.map((entry, index) => (
@@ -1102,12 +1079,12 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-gray-500 text-sm">
+                  <div className="h-[200px] flex items-center justify-center text-[var(--text-dim)] text-sm">
                     {d.noInvoices}
                   </div>
                 )
               ) : (
-                <div className="h-[200px] flex items-center justify-center text-gray-500 text-sm">
+                <div className="h-[200px] flex items-center justify-center text-[var(--text-dim)] text-sm">
                   Loading charts...
                 </div>
               )}
@@ -1115,13 +1092,13 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           </div>
 
           {/* Original Plan Revenue Distribution */}
-          <div className="bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 flex flex-col justify-between">
+          <div className="bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
             <div>
-              <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                <Landmark className="text-emerald-400" size={18} />
+              <h3 className="text-lg font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+                <Landmark className="text-emerald-500" size={18} />
                 {d.revenueByPlan}
               </h3>
-              <p className="text-xs text-gray-400 mb-6">
+              <p className="text-xs text-[var(--text-dim)] mb-6">
                 {d.revenueByPlanSub}
               </p>
             </div>
@@ -1131,7 +1108,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                 const percentage = Math.min(Math.max((plan.value / maxPlanValue) * 100, 4), 100)
                 
                 let barColor = 'from-emerald-500 to-teal-400 shadow-emerald-500/10'
-                if (plan.name === 'starter') barColor = 'from-gray-500 to-gray-400 shadow-gray-500/10'
+                if (plan.name === 'starter') barColor = 'from-gray-550 to-gray-400 shadow-gray-500/10'
                 if (plan.name === 'growth') barColor = 'from-blue-500 to-cyan-400 shadow-blue-500/10'
                 if (plan.name === 'pro') barColor = 'from-purple-500 to-pink-500 shadow-purple-500/10'
                 if (plan.name === 'vip') barColor = 'from-amber-500 to-yellow-400 shadow-amber-500/10'
@@ -1139,14 +1116,14 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                 return (
                   <div key={plan.name} className="space-y-1 group">
                     <div className="flex justify-between items-center text-xs">
-                      <span className="font-semibold text-gray-200 capitalize group-hover:text-white transition-colors">
+                      <span className="font-semibold text-[var(--text-main)] capitalize group-hover:text-[var(--text-main)] transition-colors">
                         {plan.label}
                       </span>
-                      <span className="font-bold text-gray-400 group-hover:text-white transition-colors">
+                      <span className="font-bold text-[var(--text-dim)] group-hover:text-[var(--text-main)] transition-colors">
                         {formatUSD(plan.value)}
                       </span>
                     </div>
-                    <div className="w-full bg-gray-800 rounded-full h-3 overflow-hidden p-0.5 border border-gray-700/30">
+                    <div className="w-full bg-[var(--bg-input)] rounded-full h-3 overflow-hidden p-0.5 border border-[var(--glass-border)]">
                       <div
                         className={`h-full rounded-full bg-gradient-to-r ${barColor} shadow-md transition-all duration-1000 ease-out`}
                         style={{ width: `${percentage}%` }}
@@ -1157,7 +1134,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
               })}
             </div>
 
-            <div className="pt-4 border-t border-gray-800 mt-6 flex justify-between items-center text-xs text-gray-500">
+            <div className="pt-4 border-t border-[var(--glass-border)] mt-6 flex justify-between items-center text-xs text-[var(--text-dim)]">
               <span>* Cumulative tier values</span>
               <span>$ USD ONLY</span>
             </div>
@@ -1166,60 +1143,60 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
         </div>
 
         {/* Recent Invoices Table with Advanced Filters */}
-        <div className="lg:col-span-7 bg-gray-800/40 border border-gray-700/50 rounded-2xl p-6 flex flex-col justify-between">
+        <div className="lg:col-span-7 bg-[var(--card-bg)] border border-[var(--glass-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
           
           {/* Header block with Filters */}
           <div className="space-y-4 mb-4">
             <div className="flex justify-between items-start">
               <div>
-                <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                  <Receipt className="text-emerald-400" size={18} />
+                <h3 className="text-lg font-bold text-[var(--text-main)] mb-1 flex items-center gap-2">
+                  <Receipt className="text-emerald-500" size={18} />
                   {d.invoicesTable}
                 </h3>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[var(--text-dim)]">
                   {d.invoicesTableSub}
                 </p>
               </div>
             </div>
 
             {/* Filter controls row */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-gray-900/50 rounded-xl border border-gray-800/50">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-[var(--bg-input)] rounded-xl border border-[var(--glass-border)]">
               
               {/* Filter by Status */}
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center gap-1">
+                <label className="text-[10px] uppercase font-bold text-[var(--text-dim)] tracking-wider flex items-center gap-1">
                   <Filter size={10} />
                   {d.filterStatus}
                 </label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700/50 text-gray-200 rounded-lg p-2 text-xs outline-none cursor-pointer hover:border-emerald-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-space-surface)] border border-[var(--glass-border)] text-[var(--text-main)] rounded-lg p-2 text-xs outline-none cursor-pointer hover:border-[var(--accent-primary)] transition-colors focus:ring-0"
                 >
-                  <option value="all">{d.filterAll}</option>
-                  <option value="paid">{d.statusPaid}</option>
-                  <option value="pending">{d.statusPending}</option>
-                  <option value="unpaid">{d.statusUnpaid}</option>
-                  <option value="refunded">{d.statusRefunded}</option>
+                  <option value="all" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterAll}</option>
+                  <option value="paid" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusPaid}</option>
+                  <option value="pending" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusPending}</option>
+                  <option value="unpaid" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusUnpaid}</option>
+                  <option value="refunded" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.statusRefunded}</option>
                 </select>
               </div>
 
               {/* Filter by Date Range */}
               <div className="space-y-1">
-                <label className="text-[10px] uppercase font-bold text-gray-500 tracking-wider flex items-center gap-1">
+                <label className="text-[10px] uppercase font-bold text-[var(--text-dim)] tracking-wider flex items-center gap-1">
                   <Calendar size={10} />
                   {d.filterDate}
                 </label>
                 <select
                   value={dateFilter}
                   onChange={(e) => setDateFilter(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700/50 text-gray-200 rounded-lg p-2 text-xs outline-none cursor-pointer hover:border-emerald-500/50 transition-colors"
+                  className="w-full bg-[var(--bg-space-surface)] border border-[var(--glass-border)] text-[var(--text-main)] rounded-lg p-2 text-xs outline-none cursor-pointer hover:border-[var(--accent-primary)] transition-colors focus:ring-0"
                 >
-                  <option value="all">{d.filterAll}</option>
-                  <option value="this_month">{d.thisMonth}</option>
-                  <option value="last_month">{d.lastMonth}</option>
-                  <option value="last_6_months">{lang === 'ar' ? 'آخر 6 أشهر' : 'Last 6 Months'}</option>
-                  <option value="last_year">{lang === 'ar' ? 'آخر سنة كاملة' : 'Last Year'}</option>
+                  <option value="all" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.filterAll}</option>
+                  <option value="this_month" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.thisMonth}</option>
+                  <option value="last_month" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{d.lastMonth}</option>
+                  <option value="last_6_months" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{lang === 'ar' ? 'آخر 6 أشهر' : 'Last 6 Months'}</option>
+                  <option value="last_year" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>{lang === 'ar' ? 'آخر سنة كاملة' : 'Last Year'}</option>
                 </select>
               </div>
 
@@ -1229,7 +1206,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
           <div className="overflow-x-auto flex-1 min-h-[300px]">
             <table className="w-full text-sm text-right border-collapse">
               <thead>
-                <tr className="text-gray-400 border-b border-gray-800 text-[11px] font-semibold uppercase tracking-wider">
+                <tr className="text-[var(--text-dim)] border-b border-[var(--glass-border)] text-[11px] font-semibold uppercase tracking-wider">
                   <th className={`pb-3 px-2 ${isRtl ? 'text-right' : 'text-left'}`}>{d.invoiceNo}</th>
                   <th className={`pb-3 px-2 ${isRtl ? 'text-right' : 'text-left'}`}>{d.agency}</th>
                   <th className="pb-3 px-2 text-center">{d.invoiceType}</th>
@@ -1238,10 +1215,10 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                   <th className={`pb-3 px-2 ${isRtl ? 'text-left' : 'text-right'}`}>{d.date}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/50">
+              <tbody className="divide-y divide-[var(--glass-border)]">
                 {filteredInvoices.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-24 text-center text-gray-500 text-sm font-medium">
+                    <td colSpan={6} className="py-24 text-center text-[var(--text-dim)] text-sm font-medium">
                       {d.noInvoices}
                     </td>
                   </tr>
@@ -1251,16 +1228,16 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                     let statusLabel: string = d.statusPending
                     
                     if (inv.status === 'paid') {
-                      statusStyle = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15'
+                      statusStyle = 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/15'
                       statusLabel = d.statusPaid
                     } else if (inv.status === 'pending') {
-                      statusStyle = 'bg-amber-500/10 text-amber-400 border border-amber-500/15'
+                      statusStyle = 'bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/15'
                       statusLabel = d.statusPending
                     } else if (inv.status === 'unpaid') {
-                      statusStyle = 'bg-red-500/10 text-red-400 border border-red-500/15'
+                      statusStyle = 'bg-red-500/10 text-red-500 dark:text-red-400 border border-red-500/15'
                       statusLabel = d.statusUnpaid
                     } else if (inv.status === 'refunded') {
-                      statusStyle = 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
+                      statusStyle = 'bg-purple-500/10 text-purple-500 dark:text-purple-400 border border-purple-500/15'
                       statusLabel = d.statusRefunded
                     }
 
@@ -1272,17 +1249,17 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                     })
 
                     return (
-                      <tr key={inv.id} className="hover:bg-gray-800/35 transition-colors">
-                        <td className={`py-3 px-2 font-mono text-[11px] font-bold text-emerald-400 ${isRtl ? 'text-right' : 'text-left'}`}>
+                      <tr key={inv.id} className="hover:bg-[var(--hover-bg)] transition-colors">
+                        <td className={`py-3 px-2 font-mono text-[11px] font-bold text-emerald-500 ${isRtl ? 'text-right' : 'text-left'}`}>
                           {inv.invoice_number || `INV-${inv.id.substring(0, 8).toUpperCase()}`}
                         </td>
-                        <td className={`py-3 px-2 font-semibold text-white ${isRtl ? 'text-right' : 'text-left'}`}>
+                        <td className={`py-3 px-2 font-semibold text-[var(--text-main)] ${isRtl ? 'text-right' : 'text-left'}`}>
                           {getRecipientName(inv)}
                         </td>
-                        <td className="py-3 px-2 text-center text-xs font-semibold text-gray-400 capitalize">
+                        <td className="py-3 px-2 text-center text-xs font-semibold text-[var(--text-dim)] capitalize">
                           {inv.invoice_type || 'subscription'}
                         </td>
-                        <td className="py-3 px-2 text-center font-bold text-white">
+                        <td className="py-3 px-2 text-center font-bold text-[var(--text-main)]">
                           {formatUSD(inv.amount)}
                         </td>
                         <td className="py-3 px-2 text-center">
@@ -1290,7 +1267,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
                             {statusLabel}
                           </span>
                         </td>
-                        <td className={`py-3 px-2 text-gray-400 text-xs ${isRtl ? 'text-left' : 'text-right'}`}>
+                        <td className={`py-3 px-2 text-[var(--text-dim)] text-xs ${isRtl ? 'text-left' : 'text-right'}`}>
                           {formattedDate}
                         </td>
                       </tr>
@@ -1301,7 +1278,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
             </table>
           </div>
 
-          <div className="pt-4 border-t border-gray-800 mt-4 flex justify-between items-center text-xs text-gray-500">
+          <div className="pt-4 border-t border-[var(--glass-border)] mt-4 flex justify-between items-center text-xs text-[var(--text-dim)]">
             <span>🛡️ End-to-end Encrypted Platform Billings</span>
             <span>$ USD ONLY</span>
           </div>
