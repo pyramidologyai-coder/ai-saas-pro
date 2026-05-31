@@ -30,7 +30,6 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    password: '',
     role: 'staff',
     branch_access: ['all'],
     permissions: {
@@ -86,33 +85,71 @@ export default function UsersPage() {
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tenantId) return;
+    if (!tenantId) {
+      alert('حدث خطأ: معرف النشاط التجاري غير متوفر.');
+      return;
+    }
     
     try {
-      const { data, error } = await supabase.from('profiles').insert({
-        tenant_id: tenantId,
-        full_name: formData.fullName,
-        email: formData.email,
-        role: formData.role,
-        branch_access: formData.branch_access,
-        permissions: formData.permissions
-      }).select().single();
-
-      if (error) {
-        console.error('Error inserting profile:', error);
-        alert('حدث خطأ أثناء حفظ المستخدم في قاعدة البيانات.');
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      
+      if (!token) {
+        alert('جلسة العمل منتهية، يرجى تسجيل الدخول مجدداً.');
         return;
       }
-
-      setUsers([...users, data as Profile]);
-      setFormData({ 
-        fullName: '', email: '', password: '', role: 'staff', branch_access: ['all'],
-        permissions: { view_revenue: false, manage_settings: false, view_all_bookings: false } 
+      
+      const response = await fetch('/api/staff/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          full_name: formData.fullName,
+          email: formData.email,
+          role: formData.role,
+          branch_access: formData.branch_access,
+          permissions: formData.permissions,
+          tenant_id: tenantId,
+          token
+        })
       });
       
-      alert('تم إضافة ملف المستخدم بنجاح! في بيئة الإنتاج الفعلية، سيتم إرسال بريد إلكتروني للمستخدم بكلمة المرور المؤقتة لتسجيل الدخول.');
-    } catch (err) {
+      const resData = await response.json();
+      
+      if (!response.ok || resData.error) {
+        alert(resData.error || 'حدث خطأ أثناء إنشاء حساب الموظف.');
+        return;
+      }
+      
+      const newProfile: Profile = {
+        id: resData.user.id,
+        full_name: formData.fullName,
+        role: formData.role as any,
+        email: formData.email,
+        branch_access: formData.branch_access,
+        permissions: formData.permissions,
+        created_at: new Date().toISOString()
+      };
+      
+      setUsers([...users, newProfile]);
+      setFormData({ 
+        fullName: '', 
+        email: '', 
+        role: 'staff', 
+        branch_access: ['all'],
+        permissions: { 
+          view_revenue: false, 
+          manage_settings: false, 
+          view_all_bookings: false 
+        } 
+      });
+      
+      alert(`تم إنشاء حساب الموظف بنجاح ✅\n\nالبريد الإلكتروني: ${resData.user.email}\nكلمة المرور المؤقتة: ${resData.user.temp_password}\n\nيرجى نسخ كلمة المرور وتسليمها للموظف ليتمكن من تسجيل الدخول.`);
+    } catch (err: any) {
       console.error(err);
+      alert('حدث خطأ غير متوقع: ' + err.message);
     }
   };
 
@@ -156,17 +193,6 @@ export default function UsersPage() {
                 placeholder="m.saeed@clinic.com"
                 value={formData.email}
                 onChange={e => setFormData({...formData, email: e.target.value})}
-                required
-              />
-            </div>
-            <div className={styles.formGroup}>
-              <label>كلمة المرور المؤقتة</label>
-              <input 
-                type="text" 
-                className={styles.input} 
-                placeholder="******"
-                value={formData.password}
-                onChange={e => setFormData({...formData, password: e.target.value})}
                 required
               />
             </div>
