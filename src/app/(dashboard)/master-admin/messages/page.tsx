@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { MessagesUI } from '@/components/master-admin/MessagesUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +22,7 @@ async function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<Awaited<
 }
 
 export default async function MasterAdminMessagesPage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let analyticsData: any = null;
@@ -82,28 +76,28 @@ export default async function MasterAdminMessagesPage() {
       redirectTarget = '/admin';
     } else {
       // Parse Analytics
-      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.data) {
-        analyticsData = analyticsRes.value.data;
+      if (analyticsRes.status === 'fulfilled' && (analyticsRes.value as any).data) {
+        analyticsData = (analyticsRes.value as any).data;
       }
 
       // Parse Conversations
-      if (conversationsRes.status === 'fulfilled' && conversationsRes.value.data) {
-        conversationsData = conversationsRes.value.data;
+      if (conversationsRes.status === 'fulfilled' && (conversationsRes.value as any).data) {
+        conversationsData = (conversationsRes.value as any).data;
       }
 
       // Parse Chat Messages
-      if (chatMessagesRes.status === 'fulfilled' && chatMessagesRes.value.data) {
-        chatMessagesData = chatMessagesRes.value.data;
+      if (chatMessagesRes.status === 'fulfilled' && (chatMessagesRes.value as any).data) {
+        chatMessagesData = (chatMessagesRes.value as any).data;
       }
 
       // Parse Agencies
-      if (agenciesRes.status === 'fulfilled' && agenciesRes.value.data) {
-        agencies = agenciesRes.value.data;
+      if (agenciesRes.status === 'fulfilled' && (agenciesRes.value as any).data) {
+        agencies = (agenciesRes.value as any).data;
       }
 
       // Parse Tenants
-      if (tenantsRes.status === 'fulfilled' && tenantsRes.value.data) {
-        tenants = tenantsRes.value.data;
+      if (tenantsRes.status === 'fulfilled' && (tenantsRes.value as any).data) {
+        tenants = (tenantsRes.value as any).data;
       }
     }
   } catch (e) {
@@ -161,4 +155,3 @@ export default async function MasterAdminMessagesPage() {
     />
   );
 }
-

@@ -5,14 +5,14 @@ import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import TrialBlocker from "@/components/TrialBlocker";
 import NeuralCommandBar from "@/components/NeuralCommandBar";
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -48,4 +48,3 @@ export default function DashboardLayout({
     </div>
   );
 }
-

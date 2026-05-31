@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/utils/supabase/client'
 import { 
   Check, X, Edit2, Save, Loader2, Key, Activity, 
   DollarSign, Users, Shield, Settings, Lock, ShieldAlert,
@@ -275,7 +275,7 @@ export function SettingsUI({
   initialLang
 }: SettingsUIProps) {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [lang, setLang] = useState<Lang>(initialLang as Lang)
   const isRTL = lang === 'ar'
   const d = DICTIONARY[lang]

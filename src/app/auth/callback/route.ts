@@ -1,7 +1,5 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
@@ -9,11 +7,7 @@ export async function GET(request: Request) {
 
   try {
     if (code) {
-      const cookieStore = await cookies();
-      const supabase = createRouteHandlerClient(
-        { cookies: () => cookieStore as any },
-        { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-      );
+      const supabase = await createClient();
       
       // Synchronously exchange the authorization code for a session on the server
       // This automatically sets the session cookies on the response headers.

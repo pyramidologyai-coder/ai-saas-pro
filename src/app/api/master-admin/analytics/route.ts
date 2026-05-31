@@ -1,17 +1,11 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { NextResponse } from 'next/server';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
   try {
-    const cookieStore = await cookies();
-    const supabase = createRouteHandlerClient(
-      { cookies: () => cookieStore as any },
-      { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-    );
+    const supabase = await createClient();
 
     // 1. Verify Authentication
     const { data: { user }, error: userErr } = await supabase.auth.getUser();

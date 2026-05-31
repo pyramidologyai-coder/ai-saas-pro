@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock } from 'lucide-react';
 import { getActiveTenant } from '@/lib/tenant';
 import { saveTenantSettingsAction } from './actions';
 import { getDictionary } from '@/lib/dictionary';
 
 const SettingsPage = () => {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
@@ -415,7 +415,7 @@ const SettingsPage = () => {
               <div className={styles.quickAddCard} style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.05)' }}>
                 <h4 style={{ color: '#8b5cf6' }}>مفتاح الربط البرمجي (API Key)</h4>
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  استخدم هذا المفتاح إذا كان لديك مطورين يريدون ربط النظام بتطبيقك الخاص لإرسال الحجوزات مباشرة للـ API الخاص بنا (<code>/api/v1/bookings</code>).
+                  استخدم هذا مفتاح إذا كان لديك مطورين يريدون ربط النظام بتطبيقك الخاص لإرسال الحجوزات مباشرة للـ API الخاص بنا (<code>/api/v1/bookings</code>).
                 </p>
                 <div className={styles.formGroup}>
                   <label>مفتاح الـ API</label>

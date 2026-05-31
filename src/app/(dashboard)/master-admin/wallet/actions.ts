@@ -1,9 +1,7 @@
 'use server';
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/server';
 
 async function checkMasterRole(supabase: any, userId: string): Promise<boolean> {
   try {
@@ -32,11 +30,7 @@ export async function addWalletCreditAction(
   description: string
 ) {
   // 1. Verify User Authentication
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -65,7 +59,7 @@ export async function addWalletCreditAction(
   // 4. Update WORM double-entry ledger in database using Admin Client
   const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
   const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
 
   // Try RPC first, fallback to direct insertion if missing
   const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('add_wallet_credit', {
@@ -129,11 +123,7 @@ export async function addTenantCreditAction(
   description: string
 ) {
   // 1. Verify User Authentication
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -161,7 +151,7 @@ export async function addTenantCreditAction(
   // 4. Update ledger in database using Admin Client
   const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
   const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
 
   // Verify direct tenant exists manually
   const { data: tenantExists } = await supabaseAdmin

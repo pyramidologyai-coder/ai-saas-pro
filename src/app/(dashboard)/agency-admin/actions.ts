@@ -1,9 +1,7 @@
 'use server';
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { createClient } from '@/utils/supabase/server';
 import { TenantCrypto } from '@/lib/crypto';
 
 /**
@@ -18,11 +16,7 @@ export async function saveAgencySettingsAction(
   paymobApiKey: string
 ) {
   // 1. Verify User Authentication
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -64,7 +58,7 @@ export async function saveAgencySettingsAction(
   // 4. Save to Database using the Admin Client
   const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
   const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
 
   const { error: updateError } = await supabaseAdmin
     .from('agencies')
@@ -97,11 +91,7 @@ export async function toggleTenantStatusAction(
   currentStatus: string
 ) {
   // 1. Verify User Authentication
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
@@ -137,7 +127,7 @@ export async function toggleTenantStatusAction(
   // 4. Update Status using Admin Client
   const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
   const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
 
   const { error: updateError } = await supabaseAdmin
     .from('tenants')
@@ -166,11 +156,7 @@ export async function toggleTenantStatusAction(
  * Safe insertion of pending-payment agency status.
  */
 export async function requestAgencyUpgradeAction() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {

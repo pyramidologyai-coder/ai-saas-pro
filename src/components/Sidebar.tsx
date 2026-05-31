@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -62,10 +62,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     async function loadUserData() {
-      const supabaseClient = createClientComponentClient({
-        supabaseUrl: SUPABASE_URL,
-        supabaseKey: SUPABASE_ANON_KEY
-      });
+      const supabaseClient = createClient();
       const { data: { session } } = await supabaseClient.auth.getSession();
       
       // Fallback to localStorage if cookie session is missing
@@ -156,10 +153,7 @@ const Sidebar = () => {
   }, []);
 
   const handleLogout = async () => {
-    const supabaseClient = createClientComponentClient({
-      supabaseUrl: SUPABASE_URL,
-      supabaseKey: SUPABASE_ANON_KEY
-    });
+    const supabaseClient = createClient();
     await supabaseClient.auth.signOut();
     await supabase.auth.signOut();
     window.location.href = '/auth';

@@ -1,22 +1,16 @@
 import React from 'react';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
-import { TenantCrypto } from '@/lib/crypto';
-import { Building2, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { AgencyDashboardUI } from '@/components/agency-admin/AgencyDashboardUI';
 import UpgradeButton from './UpgradeButton';
+import { TenantCrypto } from '@/lib/crypto';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AgencyDashboardPage() {
   // 1. Authenticate user securely on the server via cookies
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -68,7 +62,7 @@ export default async function AgencyDashboardPage() {
     .eq('agency_id', agencyData.id);
 
   const tenantsList = tenantsData || [];
-  const tenantIds = tenantsList.map(t => t.id);
+  const tenantIds = tenantsList.map((t: any) => t.id);
 
   // 4. Fetch and aggregate AI message usages
   let messagesData: any[] = [];
@@ -81,8 +75,8 @@ export default async function AgencyDashboardPage() {
   }
 
   let totalUsage = 0;
-  const tenantsWithUsage = tenantsList.map(t => {
-    const usage = messagesData.filter(m => m.tenant_id === t.id && m.sender === 'model').length || 0;
+  const tenantsWithUsage = tenantsList.map((t: any) => {
+    const usage = messagesData.filter((m: any) => m.tenant_id === t.id && m.sender === 'model').length || 0;
     totalUsage += usage;
     return { ...t, ai_usage: usage };
   });

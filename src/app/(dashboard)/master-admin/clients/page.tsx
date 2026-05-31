@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { ClientsUI } from '@/components/master-admin/ClientsUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +22,7 @@ async function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<Awaited<
 }
 
 export default async function MasterAdminClientsPage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let clientsData: any[] = [];

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs';
+import { createServerClient } from '@supabase/ssr';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { GhostDefender } from './lib/ghost-defender';
 
 export const config = {
@@ -15,7 +16,10 @@ export default async function middleware(req: NextRequest) {
   if (trapResponse) return trapResponse;
 
   const url = req.nextUrl;
-  const res = NextResponse.next();
+  let res = NextResponse.next({
+    request: req,
+  });
+  
   let hostname = req.headers.get('host') || 'localhost:3000';
 
   // Remove port for production
@@ -27,6 +31,28 @@ export default async function middleware(req: NextRequest) {
     process.env.NODE_ENV === 'production' && process.env.VERCEL === '1'
       ? hostname.replace(`.reportclinics.vercel.app`, '')
       : hostname.replace(`.localhost:3000`, '');
+
+  // Create the modern @supabase/ssr server client for middleware/proxy cookie sync
+  const supabase = createServerClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => req.cookies.set(name, value));
+          res = NextResponse.next({
+            request: req,
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
 
   // ✅ كل المسارات المحمية والداخلية
   const isExemptPath =
@@ -59,13 +85,25 @@ export default async function middleware(req: NextRequest) {
 
   // ✅ لو على /admin وعنده session → check لو master admin وحوله
   if (url.pathname === '/admin' && isMainDomain) {
-    const supabase = createMiddlewareClient({ req, res });
     const { data: { session } } = await supabase.auth.getSession();
     
     if (session) {
       const { data: isMaster } = await supabase.rpc('verify_master_admin_role');
       if (isMaster) {
-        return NextResponse.redirect(new URL('/master-admin', req.url));
+        const redirectRes = NextResponse.redirect(new URL('/master-admin', req.url));
+        // Copy the cookies set on `res` to the redirect response
+        res.cookies.getAll().forEach(cookie => {
+          redirectRes.cookies.set(cookie.name, cookie.value, {
+            path: cookie.path,
+            domain: cookie.domain,
+            maxAge: cookie.maxAge,
+            expires: cookie.expires,
+            secure: cookie.secure,
+            httpOnly: cookie.httpOnly,
+            sameSite: cookie.sameSite,
+          });
+        });
+        return redirectRes;
       }
     }
   }
@@ -76,5 +114,18 @@ export default async function middleware(req: NextRequest) {
 
   // Custom domain → rewrite
   url.pathname = `/_sites/${currentHost}${url.pathname}`;
-  return NextResponse.rewrite(url);
+  const rewriteRes = NextResponse.rewrite(url);
+  // Copy the cookies set on `res` to the rewrite response
+  res.cookies.getAll().forEach(cookie => {
+    rewriteRes.cookies.set(cookie.name, cookie.value, {
+      path: cookie.path,
+      domain: cookie.domain,
+      maxAge: cookie.maxAge,
+      expires: cookie.expires,
+      secure: cookie.secure,
+      httpOnly: cookie.httpOnly,
+      sameSite: cookie.sameSite,
+    });
+  });
+  return rewriteRes;
 }

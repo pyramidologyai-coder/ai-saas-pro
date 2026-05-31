@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { AgenciesUI } from '@/components/master-admin/AgenciesUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,11 +22,7 @@ async function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<Awaited<
 }
 
 export default async function MasterAdminAgenciesPage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let agenciesData: any[] = [];
@@ -62,7 +56,7 @@ export default async function MasterAdminAgenciesPage() {
       )
     ]);
 
-    user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
+    user = userRes.status === 'fulfilled' && (userRes.value as any).data ? (userRes.value as any).data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
     agenciesData = agenciesRes.status === 'fulfilled' && !(agenciesRes.value as any).error ? (agenciesRes.value as any).data || [] : [];
     plansData = plansRes.status === 'fulfilled' && !(plansRes.value as any).error ? (plansRes.value as any).data || [] : [];

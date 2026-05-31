@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { 
   Loader2, 
   Plus, 
@@ -174,7 +174,7 @@ const d = {
 };
 
 export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIProps) {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const { language } = useLanguage();
   const currentLang = (language as 'ar' | 'en' | 'fr') || 'ar';
   const t = d[currentLang];
@@ -368,7 +368,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
 
       {/* METRIC CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)', backdropFilter: 'blur(12px)' }}>
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(12px)' }}>
           <div style={{ background: 'rgba(167, 139, 250, 0.1)', border: '1px solid rgba(167, 139, 250, 0.2)', borderRadius: '18px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Briefcase size={28} color="#a78bfa" />
           </div>
@@ -378,7 +378,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
           </div>
         </div>
 
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)', backdropFilter: 'blur(12px)' }}>
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(12px)' }}>
           <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '18px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <CheckCircle size={28} color="#10b981" />
           </div>
@@ -388,7 +388,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
           </div>
         </div>
 
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)', backdropFilter: 'blur(12px)' }}>
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(12px)' }}>
           <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '18px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <XCircle size={28} color="#ef4444" />
           </div>
@@ -398,7 +398,7 @@ export function AgenciesUI({ initialAgencies, plans = [], adminId }: AgenciesUIP
           </div>
         </div>
 
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0,0,0,0.15)', backdropFilter: 'blur(12px)' }}>
+        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(12px)' }}>
           <div style={{ background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '18px', padding: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <DollarSign size={28} color="#6366f1" />
           </div>

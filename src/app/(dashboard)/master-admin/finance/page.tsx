@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { FinanceUI } from '@/components/master-admin/FinanceUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,11 +29,7 @@ async function withTimeout<T>(
 }
 
 export default async function SuperAdminFinancePage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let financialData: any = null;
@@ -91,11 +85,11 @@ export default async function SuperAdminFinancePage() {
 
     const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
-    financialData = financeRes.status === 'fulfilled' && financeRes.value.data ? financeRes.value.data : null;
-    invoices = invoicesRes.status === 'fulfilled' && !invoicesRes.value.error ? (invoicesRes.value.data || []) : [];
-    agencies = agenciesRes.status === 'fulfilled' && !agenciesRes.value.error ? (agenciesRes.value.data || []) : [];
-    plans = plansRes.status === 'fulfilled' && !plansRes.value.error ? (plansRes.value.data || []) : [];
-    tenants = tenantsRes.status === 'fulfilled' && !tenantsRes.value.error ? (tenantsRes.value.data || []) : [];
+    financialData = financeRes.status === 'fulfilled' && (financeRes.value as any).data ? (financeRes.value as any).data : null;
+    invoices = invoicesRes.status === 'fulfilled' && !(invoicesRes.value as any).error ? ((invoicesRes.value as any).data || []) : [];
+    agencies = agenciesRes.status === 'fulfilled' && !(agenciesRes.value as any).error ? ((agenciesRes.value as any).data || []) : [];
+    plans = plansRes.status === 'fulfilled' && !(plansRes.value as any).error ? ((plansRes.value as any).data || []) : [];
+    tenants = tenantsRes.status === 'fulfilled' && !(tenantsRes.value as any).error ? ((tenantsRes.value as any).data || []) : [];
 
     if (!user) {
       redirectTarget = '/auth';

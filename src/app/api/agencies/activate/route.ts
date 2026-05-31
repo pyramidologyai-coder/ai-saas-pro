@@ -1,7 +1,5 @@
-import { createRouteHandlerClient }
-  from '@supabase/auth-helpers-nextjs'
-import { cookies, headers } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from 'next/server';
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -59,10 +57,7 @@ async function withTimeout(
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createRouteHandlerClient({
-      cookies: () => cookieStore as any
-    })
+    const supabase = await createClient();
 
     const { data: { user }, error: authError } =
       await withTimeout(

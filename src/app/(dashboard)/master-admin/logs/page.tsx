@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { LogsUI } from '@/components/master-admin/LogsUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,11 +29,7 @@ async function withTimeout<T>(
 }
 
 export default async function SuperAdminLogsPage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let logsData: any[] = [];
@@ -57,8 +51,8 @@ export default async function SuperAdminLogsPage() {
     const user = userRes.status === 'fulfilled' && userRes.value.data ? userRes.value.data.user : null;
     const isMaster = isMasterRes.status === 'fulfilled' ? isMasterRes.value.data : false;
     
-    if (logsRes.status === 'fulfilled' && logsRes.value.data) {
-      logsData = logsRes.value.data;
+    if (logsRes.status === 'fulfilled' && (logsRes.value as any).data) {
+      logsData = (logsRes.value as any).data;
     }
 
     if (!user) {

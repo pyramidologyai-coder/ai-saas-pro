@@ -1,17 +1,11 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import { MasterOverviewUI } from '@/components/master-admin/MasterOverviewUI';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MasterOverviewPage() {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    { supabaseUrl: SUPABASE_URL, supabaseKey: SUPABASE_ANON_KEY }
-  );
+  const supabase = await createClient();
 
   const [userRes, isMasterRes, dashboardRes, plansRes, logsRes, walletsRes] = await Promise.allSettled([
     supabase.auth.getUser(),

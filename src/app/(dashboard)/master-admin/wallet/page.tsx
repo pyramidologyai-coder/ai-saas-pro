@@ -1,8 +1,6 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { redirect } from 'next/navigation';
 import { WalletUI } from '@/components/master-admin/WalletUI';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import React from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -40,14 +38,7 @@ export default async function WalletPage({
   searchParams: Promise<{ lang?: string }>
 }) {
   const resolvedSearchParams = await searchParams;
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    {
-      supabaseUrl: SUPABASE_URL,
-      supabaseKey: SUPABASE_ANON_KEY
-    }
-  );
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let summary = {

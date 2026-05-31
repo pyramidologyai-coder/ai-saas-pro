@@ -1,36 +1,33 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
-import { SettingsUI } from '@/components/master-admin/SettingsUI'
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
+import { SettingsUI } from '@/components/master-admin/SettingsUI';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
-const VALID_LANGS = ['ar', 'en', 'fr'] as const
-type Lang = typeof VALID_LANGS[number]
+const VALID_LANGS = ['ar', 'en', 'fr'] as const;
+type Lang = typeof VALID_LANGS[number];
 
 async function withTimeout<T>(
   promise: Promise<T> | PromiseLike<T>,
   ms = 10000
 ): Promise<Awaited<T>> {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined
+  let timeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
   try {
     const result = await Promise.race([
       Promise.resolve(promise),
       new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('timeout')), ms)
+        timeoutId = setTimeout(() => reject(new Error('timeout')), ms);
       })
-    ])
+    ]);
     if (timeoutId !== undefined) {
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
     }
-    return result
+    return result;
   } catch (error) {
     if (timeoutId !== undefined) {
-      clearTimeout(timeoutId)
+      clearTimeout(timeoutId);
     }
-    throw error
+    throw error;
   }
 }
 
@@ -39,14 +36,7 @@ export default async function SuperAdminSettingsPage({
 }: {
   searchParams: { lang?: string }
 }) {
-  const cookieStore = await cookies();
-  const supabase = createRouteHandlerClient(
-    { cookies: () => cookieStore as any },
-    {
-      supabaseUrl: SUPABASE_URL,
-      supabaseKey: SUPABASE_ANON_KEY
-    }
-  )
+  const supabase = await createClient();
 
   let redirectTarget: string | null = null;
   let platformSettings: any = null;
@@ -84,24 +74,34 @@ export default async function SuperAdminSettingsPage({
       redirectTarget = '/admin';
     }
 
-    if (settingsRes.status === 'fulfilled' && settingsRes.value && !settingsRes.value.error) {
-      platformSettings = settingsRes.value.data;
+    if (settingsRes.status === 'fulfilled' && settingsRes.value) {
+      const val = settingsRes.value as any;
+      if (!val.error) {
+        platformSettings = val.data;
+      }
     }
 
-    if (plansRes.status === 'fulfilled' && plansRes.value && !plansRes.value.error) {
-      plans = plansRes.value.data || [];
+    if (plansRes.status === 'fulfilled' && plansRes.value) {
+      const val = plansRes.value as any;
+      if (!val.error) {
+        plans = val.data || [];
+      }
     }
 
     if (failedLoginsRes.status === 'fulfilled' && failedLoginsRes.value) {
-      failedLoginsCount = failedLoginsRes.value.count || 0;
+      const val = failedLoginsRes.value as any;
+      failedLoginsCount = val.count || 0;
     }
 
-    if (featuresRes.status === 'fulfilled' && featuresRes.value && !featuresRes.value.error && featuresRes.value.data) {
-      const features = featuresRes.value.data;
-      plans = plans.map((p: any) => ({
-        ...p,
-        features: features.filter((f: any) => f.plan_id === p.id)
-      }));
+    if (featuresRes.status === 'fulfilled' && featuresRes.value) {
+      const val = featuresRes.value as any;
+      if (!val.error && val.data) {
+        const features = val.data;
+        plans = plans.map((p: any) => ({
+          ...p,
+          features: features.filter((f: any) => f.plan_id === p.id)
+        }));
+      }
     }
   } catch (error) {
     console.error('Error loading SuperAdminSettingsPage data:', error);
@@ -125,5 +125,5 @@ export default async function SuperAdminSettingsPage({
       user={user}
       initialLang={lang}
     />
-  )
+  );
 }

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './Messages.module.css';
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@/utils/supabase/client';
 import { 
   Search, 
   Send, 
@@ -36,7 +36,7 @@ type ChatData = {
 };
 
 export default function MessagesPage() {
-  const supabase = createClientComponentClient();
+  const supabase = createClient();
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   
@@ -98,7 +98,7 @@ export default function MessagesPage() {
         const { data: tnData } = await supabase.from('tenants').select('id, name, agency_id, messages_used');
         if (tnData) {
           setAllTenants(tnData);
-          setAiQuotaUsed(tnData.reduce((acc, t) => acc + (t.messages_used || 0), 0));
+          setAiQuotaUsed(tnData.reduce((acc: number, t: any) => acc + (t.messages_used || 0), 0));
         }
         setHumanMessagesSent(0);
       } else {
@@ -109,7 +109,7 @@ export default function MessagesPage() {
           const { data: tnData } = await supabase.from('tenants').select('id, name, messages_used').eq('agency_id', agencyData[0].id);
           if (tnData) {
             setAllTenants(tnData);
-            setAiQuotaUsed(tnData.reduce((acc, t) => acc + (t.messages_used || 0), 0));
+            setAiQuotaUsed(tnData.reduce((acc: number, t: any) => acc + (t.messages_used || 0), 0));
           }
           setHumanMessagesSent(0);
         } else {
@@ -132,7 +132,7 @@ export default function MessagesPage() {
       
       const { data: convData } = await query;
       if (convData && convData.length > 0) {
-        const formattedChats = convData.map(c => ({
+        const formattedChats = convData.map((c: any) => ({
           id: c.id,
           name: c.customer_name || c.customer_phone || 'عميل غير مسجل',
           channel: c.channel || 'whatsapp',
@@ -455,7 +455,7 @@ export default function MessagesPage() {
       </div>
     </div>
   );
-};
+}
 
 const tabStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', fontWeight: 700, fontSize: '0.9rem' };
 const selectStyle: React.CSSProperties = { background: 'var(--bg-input)', border: '1px solid var(--border-color)', color: 'var(--text-main)', padding: '0.4rem', borderRadius: '8px', fontSize: '0.8rem', width: '100%', outline: 'none' };
