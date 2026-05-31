@@ -33,7 +33,7 @@ export class TemplateEngine {
     static async getMessage(tenantId: string, intent: string, defaultLang: string = 'ar'): Promise<string> {
         try {
             const { data } = await this.supabaseAdmin
-                .from('whatsapp_templates')
+                .from('bot_templates')
                 .select('template_text')
                 .eq('tenant_id', tenantId)
                 .eq('language', defaultLang)
