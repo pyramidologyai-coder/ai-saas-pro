@@ -21,7 +21,7 @@ export default function DashboardLayout({
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (event === 'SIGNED_OUT' || !session) {
+        if (event === 'SIGNED_OUT') {
           window.location.href = '/auth';
         }
       }
