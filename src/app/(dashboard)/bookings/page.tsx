@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Bookings.module.css';
 import { ChevronLeft, ChevronRight, Plus, Filter, Download } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 
 import { getActiveTenant } from '@/lib/tenant';
 
 const BookingsPage = () => {
+  const supabase = createClient();
   const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
   const [realBookings, setRealBookings] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'Day' | 'Week' | 'Month'>('Day');

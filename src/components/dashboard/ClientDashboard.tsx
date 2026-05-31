@@ -7,12 +7,13 @@ import {
   MessageCircle 
 } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 import CognitiveDashboard from '../../app/(dashboard)/admin/cognitive-view';
 
 export default function ClientDashboard() {
+  const supabase = createClient();
   const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [aiStats, setAiStats] = useState({ ai: 0, human: 0 });
   const [stats, setStats] = useState([

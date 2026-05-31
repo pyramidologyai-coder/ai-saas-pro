@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Store, KeyRound, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import styles from './Onboarding.module.css';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 export default function OnboardingWizard() {
+  const supabase = createClient();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const router = useRouter();

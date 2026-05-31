@@ -1,11 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 import { Plus, Trash2, Edit2, Loader2, Upload, FileSpreadsheet, Stethoscope, Utensils } from 'lucide-react';
 
 const ServicesPage = () => {
+  const supabase = createClient();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);

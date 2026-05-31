@@ -2,10 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Building2, Plus, MapPin, Activity, DollarSign, Users, ChevronRight, ExternalLink, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { getActiveTenant } from '@/lib/tenant';
 
 export default function BranchesPage() {
+  const supabase = createClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

@@ -1,9 +1,10 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { AlertTriangle, CreditCard, PhoneCall } from 'lucide-react';
 
 export default function TrialBlocker({ children }: { children: React.ReactNode }) {
+  const supabase = createClient();
   const [isExpired, setIsExpired] = useState(false);
   const [loading, setLoading] = useState(true);
 
