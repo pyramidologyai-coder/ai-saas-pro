@@ -39,8 +39,23 @@ export default function AuthPage() {
           // Ignore
         }
 
+        const user = session.user;
+        const role = user?.user_metadata?.role;
+        let isAgency = role === 'super_admin';
+
+        if (!isMaster && !isAgency) {
+          const { data: agencyRow } = await supabaseClient
+            .from('agencies')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+          isAgency = !!(agencyRow && agencyRow.length > 0);
+        }
+
         if (isMaster) {
           router.replace('/master-admin');
+        } else if (isAgency) {
+          router.replace('/agency-admin');
         } else {
           router.replace('/admin');
         }
@@ -81,8 +96,23 @@ export default function AuthPage() {
           // Ignore
         }
 
+        const user = authData.user;
+        const role = user?.user_metadata?.role;
+        let isAgency = role === 'super_admin';
+
+        if (user && !isMaster && !isAgency) {
+          const { data: agencyRow } = await supabaseClient
+            .from('agencies')
+            .select('id')
+            .eq('user_id', user.id)
+            .limit(1);
+          isAgency = !!(agencyRow && agencyRow.length > 0);
+        }
+
         if (isMaster) {
           router.replace('/master-admin');
+        } else if (isAgency) {
+          router.replace('/agency-admin');
         } else {
           router.replace('/admin');
         }
