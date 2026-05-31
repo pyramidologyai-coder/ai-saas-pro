@@ -22,7 +22,7 @@ export default async function CustomDomainPage({
 
   // 2. Fetch public services or menu
   const { data: services } = await supabase
-    .from('services')
+    .from('items')
     .select('*')
     .eq('tenant_id', tenant.id);
 
