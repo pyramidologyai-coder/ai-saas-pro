@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { CreditCard, Check, Zap, AlertTriangle, Wallet, Calendar, Activity, Star } from 'lucide-react';
 import UsageProgressBar from '@/components/financial/UsageProgressBar';
 
 export default function BillingPage() {
+  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<any>(null);
   const [processing, setProcessing] = useState<string | null>(null);

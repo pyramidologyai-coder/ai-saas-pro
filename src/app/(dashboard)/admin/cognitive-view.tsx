@@ -4,10 +4,11 @@ import React, { useState } from 'react';
 import useSWR from 'swr';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Cell, ReferenceLine } from 'recharts';
 import { Wallet, TrendingUp, AlertTriangle, Activity, Target, Zap, DollarSign, Calculator, Eye, CheckCircle } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 // Zero-Latency Data Fetcher
 const fetcher = async (url: string) => {
+  const supabase = createClient();
   const { data: { session } } = await supabase.auth.getSession();
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${session?.access_token}` }

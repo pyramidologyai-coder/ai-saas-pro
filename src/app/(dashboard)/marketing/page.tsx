@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Megaphone, Plus, Sparkles, Send, Users, Activity, Info } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { getDictionary } from '@/lib/dictionary';
 
 export default function MarketingPage() {
+  const supabase = createClient();
   const [showModal, setShowModal] = useState(false);
   const [campaignMode, setCampaignMode] = useState<'ai' | 'template'>('template');
   const [isGenerating, setIsGenerating] = useState(false);

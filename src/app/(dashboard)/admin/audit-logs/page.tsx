@@ -1,10 +1,11 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { ShieldAlert, Search, Loader2, Calendar, FileText, User } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/Skeleton';
 
 export default function AuditLogsPage() {
+  const supabase = createClient();
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

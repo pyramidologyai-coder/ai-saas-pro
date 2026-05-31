@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { Bell, Check, Info, AlertTriangle, AlertCircle, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function NotificationBell() {
+  const supabase = createClient();
   const [userRole, setUserRole] = useState<'master_admin' | 'super_admin' | 'admin' | 'staff' | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [agencyId, setAgencyId] = useState<string | null>(null);

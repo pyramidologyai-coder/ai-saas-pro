@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { Bot, Save, AlertTriangle, Settings2, Mic, FileText, MessageCircle, Instagram, Facebook } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 type Channel = 'whatsapp' | 'messenger' | 'instagram';
 
@@ -21,6 +21,7 @@ const DEFAULT_TEMPLATES = [
 ];
 
 export default function AutomationsPage() {
+  const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);

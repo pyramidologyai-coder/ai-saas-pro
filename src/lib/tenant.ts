@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
+const supabase = createClient();
 
 export async function getActiveTenant(sessionUser: any) {
     if (!sessionUser) return null;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { businessConfig, BusinessType } from '@/config/businessConfig';
 import { getActiveTenant } from '@/lib/tenant';
 
@@ -12,6 +12,7 @@ export const useBusinessConfig = (tenantTypeParam?: string) => {
       return;
     }
     const fetchType = async () => {
+      const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         const activeTenant = await getActiveTenant(session.user);

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { Loader2, Save } from 'lucide-react';
 import { savePlanAction } from '@/app/(dashboard)/master-admin/actions';
 
 export const PlanEditor = () => {
+  const supabase = createClient();
   const [plans, setPlans] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);

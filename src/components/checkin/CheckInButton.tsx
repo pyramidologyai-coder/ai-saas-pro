@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { useBusinessConfig } from '@/hooks/useBusinessConfig';
 
 interface CheckInButtonProps {
@@ -11,6 +11,7 @@ interface CheckInButtonProps {
 export const CheckInButton: React.FC<CheckInButtonProps> = ({ bookingId, tenantType, onStatusChange }) => {
   const { sidebarLabels } = useBusinessConfig(tenantType);
   const [loading, setLoading] = useState(false);
+  const supabase = createClient();
 
   const handleCheckIn = async (status: 'checked_in' | 'no_show') => {
     setLoading(true);

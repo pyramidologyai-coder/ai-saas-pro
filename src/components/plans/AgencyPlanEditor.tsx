@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 
 export const AgencyPlanEditor = () => {
+  const supabase = createClient();
   const [agencyPlans, setAgencyPlans] = useState<any[]>([]);
 
   useEffect(() => {

@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import styles from './Sidebar.module.css';
@@ -68,7 +67,7 @@ const Sidebar = () => {
       // Fallback to localStorage if cookie session is missing
       let finalSession = session;
       if (!finalSession) {
-         const localSession = await supabase.auth.getSession();
+         const localSession = await supabaseClient.auth.getSession();
          finalSession = localSession.data.session;
          
          // If localStorage has session but cookies don't, manually trigger auth change to set cookie
@@ -81,49 +80,49 @@ const Sidebar = () => {
       }
 
       if (finalSession) {
-        setUserEmail(finalSession.user.email || '');
-        const isMaster = finalSession.user.user_metadata?.role === 'master_admin';
-        setIsMasterAdmin(isMaster);
+         setUserEmail(finalSession.user.email || '');
+         const isMaster = finalSession.user.user_metadata?.role === 'master_admin';
+         setIsMasterAdmin(isMaster);
 
-        if (isMaster) {
-          // Fetch platform name from platform_settings
-          const { data: platformSettings } = await supabase
-            .from('platform_settings')
-            .select('platform_name')
-            .limit(1)
-            .maybeSingle();
-          if (platformSettings?.platform_name) {
-            setBusinessName(platformSettings.platform_name);
-          } else {
-            setBusinessName('Ash Agent');
-          }
-        } else {
-          // 1. Fetch Active Tenant and All Tenants
-          const activeTenant = await getActiveTenant(finalSession.user);
-          const allTenantsList = await getAllTenants(finalSession.user);
-          setTenants(allTenantsList);
+         if (isMaster) {
+           // Fetch platform name from platform_settings
+           const { data: platformSettings } = await supabaseClient
+             .from('platform_settings')
+             .select('platform_name')
+             .limit(1)
+             .maybeSingle();
+           if (platformSettings?.platform_name) {
+             setBusinessName(platformSettings.platform_name);
+           } else {
+             setBusinessName('Ash Agent');
+           }
+         } else {
+           // 1. Fetch Active Tenant and All Tenants
+           const activeTenant = await getActiveTenant(finalSession.user);
+           const allTenantsList = await getAllTenants(finalSession.user);
+           setTenants(allTenantsList);
 
-          if (activeTenant) {
-            setBusinessName(activeTenant.name);
-            setTenantType(activeTenant.type);
-          } else {
-            setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
-            setBusinessName('مساحة عمل افتراضية');
-          }
-        }
+           if (activeTenant) {
+             setBusinessName(activeTenant.name);
+             setTenantType(activeTenant.type);
+           } else {
+             setTenantType(localStorage.getItem('demo_tenant_type') || 'clinic');
+             setBusinessName('مساحة عمل افتراضية');
+           }
+         }
 
-        // 2. Default User Role
-        setUserRole('admin');
+         // 2. Default User Role
+         setUserRole('admin');
 
-        // 3. Check if Agency Owner
-        const { data: agencyData } = await supabase
-          .from('agencies')
-          .select('id')
-          .eq('user_id', finalSession.user.id)
-          .limit(1);
-        if (agencyData && agencyData.length > 0) {
-          setIsAgencyOwner(true);
-        }
+         // 3. Check if Agency Owner
+         const { data: agencyData } = await supabaseClient
+           .from('agencies')
+           .select('id')
+           .eq('user_id', finalSession.user.id)
+           .limit(1);
+         if (agencyData && agencyData.length > 0) {
+           setIsAgencyOwner(true);
+         }
       }
     }
     loadUserData();
@@ -155,7 +154,6 @@ const Sidebar = () => {
   const handleLogout = async () => {
     const supabaseClient = createClient();
     await supabaseClient.auth.signOut();
-    await supabase.auth.signOut();
     window.location.href = '/auth';
   };
 
