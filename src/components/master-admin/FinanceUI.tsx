@@ -293,8 +293,67 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const safeTenants = Array.isArray(tenants) ? tenants : []
   const directClients = safeTenants
 
+  // Filter invoices logic
+  const filteredInvoices = safeInvoices.filter(inv => {
+    const matchesStatus = statusFilter === 'all' ? true : inv.status === statusFilter
+    
+    let matchesDate = true
+    if (dateFilter !== 'all') {
+      const now = new Date()
+      const invDate = new Date(inv.created_at)
+      if (dateFilter === 'this_month') {
+        matchesDate = invDate.getFullYear() === now.getFullYear() && invDate.getMonth() === now.getMonth()
+      } else if (dateFilter === 'last_month') {
+        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1
+        const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
+        matchesDate = invDate.getFullYear() === lastMonthYear && invDate.getMonth() === lastMonth
+      } else if (dateFilter === 'last_6_months') {
+        const sixMonthsAgo = new Date()
+        sixMonthsAgo.setMonth(now.getMonth() - 6)
+        matchesDate = invDate >= sixMonthsAgo
+      } else if (dateFilter === 'last_year') {
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(now.getFullYear() - 1)
+        matchesDate = invDate >= oneYearAgo
+      } else if (dateFilter === 'custom') {
+        const start = startDate ? new Date(startDate) : null
+        const end = endDate ? new Date(endDate) : null
+        
+        if (start && end) {
+          start.setHours(0, 0, 0, 0)
+          const endOfDay = new Date(end)
+          endOfDay.setHours(23, 59, 59, 999)
+          matchesDate = invDate >= start && invDate <= endOfDay
+        } else if (start) {
+          start.setHours(0, 0, 0, 0)
+          matchesDate = invDate >= start
+        } else if (end) {
+          const endOfDay = new Date(end)
+          endOfDay.setHours(23, 59, 59, 999)
+          matchesDate = invDate <= endOfDay
+        }
+      }
+    }
+    
+    // Filter by Searchable Recipient selection (Agencies & Direct Clients)
+    let matchesRecipient = true
+    if (selectedRecipient) {
+      if (selectedRecipient.type === 'agency') {
+        matchesRecipient = inv.agency_id === selectedRecipient.id
+      } else {
+        matchesRecipient = inv.tenant_id === selectedRecipient.id
+      }
+    } else if (selectedAgencyId) {
+      matchesRecipient = inv.agency_id === selectedAgencyId
+    } else if (selectedTenantId) {
+      matchesRecipient = inv.tenant_id === selectedTenantId
+    }
+    
+    return matchesStatus && matchesDate && matchesRecipient
+  })
+
   // Dynamic KPI Calculations
-  const calculatedTotalRevenue = safeInvoices
+  const calculatedTotalRevenue = filteredInvoices
     .filter(inv => inv.status === 'paid')
     .reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0)
 
@@ -304,7 +363,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
     const currentYear = now.getFullYear()
     const currentMonth = now.getMonth() // 0-11
     
-    return safeInvoices
+    return filteredInvoices
       .filter(inv => {
         if (inv.status !== 'paid') return false
         const date = new Date(inv.paid_at || inv.created_at)
@@ -315,7 +374,15 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
 
   const calculatedMRR = getMRR()
   const calculatedARR = calculatedMRR * 12
-  const calculatedARPA = safeAgencies.length > 0 ? calculatedTotalRevenue / safeAgencies.length : 0
+
+  const filteredAgencyCount = new Set(
+    filteredInvoices
+      .filter(inv => inv.agency_id)
+      .map(inv => inv.agency_id)
+  ).size || safeAgencies.length
+
+  const calculatedARPA = filteredAgencyCount > 0 
+    ? calculatedTotalRevenue / filteredAgencyCount : 0
 
   // Standard platform metrics from initialData or calculated as a fallback
   const totalRevenue = initialData?.total_revenue ?? initialData?.totalRevenue ?? calculatedTotalRevenue
@@ -397,65 +464,6 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
     return Math.max(...vals, 1)
   }
   const maxPlanValue = getMaxPlanValue()
-
-  // Filter invoices logic
-  const filteredInvoices = safeInvoices.filter(inv => {
-    const matchesStatus = statusFilter === 'all' ? true : inv.status === statusFilter
-    
-    let matchesDate = true
-    if (dateFilter !== 'all') {
-      const now = new Date()
-      const invDate = new Date(inv.created_at)
-      if (dateFilter === 'this_month') {
-        matchesDate = invDate.getFullYear() === now.getFullYear() && invDate.getMonth() === now.getMonth()
-      } else if (dateFilter === 'last_month') {
-        const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1
-        const lastMonthYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
-        matchesDate = invDate.getFullYear() === lastMonthYear && invDate.getMonth() === lastMonth
-      } else if (dateFilter === 'last_6_months') {
-        const sixMonthsAgo = new Date()
-        sixMonthsAgo.setMonth(now.getMonth() - 6)
-        matchesDate = invDate >= sixMonthsAgo
-      } else if (dateFilter === 'last_year') {
-        const oneYearAgo = new Date()
-        oneYearAgo.setFullYear(now.getFullYear() - 1)
-        matchesDate = invDate >= oneYearAgo
-      } else if (dateFilter === 'custom') {
-        const start = startDate ? new Date(startDate) : null
-        const end = endDate ? new Date(endDate) : null
-        
-        if (start && end) {
-          start.setHours(0, 0, 0, 0)
-          const endOfDay = new Date(end)
-          endOfDay.setHours(23, 59, 59, 999)
-          matchesDate = invDate >= start && invDate <= endOfDay
-        } else if (start) {
-          start.setHours(0, 0, 0, 0)
-          matchesDate = invDate >= start
-        } else if (end) {
-          const endOfDay = new Date(end)
-          endOfDay.setHours(23, 59, 59, 999)
-          matchesDate = invDate <= endOfDay
-        }
-      }
-    }
-    
-    // Filter by Searchable Recipient selection (Agencies & Direct Clients)
-    let matchesRecipient = true
-    if (selectedRecipient) {
-      if (selectedRecipient.type === 'agency') {
-        matchesRecipient = inv.agency_id === selectedRecipient.id
-      } else {
-        matchesRecipient = inv.tenant_id === selectedRecipient.id
-      }
-    } else if (selectedAgencyId) {
-      matchesRecipient = inv.agency_id === selectedAgencyId
-    } else if (selectedTenantId) {
-      matchesRecipient = inv.tenant_id === selectedTenantId
-    }
-    
-    return matchesStatus && matchesDate && matchesRecipient
-  })
 
   // Dynamic Recharts Data Aggregation
 
