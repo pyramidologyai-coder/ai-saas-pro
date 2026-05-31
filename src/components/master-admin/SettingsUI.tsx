@@ -287,22 +287,26 @@ export function SettingsUI({
   const [platformName, setPlatformName] = useState(
     initialPlatformSettings?.platform_name || 'AI Clinic & Restaurant SaaS'
   )
-  const [currency, setCurrency] = useState(
-    initialPlatformSettings?.currency || 'USD'
-  )
-  const [agencyPercentage, setAgencyPercentage] = useState<number>(
-    initialPlatformSettings?.agency_percentage ?? 20
-  )
-  const [agencyBaseFee, setAgencyBaseFee] = useState<number>(
-    initialPlatformSettings?.agency_base_fee ?? 100
-  )
   const [trialPeriodDays, setTrialPeriodDays] = useState<number>(
     initialPlatformSettings?.trial_period_days ?? 7
+  )
+  const [supportEmail, setSupportEmail] = useState(
+    initialPlatformSettings?.support_email || ''
+  )
+  const [resendApiKey, setResendApiKey] = useState(
+    initialPlatformSettings?.resend_api_key || ''
   )
   const [savingPlatform, setSavingPlatform] = useState(false)
   const [platformMessage, setPlatformMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
+  const [origin, setOrigin] = useState('')
+  const [showApiKey, setShowApiKey] = useState(false)
 
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin)
+    }
+  }, [])
 
   // ----------------------------------------------------
   // Actions
@@ -315,18 +319,11 @@ export function SettingsUI({
 
     try {
       const payload: any = {
-        agency_base_fee: agencyBaseFee,
-        agency_percentage: agencyPercentage,
-        updated_at: new Date().toISOString()
-      }
-
-      // Check if schema has columns for platform_name and trial_period_days
-      // We safely put them in the payload; if the db throws error we'll catch it and retry with a fallback safe payload
-      const fullPayload = {
-        ...payload,
         platform_name: platformName,
-        currency: 'USD', // USD ($) currency only
-        trial_period_days: trialPeriodDays
+        trial_period_days: trialPeriodDays,
+        support_email: supportEmail,
+        resend_api_key: resendApiKey,
+        updated_at: new Date().toISOString()
       }
 
       let settingsId = initialPlatformSettings?.id
@@ -335,28 +332,34 @@ export function SettingsUI({
       if (settingsId && isValidUUID(settingsId)) {
         result = await supabase
           .from('platform_settings')
-          .update(fullPayload)
+          .update(payload)
           .eq('id', settingsId)
       } else {
         result = await supabase
           .from('platform_settings')
-          .insert([fullPayload])
+          .insert([payload])
       }
 
       if (result.error) {
-        console.warn("Full payload insert/update failed, retrying with fallback safe payload (excluding custom columns)...", result.error)
+        console.warn("Full payload insert/update failed, retrying with fallback safe platform settings...", result.error)
         
-        // Fallback retry using only base columns
+        // Fallback retry using only base columns (platform_name, trial_period_days)
+        const fallbackPayload = {
+          platform_name: platformName,
+          trial_period_days: trialPeriodDays,
+          updated_at: new Date().toISOString()
+        }
+
         let fallbackResult;
         if (settingsId && isValidUUID(settingsId)) {
           fallbackResult = await supabase
             .from('platform_settings')
-            .update(payload)
+            .update(fallbackPayload)
             .eq('id', settingsId)
         } else {
           fallbackResult = await supabase
             .from('platform_settings')
-            .insert([payload])
+            .insert([fallbackPayload])
         }
 
         if (fallbackResult.error) {
@@ -379,15 +382,6 @@ export function SettingsUI({
     } finally {
       setSavingPlatform(false)
     }
-  }
-
-
-
-  // Helper for rendering badges
-  const getActionBadgeColor = (isActive: boolean) => {
-    return isActive 
-      ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15'
-      : 'bg-red-500/10 text-red-400 border border-red-500/15'
   }
 
   // Format timestamp beautifully with Arabic/English locale support
@@ -523,40 +517,6 @@ export function SettingsUI({
                   />
                 </div>
 
-                {/* Currency - Read-only $ only */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[var(--text-main)] block flex items-center gap-1.5">
-                    {d.currency}
-                    <span className="text-xs text-[var(--accent-primary)] bg-[var(--bg-input)] px-2 py-0.5 rounded-full border border-[var(--glass-border)]">
-                      Fixed
-                    </span>
-                  </label>
-                  <div className="relative">
-                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-[var(--text-dim)]`} />
-                    <input
-                      type="text"
-                      value={`${currency} ($)`}
-                      disabled
-                      className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-dim)] outline-none cursor-not-allowed text-sm font-bold opacity-70 relative"
-                      style={{ paddingLeft: isRTL ? '1rem' : '2.5rem', paddingRight: isRTL ? '2.5rem' : '1rem' }}
-                    />
-                  </div>
-                </div>
-
-                {/* Default Commission Rate */}
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.defaultCommission}</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={agencyPercentage}
-                    onChange={(e) => setAgencyPercentage(Number(e.target.value))}
-                    required
-                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-mono"
-                  />
-                </div>
-
                 {/* Trial Period in Days */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-[var(--text-main)] block">{d.trialPeriod}</label>
@@ -570,21 +530,67 @@ export function SettingsUI({
                   />
                 </div>
 
-                {/* Agency Base Fee */}
+                {/* Support Email */}
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[var(--text-main)] block">{d.baseFee}</label>
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">
+                    {lang === 'ar' ? 'البريد الإلكتروني للدعم' : lang === 'fr' ? 'Email de support' : 'Support Email'}
+                  </label>
+                  <input
+                    type="email"
+                    value={supportEmail}
+                    onChange={(e) => setSupportEmail(e.target.value)}
+                    placeholder="support@example.com"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-sans"
+                  />
+                </div>
+
+                {/* Resend API Key */}
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">
+                    {lang === 'ar' ? 'مفتاح API لـ Resend' : lang === 'fr' ? 'Clé API Resend' : 'Resend API Key'}
+                  </label>
                   <div className="relative">
-                    <DollarSign size={16} className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 -translate-y-1/2 text-[var(--text-dim)]`} />
                     <input
-                      type="number"
-                      min="0"
-                      value={agencyBaseFee}
-                      onChange={(e) => setAgencyBaseFee(Number(e.target.value))}
-                      required
+                      type={showApiKey ? 'text' : 'password'}
+                      value={resendApiKey}
+                      onChange={(e) => setResendApiKey(e.target.value)}
+                      placeholder="re_..."
                       className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-main)] placeholder-[var(--text-dim)] outline-none focus:border-[var(--accent-primary)] focus:ring-1 focus:ring-[var(--accent-primary)] transition-all text-sm font-mono"
-                      style={{ paddingLeft: isRTL ? '1rem' : '2.5rem', paddingRight: isRTL ? '2.5rem' : '1rem' }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 -translate-y-1/2 text-xs text-[var(--text-dim)] hover:text-[var(--text-main)] cursor-pointer bg-transparent border-none`}
+                    >
+                      {showApiKey ? (isRTL ? 'إخفاء' : 'Hide') : (isRTL ? 'إظهار' : 'Show')}
+                    </button>
                   </div>
+                </div>
+
+                {/* Stripe Webhook URL (read-only) */}
+                <div className="space-y-2 col-span-1 md:col-span-2">
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">
+                    {lang === 'ar' ? 'رابط ويبهوك Stripe (للقراءة فقط)' : lang === 'fr' ? 'URL Webhook Stripe (Lecture seule)' : 'Stripe Webhook URL (Read-only)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={origin ? `${origin}/api/webhooks/stripe` : '...'}
+                    readOnly
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-dim)] outline-none cursor-not-allowed text-xs font-mono opacity-80"
+                  />
+                </div>
+
+                {/* PayMob Webhook URL (read-only) */}
+                <div className="space-y-2 col-span-1 md:col-span-2">
+                  <label className="text-sm font-semibold text-[var(--text-main)] block">
+                    {lang === 'ar' ? 'رابط ويبهوك PayMob (للقراءة فقط)' : lang === 'fr' ? 'URL Webhook PayMob (Lecture seule)' : 'PayMob Webhook URL (Read-only)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={origin ? `${origin}/api/webhooks/paymob` : '...'}
+                    readOnly
+                    className="w-full bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-4 py-3 text-[var(--text-dim)] outline-none cursor-not-allowed text-xs font-mono opacity-80"
+                  />
                 </div>
 
               </div>
