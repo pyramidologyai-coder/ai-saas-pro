@@ -270,6 +270,8 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const [recipientDropdownOpen, setRecipientDropdownOpen] = useState(false)
   const [recipientSearchQuery, setRecipientSearchQuery] = useState('')
   const [selectedRecipient, setSelectedRecipient] = useState<{ id: string; name: string; type: 'agency' | 'tenant' } | null>(null)
+  const [selectedAgencyId, setSelectedAgencyId] = useState<string | null>(null)
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null)
   
   const recipientDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -289,6 +291,7 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
   const safeAgencies = Array.isArray(agencies) ? agencies : []
   const safePlans = Array.isArray(plans) ? plans : []
   const safeTenants = Array.isArray(tenants) ? tenants : []
+  const directClients = safeTenants
 
   // Dynamic KPI Calculations
   const calculatedTotalRevenue = safeInvoices
@@ -445,6 +448,10 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
       } else {
         matchesRecipient = inv.tenant_id === selectedRecipient.id
       }
+    } else if (selectedAgencyId) {
+      matchesRecipient = inv.agency_id === selectedAgencyId
+    } else if (selectedTenantId) {
+      matchesRecipient = inv.tenant_id === selectedTenantId
     }
     
     return matchesStatus && matchesDate && matchesRecipient
@@ -688,94 +695,44 @@ export function FinanceUI({ initialData, invoices = [], agencies = [], plans = [
             </div>
           )}
 
-          {/* Searchable Beneficiary Dropdown Select (المستفيد القابل للبحث) */}
-          <div className="relative min-w-[240px] flex-1 sm:flex-none" ref={recipientDropdownRef}>
-            <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] hover:border-[var(--accent-primary)] transition-all rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)]">
-              <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'المستفيد:' : 'Beneficiary:'}</span>
-              <button
-                type="button"
-                onClick={() => setRecipientDropdownOpen(!recipientDropdownOpen)}
-                className="flex justify-between items-center bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-full text-right border-none p-0"
-              >
-                <span className="truncate flex-1">
-                  {selectedRecipient 
-                    ? `${selectedRecipient.name} (${selectedRecipient.type === 'agency' ? (isRtl ? 'وكالة' : 'Agency') : (isRtl ? 'عميل مباشر' : 'Direct Tenant')})` 
-                    : (isRtl ? 'كل الوكالات والعملاء' : 'All Agencies & Clients')
-                  }
-                </span>
-                <ChevronDown size={12} className="text-[var(--text-dim)] shrink-0 mr-1" />
-              </button>
-            </div>
-
-            {recipientDropdownOpen && (
-              <div className="absolute z-50 mt-1.5 w-full bg-[var(--bg-space-surface)] border border-[var(--glass-border)] rounded-xl shadow-2xl p-2 space-y-2 animate-fadeIn min-w-[260px] right-0">
-                {/* Search input field inside dropdown */}
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={recipientSearchQuery}
-                    onChange={(e) => setRecipientSearchQuery(e.target.value)}
-                    placeholder={isRtl ? 'اكتب للبحث...' : 'Search recipient...'}
-                    className="w-full bg-[var(--bg-color)] border border-[var(--glass-border)] focus:border-[var(--accent-primary)] rounded-lg p-2 pr-8 text-xs text-[var(--text-main)] outline-none placeholder-[var(--text-dim)] font-sans"
-                    autoFocus
-                  />
-                  <Search size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-dim)] pointer-events-none" />
-                </div>
-
-                {/* Options List */}
-                <div className="max-h-48 overflow-y-auto space-y-0.5 custom-scrollbar">
-                  {/* Reset option */}
-                  <div
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setSelectedRecipient(null);
-                      setRecipientDropdownOpen(false);
-                      setRecipientSearchQuery('');
-                    }}
-                    className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex items-center gap-2 ${
-                      !selectedRecipient ? 'bg-[var(--success-bg)] text-[var(--success-text)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-main)]'
-                    }`}
-                  >
-                    <span>{isRtl ? 'كل الوكالات والعملاء' : 'All Agencies & Clients'}</span>
-                  </div>
-                  
-                  <div className="h-px bg-[var(--glass-border)] my-1"></div>
-
-                  {/* Filtered unique recipients list */}
-                  {uniqueRecipients
-                    .filter(r => r.name.toLowerCase().includes(recipientSearchQuery.toLowerCase()))
-                    .map(r => {
-                      const isSelected = selectedRecipient?.id === r.id;
-                      return (
-                        <div
-                          key={r.id}
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            setSelectedRecipient(r);
-                            setRecipientDropdownOpen(false);
-                            setRecipientSearchQuery('');
-                          }}
-                          className={`p-2 rounded-lg text-xs cursor-pointer transition-colors flex justify-between items-center gap-2 ${
-                            isSelected ? 'bg-[var(--success-bg)] text-[var(--success-text)] font-bold' : 'text-[var(--text-dim)] hover:bg-[var(--hover-bg)] hover:text-[var(--text-main)]'
-                          }`}
-                        >
-                          <span className="truncate">{r.name}</span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
-                            r.type === 'agency' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/15' : 'bg-purple-500/10 text-purple-400 border border-purple-500/15'
-                          }`}>
-                            {r.type === 'agency' ? (isRtl ? 'وكالة' : 'Agency') : (isRtl ? 'عميل' : 'Tenant')}
-                          </span>
-                        </div>
-                      )
-                    })
-                  }
-
-                  {uniqueRecipients.filter(r => r.name.toLowerCase().includes(recipientSearchQuery.toLowerCase())).length === 0 && (
-                    <div className="text-center py-4 text-[var(--text-dim)] opacity-60 text-xs">{isRtl ? 'لا توجد نتائج مطابقة.' : 'No matches found.'}</div>
-                  )}
-                </div>
-              </div>
-            )}
+          {/* Beneficiary Filter Dropdown Selection */}
+          <div className="flex items-center bg-[var(--bg-input)] border border-[var(--glass-border)] rounded-xl px-3 py-1.5 focus-within:border-[var(--accent-primary)] transition-all min-w-[240px] flex-1 sm:flex-none">
+            <span className="text-[11px] text-[var(--text-dim)] font-bold whitespace-nowrap ml-2">{isRtl ? 'المستفيد:' : 'Beneficiary:'}</span>
+            <select
+              value={selectedAgencyId ? `agency_${selectedAgencyId}` : selectedTenantId ? `tenant_${selectedTenantId}` : 'all'}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'all') {
+                  setSelectedAgencyId(null);
+                  setSelectedTenantId(null);
+                } else if (val.startsWith('agency_')) {
+                  setSelectedAgencyId(val.replace('agency_', ''));
+                  setSelectedTenantId(null);
+                } else if (val.startsWith('tenant_')) {
+                  setSelectedTenantId(val.replace('tenant_', ''));
+                  setSelectedAgencyId(null);
+                }
+              }}
+              className="bg-transparent text-[var(--text-main)] text-xs outline-none cursor-pointer w-full border-none p-0 focus:ring-0"
+            >
+              <option value="all" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                {isRtl ? 'كل الوكالات والعملاء' : 'All Agencies & Clients'}
+              </option>
+              <optgroup label="🏢 الوكالات" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                {safeAgencies.map(a => (
+                  <option key={a.id} value={`agency_${a.id}`} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                    {a.name}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="👤 العملاء المباشرين" style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                {directClients.map(c => (
+                  <option key={c.id} value={`tenant_${c.id}`} style={{ background: 'var(--bg-space-surface)', color: 'var(--text-main)' }}>
+                    {c.name}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
           </div>
         </div>
       </div>
