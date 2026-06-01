@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import styles from './Users.module.css';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { UserPlus, Shield, UserCog, Trash2 } from 'lucide-react';
 import { getDictionary } from '@/lib/dictionary';
+import { getActiveTenant } from '@/lib/tenant';
 
 interface Profile {
   id: string;
@@ -21,6 +22,7 @@ interface Profile {
 }
 
 export default function UsersPage() {
+  const supabase = createClient();
   const [users, setUsers] = useState<Profile[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,21 +46,17 @@ export default function UsersPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: tenant } = await supabase
-        .from('tenants')
-        .select('id, type')
-        .eq('user_id', session.user.id)
-        .single();
+      const tenantData = await getActiveTenant(session.user);
 
-      if (tenant) {
-        setTenantId(tenant.id);
-        setDict(getDictionary(tenant.type));
+      if (tenantData) {
+        setTenantId(tenantData.id);
+        setDict(getDictionary(tenantData.type));
         
         // Fetch branches for this tenant to populate the dropdown
         const { data: branchData } = await supabase
           .from('branches')
           .select('id, name')
-          .eq('tenant_id', tenant.id);
+          .eq('tenant_id', tenantData.id);
           
         if (branchData) {
           // Store branches in state (need to add branches state above)
@@ -68,7 +66,7 @@ export default function UsersPage() {
         const { data: profiles } = await supabase
           .from('profiles')
           .select('*')
-          .eq('tenant_id', tenant.id);
+          .eq('tenant_id', tenantData.id);
           
         if (profiles) setUsers(profiles as Profile[]);
       }
