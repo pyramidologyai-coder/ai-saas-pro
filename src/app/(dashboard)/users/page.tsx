@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Users.module.css';
 import { createClient } from '@/utils/supabase/client';
-import { UserPlus, Shield, UserCog, Trash2 } from 'lucide-react';
+import { UserPlus, Shield, UserCog, Trash2, Pencil, X } from 'lucide-react';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 import { getUserPermissions } from '@/lib/permissions';
@@ -30,6 +30,19 @@ export default function UsersPage() {
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [dict, setDict] = useState(() => getDictionary('clinic'));
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<Profile | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    fullName: '',
+    role: 'staff',
+    branch_access: ['all'] as string[],
+    permissions: {
+      view_revenue: false,
+      manage_settings: false,
+      view_all_bookings: false
+    }
+  });
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -90,6 +103,112 @@ export default function UsersPage() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  const openEditModal = (user: Profile) => {
+    setSelectedStaff(user);
+    setEditFormData({
+      fullName: user.full_name,
+      role: user.role,
+      branch_access: user.branch_access || ['all'],
+      permissions: {
+        view_revenue: user.permissions?.view_revenue || false,
+        manage_settings: user.permissions?.manage_settings || false,
+        view_all_bookings: user.permissions?.view_all_bookings || false
+      }
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditStaffSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStaff || !tenantId) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('جلسة العمل منتهية، يرجى تسجيل الدخول مجدداً.');
+        return;
+      }
+
+      const response = await fetch('/api/staff/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          staff_id: selectedStaff.id,
+          tenant_id: tenantId,
+          token,
+          full_name: editFormData.fullName,
+          role: editFormData.role,
+          branch_access: editFormData.branch_access,
+          permissions: editFormData.permissions
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || resData.error) {
+        alert(resData.error || 'حدث خطأ أثناء تعديل صلاحيات الموظف.');
+        return;
+      }
+
+      setUsers(users.map(u => u.id === selectedStaff.id ? {
+        ...u,
+        full_name: editFormData.fullName,
+        role: editFormData.role as any,
+        branch_access: editFormData.branch_access,
+        permissions: editFormData.permissions
+      } : u));
+
+      setIsEditModalOpen(false);
+      setSelectedStaff(null);
+      alert('تم تحديث صلاحيات الموظف بنجاح ✅');
+    } catch (err: any) {
+      console.error(err);
+      alert('حدث خطأ غير متوقع: ' + err.message);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!tenantId) return;
+    if (!confirm('هل أنت متأكد من حذف حساب هذا الموظف نهائياً؟')) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) {
+        alert('جلسة العمل منتهية، يرجى تسجيل الدخول مجدداً.');
+        return;
+      }
+
+      const response = await fetch('/api/staff/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          staff_id: userId,
+          tenant_id: tenantId,
+          token
+        })
+      });
+
+      const resData = await response.json();
+      if (!response.ok || resData.error) {
+        alert(resData.error || 'حدث خطأ أثناء حذف الموظف.');
+        return;
+      }
+
+      setUsers(users.filter(u => u.id !== userId));
+      alert('تم حذف الموظف بنجاح ✅');
+    } catch (err: any) {
+      console.error(err);
+      alert('حدث خطأ غير متوقع: ' + err.message);
+    }
+  };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +284,8 @@ export default function UsersPage() {
     switch (role) {
       case 'admin': return <span className={`${styles.roleBadge} ${styles.roleAdmin}`}>مدير نظام</span>;
       case 'doctor': return <span className={`${styles.roleBadge} ${styles.roleDoctor}`}>{dict.provider}</span>;
+      case 'manager': return <span className={`${styles.roleBadge}`} style={{ backgroundColor: 'rgba(234, 179, 8, 0.1)', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid rgba(234, 179, 8, 0.2)' }}>مدير تشغيلي</span>;
+      case 'secretary': return <span className={`${styles.roleBadge}`} style={{ backgroundColor: 'rgba(236, 72, 153, 0.1)', color: '#ec4899', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', border: '1px solid rgba(236, 72, 153, 0.2)' }}>سكرتير</span>;
       default: return <span className={`${styles.roleBadge} ${styles.roleStaff}`}>موظف عام</span>;
     }
   };
@@ -220,7 +341,9 @@ export default function UsersPage() {
                 value={formData.role}
                 onChange={e => setFormData({...formData, role: e.target.value})}
               >
-                <option value="staff">موظف (Staff) - صلاحيات محدودة</option>
+                <option value="staff">موظف (Staff) - صلاحيات عامة</option>
+                <option value="secretary">سكرتير (Secretary) - استقبال وإدارة الحجوزات</option>
+                <option value="manager">مدير (Manager) - إدارة تشغيلية</option>
                 <option value="doctor">{dict.provider} (Provider) - يرى مساحته الخاصة فقط</option>
                 <option value="admin">مدير نظام (Admin) - تحكم كامل</option>
               </select>
@@ -332,9 +455,36 @@ export default function UsersPage() {
                   <td>{getRoleBadge(user.role)}</td>
                   <td style={{ color: 'var(--text-dim)' }}>{new Date(user.created_at).toLocaleDateString('ar-EG')}</td>
                   <td>
-                    <button className={styles.deleteBtn} title="حذف حساب المستخدم">
-                      <Trash2 size={18} />
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <button 
+                        style={{ 
+                          width: 'auto', 
+                          padding: '0.4rem 0.8rem', 
+                          margin: 0, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '0.3rem', 
+                          background: 'rgba(99, 102, 241, 0.1)', 
+                          border: '1px solid rgba(99, 102, 241, 0.2)', 
+                          color: '#a5b4fc', 
+                          fontSize: '0.85rem',
+                          borderRadius: '8px',
+                          cursor: 'pointer'
+                        }} 
+                        title="تعديل الموظف"
+                        onClick={() => openEditModal(user)}
+                      >
+                        <Pencil size={16} /> تعديل
+                      </button>
+                      <button 
+                        className={styles.deleteBtn} 
+                        title="حذف حساب المستخدم"
+                        onClick={() => handleDeleteUser(user.id)}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -349,6 +499,204 @@ export default function UsersPage() {
           </table>
         </div>
       </div>
+
+      {/* Edit Staff Modal */}
+      {isEditModalOpen && selectedStaff && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          background: 'rgba(0, 0, 0, 0.6)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000,
+          padding: '1rem'
+        }}>
+          <div className={styles.card} style={{
+            maxWidth: '650px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+            animation: 'fadeIn 0.2s ease',
+            margin: 0,
+            position: 'relative'
+          }}>
+            <button 
+              onClick={() => {
+                setIsEditModalOpen(false);
+                setSelectedStaff(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '1.5rem',
+                left: '1.5rem',
+                background: 'rgba(255,255,255,0.05)',
+                border: 'none',
+                color: 'var(--text-dim)',
+                cursor: 'pointer',
+                padding: '0.4rem',
+                borderRadius: '8px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="إغلاق"
+            >
+              <X size={18} />
+            </button>
+
+            <h2 className={styles.cardTitle} style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Pencil size={24} color="#6366f1" /> تعديل صلاحيات الموظف: {selectedStaff.full_name}
+            </h2>
+
+            <form onSubmit={handleEditStaffSubmit}>
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>الاسم بالكامل</label>
+                  <input 
+                    type="text" 
+                    className={styles.input} 
+                    value={editFormData.fullName}
+                    onChange={e => setEditFormData({...editFormData, fullName: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>الصلاحية والدور (Role)</label>
+                  <select 
+                    className={styles.input}
+                    value={editFormData.role}
+                    onChange={e => setEditFormData({...editFormData, role: e.target.value as any})}
+                  >
+                    <option value="staff">موظف (Staff) - صلاحيات عامة</option>
+                    <option value="secretary">سكرتير (Secretary) - استقبال وإدارة الحجوزات</option>
+                    <option value="manager">مدير (Manager) - إدارة تشغيلية</option>
+                    <option value="doctor">{dict.provider} (Provider) - يرى مساحته الخاصة فقط</option>
+                    <option value="admin">مدير نظام (Admin) - تحكم كامل</option>
+                  </select>
+                </div>
+                
+                <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+                  <label>نطاق الفروع المسموحة</label>
+                  <div className={styles.checkboxGroup} style={{ 
+                    flexDirection: 'row', 
+                    flexWrap: 'wrap', 
+                    gap: '1.5rem', 
+                    marginTop: '0.5rem', 
+                    background: 'var(--bg-input)', 
+                    padding: '1rem 1.5rem', 
+                    borderRadius: '10px', 
+                    border: '1px solid var(--border-color)' 
+                  }}>
+                    <label className={styles.checkboxLabel}>
+                      <input 
+                        type="checkbox" 
+                        checked={editFormData.branch_access.includes('all') || editFormData.role === 'admin'}
+                        disabled={editFormData.role === 'admin'}
+                        onChange={e => {
+                          if (e.target.checked) setEditFormData({...editFormData, branch_access: ['all']});
+                          else setEditFormData({...editFormData, branch_access: []});
+                        }}
+                      />
+                      كل الفروع (صلاحية كاملة)
+                    </label>
+                    
+                    {branches.map(b => (
+                      <label key={b.id} className={styles.checkboxLabel} style={{ opacity: editFormData.branch_access.includes('all') || editFormData.role === 'admin' ? 0.5 : 1 }}>
+                        <input 
+                          type="checkbox" 
+                          checked={(!editFormData.branch_access.includes('all') && editFormData.branch_access.includes(b.id)) || editFormData.role === 'admin'}
+                          disabled={editFormData.branch_access.includes('all') || editFormData.role === 'admin'}
+                          onChange={e => {
+                            const newAccess = e.target.checked 
+                              ? [...editFormData.branch_access.filter(id => id !== 'all'), b.id]
+                              : editFormData.branch_access.filter(id => id !== b.id);
+                            setEditFormData({...editFormData, branch_access: newAccess});
+                          }}
+                        />
+                        {b.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Granular Permissions */}
+              <div className={styles.permissionsContainer} style={{ marginTop: '1.5rem', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--text-bright)', marginBottom: '1rem' }}>صلاحيات إضافية (مخصصة)</h3>
+                <div className={styles.checkboxGroup}>
+                  <label className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      checked={editFormData.permissions.view_revenue || editFormData.role === 'admin'}
+                      disabled={editFormData.role === 'admin'}
+                      onChange={e => setEditFormData({
+                        ...editFormData, 
+                        permissions: {...editFormData.permissions, view_revenue: e.target.checked}
+                      })}
+                    />
+                    السماح برؤية الأرباح والتقارير المالية
+                  </label>
+                  
+                  <label className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      checked={editFormData.permissions.view_all_bookings || editFormData.role === 'admin'}
+                      disabled={editFormData.role === 'admin'}
+                      onChange={e => setEditFormData({
+                        ...editFormData, 
+                        permissions: {...editFormData.permissions, view_all_bookings: e.target.checked}
+                      })}
+                    />
+                    السماح برؤية كل {dict.bookings} (وليس الخاصة به فقط)
+                  </label>
+                  
+                  <label className={styles.checkboxLabel}>
+                    <input 
+                      type="checkbox" 
+                      checked={editFormData.permissions.manage_settings || editFormData.role === 'admin'}
+                      disabled={editFormData.role === 'admin'}
+                      onChange={e => setEditFormData({
+                        ...editFormData, 
+                        permissions: {...editFormData.permissions, manage_settings: e.target.checked}
+                      })}
+                    />
+                    السماح بتعديل إعدادات الذكاء الاصطناعي والرسائل
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedStaff(null);
+                  }}
+                  className={styles.deleteBtn}
+                  style={{ width: 'auto', padding: '0.8rem 2rem', background: 'rgba(255,255,255,0.05)', color: 'var(--text-dim)', border: 'none', borderRadius: '12px' }}
+                >
+                  إلغاء
+                </button>
+                <button 
+                  type="submit" 
+                  className={styles.submitBtn}
+                  style={{ width: 'auto', padding: '0.8rem 2.5rem', margin: 0 }}
+                >
+                  حفظ التغييرات
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
