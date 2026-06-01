@@ -18,7 +18,7 @@ export default function TrialBlocker({ children }: { children: React.ReactNode }
         }
 
         // Bypass trial blocker for Master Admins
-        if (session.user.user_metadata?.role === 'master_admin') {
+        if (session.user.app_metadata?.role === 'master_admin') {
           setLoading(false);
           return;
         }

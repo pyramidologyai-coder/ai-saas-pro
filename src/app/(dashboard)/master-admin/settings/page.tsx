@@ -65,7 +65,7 @@ export default async function SuperAdminSettingsPage({
 
     let isAuthorized = !!isMaster;
     if (!isAuthorized && user) {
-      isAuthorized = user.user_metadata?.role === 'master_admin';
+      isAuthorized = user.app_metadata?.role === 'master_admin';
     }
 
     if (!user) {

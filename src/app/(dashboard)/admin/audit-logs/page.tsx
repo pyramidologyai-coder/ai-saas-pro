@@ -16,7 +16,7 @@ export default function AuditLogsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      if (session.user.user_metadata?.role !== 'master_admin') {
+      if (session.user.app_metadata?.role !== 'master_admin') {
         setIsAdmin(false);
         setLoading(false);
         return;

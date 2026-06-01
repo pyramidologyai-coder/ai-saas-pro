@@ -81,7 +81,7 @@ const Sidebar = () => {
 
       if (finalSession) {
          setUserEmail(finalSession.user.email || '');
-         const isMaster = finalSession.user.user_metadata?.role === 'master_admin';
+         const isMaster = finalSession.user.app_metadata?.role === 'master_admin';
          setIsMasterAdmin(isMaster);
 
          if (isMaster) {

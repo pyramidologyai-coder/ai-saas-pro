@@ -82,7 +82,7 @@ const SettingsPage = () => {
       }
 
       // Check Role
-      if (session.user.user_metadata?.role === 'master_admin') {
+      if (session.user.app_metadata?.role === 'master_admin') {
         setRole('master_admin');
       } else {
         const { data: agencyRes } = await supabase.from('agencies').select('*').eq('user_id', session.user.id).limit(1);

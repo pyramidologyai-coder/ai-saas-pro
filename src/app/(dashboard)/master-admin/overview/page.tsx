@@ -23,7 +23,7 @@ export default async function MasterOverviewPage() {
     redirect('/auth');
   }
 
-  if (!isMaster && user.user_metadata?.role !== 'master_admin') {
+  if (!isMaster && user.app_metadata?.role !== 'master_admin') {
     redirect('/admin');
   }
 

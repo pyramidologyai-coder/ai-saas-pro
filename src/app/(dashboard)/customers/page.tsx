@@ -1,11 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/utils/supabase/client';
 import { User, Phone, Calendar, MessageSquare, Loader2, Search, Download, Building2 } from 'lucide-react';
 import UsageProgressBar from '@/components/financial/UsageProgressBar';
 import { TableSkeleton, CardSkeleton } from '@/components/ui/Skeleton';
 
 const CustomersPage = () => {
+  const supabase = createClient();
   const [customers, setCustomers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [planFilter, setPlanFilter] = useState('all');
@@ -18,7 +19,7 @@ const CustomersPage = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const isMasterAdmin = session.user.user_metadata?.role === 'master_admin';
+      const isMasterAdmin = session.user.app_metadata?.role === 'master_admin';
 
       if (isMasterAdmin) {
         setRole('master_admin');

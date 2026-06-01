@@ -28,7 +28,7 @@ export default function FinancialPage() {
         return;
       }
       
-      const isMasterAdmin = session.user.user_metadata?.role === 'master_admin';
+      const isMasterAdmin = session.user.app_metadata?.role === 'master_admin';
       
       let determinedRole = '';
 

@@ -87,7 +87,7 @@ export default function MessagesPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
-      const isMaster = session.user.user_metadata?.role === 'master_admin';
+      const isMaster = session.user.app_metadata?.role === 'master_admin';
       
       let tenantIdForFilter = null;
       

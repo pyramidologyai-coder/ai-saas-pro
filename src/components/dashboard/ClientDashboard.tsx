@@ -66,7 +66,7 @@ export default function ClientDashboard() {
           return;
         }
         
-        const isMasterUser = session.user.user_metadata?.role === 'master_admin';
+        const isMasterUser = session.user.app_metadata?.role === 'master_admin';
         setIsMaster(isMasterUser);
 
         const tenant = await getActiveTenant(session.user);
