@@ -2,12 +2,22 @@ import { getActiveTenant } from './tenant';
 
 export interface UserPermissions {
   isOwner: boolean;
-  role: 'admin' | 'staff' | 'doctor';
-  canViewRevenue: boolean;
+  role: 'admin' | 'staff' | 'doctor' | 'secretary' | 'manager';
+  
+  // Custom functional logic
   canViewAllBookings: boolean;
-  canManageAI: boolean;
-  canManageUsers: boolean;
-  canManageSettings: boolean;
+  
+  // Page-level permissions
+  financial: boolean;
+  services: boolean;
+  bookings: boolean;
+  customers: boolean;
+  team: boolean;
+  messages: boolean;
+  automations: boolean;
+  marketing: boolean;
+  branches: boolean;
+  billing: boolean;
 }
 
 /**
@@ -32,11 +42,17 @@ export async function getUserPermissions(
     return {
       isOwner: true,
       role: 'admin',
-      canViewRevenue: true,
       canViewAllBookings: true,
-      canManageAI: true,
-      canManageUsers: true,
-      canManageSettings: true
+      financial: true,
+      services: true,
+      bookings: true,
+      customers: true,
+      team: true,
+      messages: true,
+      automations: true,
+      marketing: true,
+      branches: true,
+      billing: true
     };
   }
 
@@ -52,31 +68,65 @@ export async function getUserPermissions(
     return {
       isOwner: false,
       role: 'staff',
-      canViewRevenue: false,
       canViewAllBookings: false,
-      canManageAI: false,
-      canManageUsers: false,
-      canManageSettings: false
+      financial: false,
+      services: false,
+      bookings: false,
+      customers: false,
+      team: false,
+      messages: false,
+      automations: false,
+      marketing: false,
+      branches: false,
+      billing: false
     };
   }
 
-  const role = (profile.role || 'staff') as 'admin' | 'staff' | 'doctor';
+  const role = (profile.role || 'staff') as 'admin' | 'staff' | 'doctor' | 'secretary' | 'manager';
   const permissions = profile.permissions || {};
   const isAdmin = role === 'admin';
+
+  // 4. Admin Check: Admins get absolute permission clearance
+  if (isAdmin) {
+    return {
+      isOwner: false,
+      role,
+      canViewAllBookings: true,
+      financial: true,
+      services: true,
+      bookings: true,
+      customers: true,
+      team: true,
+      messages: true,
+      automations: true,
+      marketing: true,
+      branches: true,
+      billing: true
+    };
+  }
+
+  // 5. Employee Permissions Resolver with Double-Layer Fallbacks
+  const isNewSchema = 'bookings' in permissions;
 
   return {
     isOwner: false,
     role,
-    // Owners/Admins or employees with view_revenue permission can view financial data
-    canViewRevenue: isAdmin || !!permissions.view_revenue,
-    // Owners/Admins or employees with view_all_bookings permission can see all bookings
-    canViewAllBookings: isAdmin || !!permissions.view_all_bookings,
-    // Owners/Admins or employees with manage_settings permission can manage AI automations
-    canManageAI: isAdmin || !!permissions.manage_settings,
-    // User management (/users) is strictly restricted to Owners and Admin profiles
-    canManageUsers: isAdmin,
-    // Workspace Settings (/settings) is strictly restricted to Owners and Admin profiles
-    canManageSettings: isAdmin
+    // view_all_bookings can be checked directly
+    canViewAllBookings: !!permissions.view_all_bookings,
+
+    // Granular page permissions
+    financial: isNewSchema ? !!permissions.financial : !!permissions.view_revenue,
+    billing: isNewSchema ? !!permissions.billing : !!permissions.view_revenue,
+    automations: isNewSchema ? !!permissions.automations : !!permissions.manage_settings,
+
+    // Fallbacks for standard pages (default to true for legacy employees)
+    bookings: isNewSchema ? !!permissions.bookings : true,
+    services: isNewSchema ? !!permissions.services : true,
+    customers: isNewSchema ? !!permissions.customers : true,
+    team: isNewSchema ? !!permissions.team : true,
+    messages: isNewSchema ? !!permissions.messages : true,
+    marketing: isNewSchema ? !!permissions.marketing : true,
+    branches: isNewSchema ? !!permissions.branches : true,
   };
 }
 

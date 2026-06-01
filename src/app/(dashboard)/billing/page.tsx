@@ -4,6 +4,7 @@ import { createClient } from '@/utils/supabase/client';
 import { CreditCard, Check, Zap, AlertTriangle, Wallet, Calendar, Activity, Star } from 'lucide-react';
 import UsageProgressBar from '@/components/financial/UsageProgressBar';
 import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function BillingPage() {
   const supabase = createClient();
@@ -18,7 +19,7 @@ export default function BillingPage() {
       if (!session) return;
 
       const perms = await getUserPermissions(supabase, session.user);
-      if (!perms || !perms.canViewRevenue) {
+      if (!perms || !perms.billing) {
         setIsAuthorized(false);
         setLoading(false);
         return;
@@ -69,14 +70,7 @@ export default function BillingPage() {
   if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
 
   if (isAuthorized === false) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center', maxWidth: '1000px', margin: '0 auto', color: 'var(--text-main)' }}>
-        <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '3rem 2rem', borderRadius: '24px', textAlign: 'center' }}>
-          <h1 style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>غير مصرح لك بالدخول</h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>عذراً، هذه الصفحة مخصصة لمدير النظام أو الحسابات فقط.</p>
-        </div>
-      </div>
-    );
+    return <AccessDenied message="عذراً، هذه الصفحة مخصصة لمدير النظام أو الحسابات فقط." />;
   }
 
   const isExpired = tenant?.trial_ends_at && new Date() > new Date(tenant.trial_ends_at) && tenant?.subscription_tier === 'trial';

@@ -22,6 +22,8 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 type Channel = 'whatsapp' | 'messenger' | 'instagram';
 
@@ -79,6 +81,7 @@ export default function MessagesPage() {
   // Billing / Quota Counters (Mock data representing the real logic)
   const [aiQuotaUsed, setAiQuotaUsed] = useState(0);
   const [humanMessagesSent, setHumanMessagesSent] = useState(0);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -92,6 +95,7 @@ export default function MessagesPage() {
       let tenantIdForFilter = null;
       
       if (isMaster) {
+        setIsAuthorized(true);
         setRole('master_admin');
         const { data: agData } = await supabase.from('agencies').select('id, name');
         if (agData) setAgencies(agData);
@@ -105,6 +109,7 @@ export default function MessagesPage() {
         // Check if Agency
         const { data: agencyData } = await supabase.from('agencies').select('id, name').eq('user_id', session.user.id).limit(1);
         if (agencyData && agencyData.length > 0) {
+          setIsAuthorized(true);
           setRole('agency');
           const { data: tnData } = await supabase.from('tenants').select('id, name, messages_used').eq('agency_id', agencyData[0].id);
           if (tnData) {
@@ -114,6 +119,12 @@ export default function MessagesPage() {
           setHumanMessagesSent(0);
         } else {
           // Normal Tenant (Clinic / Store Admin)
+          const perms = await getUserPermissions(supabase, session.user);
+          if (!perms || !perms.messages) {
+            setIsAuthorized(false);
+            return;
+          }
+          setIsAuthorized(true);
           setRole('admin');
           const { data: tenant } = await supabase.from('tenants').select('id, messages_used').eq('user_id', session.user.id).single();
           if (tenant) {
@@ -211,6 +222,14 @@ export default function MessagesPage() {
       return <span key={index}>{part}</span>;
     });
   };
+
+  if (isAuthorized === null) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className={styles.container} style={{ height: 'calc(100vh - 4rem)', display: 'flex' }}>

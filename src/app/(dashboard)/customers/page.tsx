@@ -4,6 +4,8 @@ import { createClient } from '@/utils/supabase/client';
 import { User, Phone, Calendar, MessageSquare, Loader2, Search, Download, Building2 } from 'lucide-react';
 import UsageProgressBar from '@/components/financial/UsageProgressBar';
 import { TableSkeleton, CardSkeleton } from '@/components/ui/Skeleton';
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 const CustomersPage = () => {
   const supabase = createClient();
@@ -12,6 +14,7 @@ const CustomersPage = () => {
   const [planFilter, setPlanFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState('');
 
   useEffect(() => {
@@ -22,6 +25,7 @@ const CustomersPage = () => {
       const isMasterAdmin = session.user.app_metadata?.role === 'master_admin';
 
       if (isMasterAdmin) {
+        setIsAuthorized(true);
         setRole('master_admin');
         const { data } = await supabase
           .from('tenants')
@@ -36,6 +40,13 @@ const CustomersPage = () => {
           .order('created_at', { ascending: false });
         setCustomers(data || []);
       } else {
+        const perms = await getUserPermissions(supabase, session.user);
+        if (!perms || !perms.customers) {
+          setIsAuthorized(false);
+          setLoading(false);
+          return;
+        }
+        setIsAuthorized(true);
         setRole('admin');
         // Group by phone to get unique customers from bookings
         const { data } = await supabase
@@ -124,7 +135,13 @@ const CustomersPage = () => {
     return nameMatch || phoneMatch;
   });
 
-  // Removed full-page loader
+  if (isAuthorized === null) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
+  }
 
   return (
     <div style={{ padding: '2rem' }}>

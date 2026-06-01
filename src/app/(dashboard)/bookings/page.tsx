@@ -8,6 +8,8 @@ import 'react-phone-number-input/style.css';
 import PhoneInput from 'react-phone-number-input';
 
 import { getActiveTenant } from '@/lib/tenant';
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 const BookingsPage = () => {
   const supabase = createClient();
@@ -15,6 +17,7 @@ const BookingsPage = () => {
   const [realBookings, setRealBookings] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'Day' | 'Week' | 'Month'>('Day');
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [dayBookingsModal, setDayBookingsModal] = useState<any[] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,6 +37,14 @@ const BookingsPage = () => {
         window.location.href = '/auth';
         return;
       }
+
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.bookings) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
       
       const tenant = await getActiveTenant(session.user);
       if (tenant) setTenantId(tenant.id);
@@ -177,6 +188,14 @@ const BookingsPage = () => {
       }))
     };
   });
+
+  if (isAuthorized === null) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
+  }
 
   return (
     <div className={styles.container}>

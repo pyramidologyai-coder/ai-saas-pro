@@ -68,7 +68,7 @@ const SettingsPage = () => {
       const { data: agencyRes } = await supabase.from('agencies').select('id').eq('user_id', session.user.id).limit(1);
       const isAgency = agencyRes && agencyRes.length > 0;
 
-      const isAuth = (perms && perms.canManageSettings) || isAgency || (session.user.app_metadata?.role === 'master_admin');
+      const isAuth = (perms && perms.role === 'admin') || isAgency || (session.user.app_metadata?.role === 'master_admin');
 
       if (!isAuth) {
         setIsAuthorized(false);

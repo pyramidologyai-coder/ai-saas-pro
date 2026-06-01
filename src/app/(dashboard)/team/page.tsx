@@ -7,6 +7,9 @@ import { Copy, Check } from 'lucide-react';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
+
 interface TeamMember {
   id: string;
   name: string;
@@ -20,6 +23,7 @@ interface TeamMember {
 const TeamPage = () => {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -42,6 +46,14 @@ const TeamPage = () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.team) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
 
       // 1. Get Tenant ID
       const tenantData = await getActiveTenant(session.user);
@@ -143,8 +155,12 @@ const TeamPage = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  if (loading) {
+  if (isAuthorized === null || loading) {
     return <div className={styles.container}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
   }
 
   return (

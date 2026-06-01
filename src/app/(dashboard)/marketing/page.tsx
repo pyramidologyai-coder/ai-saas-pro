@@ -4,6 +4,8 @@ import { Megaphone, Plus, Sparkles, Send, Users, Activity, Info } from 'lucide-r
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { getDictionary } from '@/lib/dictionary';
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function MarketingPage() {
   const supabase = createClient();
@@ -15,12 +17,21 @@ export default function MarketingPage() {
   const [dbCampaigns, setDbCampaigns] = useState<any[]>([]);
   const [stats, setStats] = useState({ total: 0, sent: 0, recipients: 0 });
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
   React.useEffect(() => {
     const fetchTenantAndCampaigns = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
+          const perms = await getUserPermissions(supabase, session.user);
+          if (!perms || !perms.marketing) {
+            setIsAuthorized(false);
+            setLoading(false);
+            return;
+          }
+          setIsAuthorized(true);
+
           const { data: tenant } = await supabase.from('tenants').select('id, type').eq('user_id', session.user.id).single();
           if (tenant) {
             setTenantType(tenant.type);
@@ -62,6 +73,14 @@ export default function MarketingPage() {
       setShowModal(false);
     }, 1500);
   };
+
+  if (isAuthorized === null) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>

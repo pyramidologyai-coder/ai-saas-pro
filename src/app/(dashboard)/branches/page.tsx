@@ -4,12 +4,15 @@ import { Building2, Plus, MapPin, Activity, DollarSign, Users, ChevronRight, Ext
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { getActiveTenant } from '@/lib/tenant';
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 export default function BranchesPage() {
   const supabase = createClient();
   const [showAddModal, setShowAddModal] = useState(false);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [newBranchName, setNewBranchName] = useState('');
   const [newBranchLocation, setNewBranchLocation] = useState('');
   const [newBranchMapUrl, setNewBranchMapUrl] = useState('');
@@ -29,6 +32,15 @@ export default function BranchesPage() {
       // 1. Get current tenant (respects active workspace selection)
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { window.location.href = '/auth'; return; }
+
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.branches) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
+
       const tenantData = await getActiveTenant(session.user);
       if (!tenantData) return;
       setTenantId(tenantData.id);
@@ -139,6 +151,14 @@ export default function BranchesPage() {
       alert('حدث خطأ أثناء الحذف');
     }
   };
+
+  if (isAuthorized === null) {
+    return <div style={{ padding: '2rem', textAlign: 'center' }}>جاري التحميل...</div>;
+  }
+
+  if (isAuthorized === false) {
+    return <AccessDenied />;
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>

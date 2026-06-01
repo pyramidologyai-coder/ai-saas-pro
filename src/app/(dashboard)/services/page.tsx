@@ -5,10 +5,14 @@ import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 import { Plus, Trash2, Edit2, Loader2, Upload, FileSpreadsheet, Stethoscope, Utensils } from 'lucide-react';
 
+import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
+
 const ServicesPage = () => {
   const supabase = createClient();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tenant, setTenant] = useState<any>(null);
   const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [isAdding, setIsAdding] = useState(false);
@@ -26,6 +30,15 @@ const ServicesPage = () => {
         window.location.href = '/auth';
         return;
       }
+
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.services) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
+
       const tenantData = await getActiveTenant(session.user);
       if (!tenantData) return;
       setTenant(tenantData);
@@ -77,6 +90,8 @@ const ServicesPage = () => {
   };
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem' }}><Loader2 className="animate-spin" /></div>;
+
+  if (isAuthorized === false) return <AccessDenied />;
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1000px', margin: '0 auto' }}>

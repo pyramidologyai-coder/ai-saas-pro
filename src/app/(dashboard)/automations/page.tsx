@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Bot, Save, AlertTriangle, Settings2, Mic, FileText, MessageCircle, Instagram, Facebook } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { getUserPermissions } from '@/lib/permissions';
+import AccessDenied from '@/components/AccessDenied';
 
 type Channel = 'whatsapp' | 'messenger' | 'instagram';
 
@@ -47,7 +48,7 @@ export default function AutomationsPage() {
       if (!session) return;
       
       const perms = await getUserPermissions(supabase, session.user);
-      if (!perms || !perms.canManageAI) {
+      if (!perms || !perms.automations) {
         setIsAuthorized(false);
         setLoading(false);
         return;
@@ -148,14 +149,7 @@ export default function AutomationsPage() {
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>جاري تحميل الإعدادات...</div>;
 
   if (isAuthorized === false) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center', maxWidth: '1200px', margin: '0 auto', color: 'var(--text-main)' }}>
-        <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '3rem 2rem', borderRadius: '24px', textAlign: 'center' }}>
-          <h1 style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>غير مصرح لك بالدخول</h1>
-          <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>عذراً، هذه الصفحة مخصصة لمدير النظام أو المشرفين على الذكاء الاصطناعي فقط.</p>
-        </div>
-      </div>
-    );
+    return <AccessDenied message="عذراً، هذه الصفحة مخصصة لمدير النظام أو المشرفين على الذكاء الاصطناعي فقط." />;
   }
 
   return (

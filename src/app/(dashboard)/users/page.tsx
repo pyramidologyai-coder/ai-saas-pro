@@ -11,13 +11,21 @@ import { getUserPermissions } from '@/lib/permissions';
 interface Profile {
   id: string;
   full_name: string;
-  role: 'admin' | 'staff' | 'doctor';
+  role: 'admin' | 'staff' | 'doctor' | 'secretary' | 'manager';
   email?: string;
-  branch_access: string[]; // ['all'] or array of branch_ids
+  branch_access: string[];
   permissions: {
-    view_revenue: boolean;
-    manage_settings: boolean;
-    view_all_bookings: boolean;
+    bookings?: boolean;
+    services?: boolean;
+    customers?: boolean;
+    messages?: boolean;
+    automations?: boolean;
+    marketing?: boolean;
+    team?: boolean;
+    branches?: boolean;
+    financial?: boolean;
+    billing?: boolean;
+    view_all_bookings?: boolean;
   };
   created_at: string;
 }
@@ -38,8 +46,16 @@ export default function UsersPage() {
     role: 'staff',
     branch_access: ['all'] as string[],
     permissions: {
-      view_revenue: false,
-      manage_settings: false,
+      bookings: false,
+      services: false,
+      customers: false,
+      messages: false,
+      automations: false,
+      marketing: false,
+      team: false,
+      branches: false,
+      financial: false,
+      billing: false,
       view_all_bookings: false
     }
   });
@@ -50,8 +66,16 @@ export default function UsersPage() {
     role: 'staff',
     branch_access: ['all'],
     permissions: {
-      view_revenue: false,
-      manage_settings: false,
+      bookings: false,
+      services: false,
+      customers: false,
+      messages: false,
+      automations: false,
+      marketing: false,
+      team: false,
+      branches: false,
+      financial: false,
+      billing: false,
       view_all_bookings: false
     }
   });
@@ -62,7 +86,7 @@ export default function UsersPage() {
       if (!session) return;
 
       const perms = await getUserPermissions(supabase, session.user);
-      if (!perms || !perms.canManageUsers) {
+      if (!perms || perms.role !== 'admin') {
         setIsAuthorized(false);
         setLoading(false);
         return;
@@ -111,8 +135,16 @@ export default function UsersPage() {
       role: user.role,
       branch_access: user.branch_access || ['all'],
       permissions: {
-        view_revenue: user.permissions?.view_revenue || false,
-        manage_settings: user.permissions?.manage_settings || false,
+        bookings: user.permissions?.bookings || false,
+        services: user.permissions?.services || false,
+        customers: user.permissions?.customers || false,
+        messages: user.permissions?.messages || false,
+        automations: user.permissions?.automations || false,
+        marketing: user.permissions?.marketing || false,
+        team: user.permissions?.team || false,
+        branches: user.permissions?.branches || false,
+        financial: user.permissions?.financial || false,
+        billing: user.permissions?.billing || false,
         view_all_bookings: user.permissions?.view_all_bookings || false
       }
     });
@@ -267,9 +299,17 @@ export default function UsersPage() {
         role: 'staff', 
         branch_access: ['all'],
         permissions: { 
-          view_revenue: false, 
-          manage_settings: false, 
-          view_all_bookings: false 
+          bookings: false,
+          services: false,
+          customers: false,
+          messages: false,
+          automations: false,
+          marketing: false,
+          team: false,
+          branches: false,
+          financial: false,
+          billing: false,
+          view_all_bookings: false
         } 
       });
       
@@ -395,38 +435,38 @@ export default function UsersPage() {
           </div>
           
           {/* Granular Permissions Section */}
-          <div className={styles.permissionsContainer}>
+          <div className={styles.permissionsContainer} style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
             <h3 style={{ fontSize: '1rem', color: 'var(--text-bright)', marginBottom: '1rem', marginTop: '0.5rem' }}>صلاحيات إضافية (مخصصة)</h3>
-            <div className={styles.checkboxGroup}>
-              <label className={styles.checkboxLabel}>
-                <input 
-                  type="checkbox" 
-                  checked={formData.permissions.view_revenue || formData.role === 'admin'}
-                  disabled={formData.role === 'admin'}
-                  onChange={e => setFormData({...formData, permissions: {...formData.permissions, view_revenue: e.target.checked}})}
-                />
-                السماح برؤية الأرباح والتقارير المالية
-              </label>
-              
-              <label className={styles.checkboxLabel}>
-                <input 
-                  type="checkbox" 
-                  checked={formData.permissions.view_all_bookings || formData.role === 'admin'}
-                  disabled={formData.role === 'admin'}
-                  onChange={e => setFormData({...formData, permissions: {...formData.permissions, view_all_bookings: e.target.checked}})}
-                />
-                السماح برؤية كل {dict.bookings} (وليس الخاصة به فقط)
-              </label>
-              
-              <label className={styles.checkboxLabel}>
-                <input 
-                  type="checkbox" 
-                  checked={formData.permissions.manage_settings || formData.role === 'admin'}
-                  disabled={formData.role === 'admin'}
-                  onChange={e => setFormData({...formData, permissions: {...formData.permissions, manage_settings: e.target.checked}})}
-                />
-                السماح بتعديل إعدادات الذكاء الاصطناعي والرسائل
-              </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', background: 'var(--bg-input)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+              {[
+                { key: 'bookings', label: 'عرض صفحة الحجوزات' },
+                { key: 'services', label: 'عرض وإدارة الخدمات/المنيو' },
+                { key: 'customers', label: 'عرض صفحة العملاء/المرضى' },
+                { key: 'messages', label: 'الوصول لقسم المحادثات والدردشة' },
+                { key: 'automations', label: 'إدارة الرسائل التلقائية والذكاء الاصطناعي' },
+                { key: 'marketing', label: 'الوصول لقسم التسويق والحملات' },
+                { key: 'team', label: 'عرض وإدارة فريق العمل' },
+                { key: 'branches', label: 'عرض وإدارة الفروع' },
+                { key: 'financial', label: 'عرض التحليل المالي والأرباح' },
+                { key: 'billing', label: 'عرض وإدارة الفواتير والاشتراكات' },
+                { key: 'view_all_bookings', label: 'رؤية كل الحجوزات (وليس الخاصة بالموظف فقط)' },
+              ].map(item => (
+                <label key={item.key} className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input 
+                    type="checkbox" 
+                    checked={!!(formData.permissions as any)[item.key] || formData.role === 'admin'}
+                    disabled={formData.role === 'admin'}
+                    onChange={e => setFormData({
+                      ...formData, 
+                      permissions: {
+                        ...formData.permissions, 
+                        [item.key]: e.target.checked
+                      }
+                    })}
+                  />
+                  {item.label}
+                </label>
+              ))}
             </div>
           </div>
 
@@ -631,45 +671,36 @@ export default function UsersPage() {
               {/* Granular Permissions */}
               <div className={styles.permissionsContainer} style={{ marginTop: '1.5rem', marginBottom: '2rem' }}>
                 <h3 style={{ fontSize: '1rem', color: 'var(--text-bright)', marginBottom: '1rem' }}>صلاحيات إضافية (مخصصة)</h3>
-                <div className={styles.checkboxGroup}>
-                  <label className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={editFormData.permissions.view_revenue || editFormData.role === 'admin'}
-                      disabled={editFormData.role === 'admin'}
-                      onChange={e => setEditFormData({
-                        ...editFormData, 
-                        permissions: {...editFormData.permissions, view_revenue: e.target.checked}
-                      })}
-                    />
-                    السماح برؤية الأرباح والتقارير المالية
-                  </label>
-                  
-                  <label className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={editFormData.permissions.view_all_bookings || editFormData.role === 'admin'}
-                      disabled={editFormData.role === 'admin'}
-                      onChange={e => setEditFormData({
-                        ...editFormData, 
-                        permissions: {...editFormData.permissions, view_all_bookings: e.target.checked}
-                      })}
-                    />
-                    السماح برؤية كل {dict.bookings} (وليس الخاصة به فقط)
-                  </label>
-                  
-                  <label className={styles.checkboxLabel}>
-                    <input 
-                      type="checkbox" 
-                      checked={editFormData.permissions.manage_settings || editFormData.role === 'admin'}
-                      disabled={editFormData.role === 'admin'}
-                      onChange={e => setEditFormData({
-                        ...editFormData, 
-                        permissions: {...editFormData.permissions, manage_settings: e.target.checked}
-                      })}
-                    />
-                    السماح بتعديل إعدادات الذكاء الاصطناعي والرسائل
-                  </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', background: 'var(--bg-input)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                  {[
+                    { key: 'bookings', label: 'عرض صفحة الحجوزات' },
+                    { key: 'services', label: 'عرض وإدارة الخدمات/المنيو' },
+                    { key: 'customers', label: 'عرض صفحة العملاء/المرضى' },
+                    { key: 'messages', label: 'الوصول لقسم المحادثات والدردشة' },
+                    { key: 'automations', label: 'إدارة الرسائل التلقائية والذكاء الاصطناعي' },
+                    { key: 'marketing', label: 'الوصول لقسم التسويق والحملات' },
+                    { key: 'team', label: 'عرض وإدارة فريق العمل' },
+                    { key: 'branches', label: 'عرض وإدارة الفروع' },
+                    { key: 'financial', label: 'عرض التحليل المالي والأرباح' },
+                    { key: 'billing', label: 'عرض وإدارة الفواتير والاشتراكات' },
+                    { key: 'view_all_bookings', label: 'رؤية كل الحجوزات (وليس الخاصة بالموظف فقط)' },
+                  ].map(item => (
+                    <label key={item.key} className={styles.checkboxLabel} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={!!(editFormData.permissions as any)[item.key] || editFormData.role === 'admin'}
+                        disabled={editFormData.role === 'admin'}
+                        onChange={e => setEditFormData({
+                          ...editFormData, 
+                          permissions: {
+                            ...editFormData.permissions, 
+                            [item.key]: e.target.checked
+                          }
+                        })}
+                      />
+                      {item.label}
+                    </label>
+                  ))}
                 </div>
               </div>
 

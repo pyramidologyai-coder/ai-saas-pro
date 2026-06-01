@@ -34,7 +34,7 @@ export default function FinancialPage() {
       let determinedRole = '';
 
       const perms = await getUserPermissions(supabase, session.user);
-      const isAuth = perms && perms.canViewRevenue;
+      const isAuth = perms && perms.financial;
 
       if (isMasterAdmin) {
         determinedRole = 'master_admin';

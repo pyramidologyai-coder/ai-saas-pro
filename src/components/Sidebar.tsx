@@ -164,7 +164,7 @@ const Sidebar = () => {
   };
 
   // Real user role fetched from DB, defaults to empty until loaded
-  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'doctor'>('admin');
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'doctor' | 'secretary' | 'manager'>('admin');
 
   const { sidebarLabels } = useBusinessConfig(tenantType || undefined);
   const dict = getDictionary(tenantType);
@@ -341,16 +341,27 @@ const Sidebar = () => {
     if (permissions) {
       // 1. Dynamic RBAC filtration based on active user permissions
       navItems = baseMenu.filter(item => {
-        if (item.href === '/users') return permissions.canManageUsers;
-        if (item.href === '/settings') return permissions.canManageSettings;
-        if (item.href === '/admin/financial') return permissions.canViewRevenue;
-        if (item.href === '/billing') return permissions.canViewRevenue;
-        if (item.href === '/automations') return permissions.canManageAI;
-        return true; // Keep other standard items (bookings, services, team, customers, messages, etc.)
+        if (item.href === '/users') return permissions.role === 'admin';
+        if (item.href === '/settings') return permissions.role === 'admin';
+        if (item.href === '/admin/financial') return permissions.financial;
+        if (item.href === '/services') return permissions.services;
+        if (item.href === '/bookings') return permissions.bookings;
+        if (item.href === '/customers') return permissions.customers;
+        if (item.href === '/team') return permissions.team;
+        if (item.href === '/messages') return permissions.messages;
+        if (item.href === '/automations') return permissions.automations;
+        if (item.href === '/marketing') return permissions.marketing;
+        if (item.href === '/branches') return permissions.branches;
+        if (item.href === '/billing') return permissions.billing;
+        return true; 
       });
     } else {
       // 2. Safe loading state: Hide sensitive pages until permissions are loaded
-      const sensitive = ['/users', '/settings', '/admin/financial', '/billing', '/automations'];
+      const sensitive = [
+        '/users', '/settings', '/admin/financial', '/services', '/bookings', 
+        '/customers', '/team', '/messages', '/automations', '/marketing', 
+        '/branches', '/billing'
+      ];
       navItems = baseMenu.filter(item => !sensitive.includes(item.href));
     }
   }
