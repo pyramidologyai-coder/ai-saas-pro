@@ -20,34 +20,36 @@ export async function getActiveTenant(sessionUser: any) {
 
     if (!tenants || tenants.length === 0) return null;
 
-    // 1. Check if the user is an employee (has a row in public.profiles)
-    // and prioritize their employee tenant as the default fallback workspace
+    // 1. الاستعلام عن ملف الموظف لتحديد طبيعة حسابه
     const { data: profile } = await supabase
         .from('profiles')
         .select('tenant_id')
         .eq('id', sessionUser.id)
         .maybeSingle();
 
-    let defaultTenantId = tenants[0].id;
+    let activeTenant = null;
+
+    // 2. قاعدة الموظفين: إجبار الموظف على دخول شركة عمله وتجاهل الـ localStorage تماماً
     if (profile && profile.tenant_id) {
-        const employeeTenant = tenants.find((t: any) => t.id === profile.tenant_id);
-        if (employeeTenant) {
-            defaultTenantId = employeeTenant.id;
+        const employerTenant = tenants.find((t: any) => t.id === profile.tenant_id);
+        if (employerTenant) {
+            activeTenant = employerTenant;
         }
     }
-    
-    let storedId = null;
-    if (typeof window !== 'undefined') {
-        storedId = localStorage.getItem('active_tenant_id');
+
+    // 3. قاعدة الملاك: استخدام الـ localStorage للتبديل المرن بين عياداتهم المملوكة
+    if (!activeTenant) {
+        let storedId = null;
+        if (typeof window !== 'undefined') {
+            storedId = localStorage.getItem('active_tenant_id');
+        }
+        const isStoredAllowed = tenants.some((t: any) => t.id === storedId);
+        const activeTenantId = isStoredAllowed ? storedId : tenants[0].id;
+        activeTenant = tenants.find((t: any) => t.id === activeTenantId) || tenants[0];
     }
     
-    // 2. Validate storedId against the allowed tenants list to prevent logical loops
-    const isStoredAllowed = tenants.some((t: any) => t.id === storedId);
-    const activeTenantId = isStoredAllowed ? storedId : defaultTenantId;
-    
-    const activeTenant = tenants.find((t: any) => t.id === activeTenantId) || tenants[0];
-    
-    if (typeof window !== 'undefined' && activeTenant.id !== storedId) {
+    // 4. مزامنة الـ localStorage بالشركة الفعلية النشطة
+    if (typeof window !== 'undefined' && activeTenant.id !== localStorage.getItem('active_tenant_id')) {
         localStorage.setItem('active_tenant_id', activeTenant.id);
     }
     return activeTenant;
