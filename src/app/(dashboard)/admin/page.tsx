@@ -13,35 +13,21 @@ export default async function AdminPage() {
     redirect('/auth');
   }
 
-  // Check if master admin
-  let isMaster = false;
-  try {
-    const { data } = await supabase.rpc('verify_master_admin_role');
-    if (data) {
-      isMaster = true;
-    } else {
-      const { data: fallbackData } = await supabase.rpc('is_master_admin');
-      isMaster = !!fallbackData;
-    }
-  } catch (e) {
-    // Ignore
-  }
-
-  if (isMaster) {
-    redirect('/master-admin');
-  }
-
-  // Check if agency owner
-  const role = user.user_metadata?.role;
-  let isAgency = role === 'super_admin';
-
-  if (!isAgency) {
-    const { data: agencyRow } = await supabase
+  // Check master and agency roles in parallel to minimize network latency
+  const [masterRes, agencyRes] = await Promise.all([
+    supabase.rpc('verify_master_admin_role'),
+    supabase
       .from('agencies')
       .select('id')
       .eq('user_id', user.id)
-      .limit(1);
-    isAgency = !!(agencyRow && agencyRow.length > 0);
+      .limit(1)
+  ]);
+
+  const isMaster = !!masterRes.data;
+  const isAgency = !!(agencyRes.data && agencyRes.data.length > 0);
+
+  if (isMaster) {
+    redirect('/master-admin');
   }
 
   if (isAgency) {
