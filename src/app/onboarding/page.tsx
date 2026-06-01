@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Store, KeyRound, Clock, ArrowRight, ArrowLeft } from 'lucide-react';
 import styles from './Onboarding.module.css';
 import { createClient } from '@/utils/supabase/client';
+import { clearTenantCache } from '@/lib/tenant';
 
 export default function OnboardingWizard() {
   const supabase = createClient();
@@ -115,6 +116,7 @@ export default function OnboardingWizard() {
         
         if (newTenant) {
           localStorage.setItem('active_tenant_id', newTenant.id);
+          clearTenantCache();
         }
         
         router.push('/admin');
