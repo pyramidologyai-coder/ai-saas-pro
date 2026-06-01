@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bot, Save, AlertTriangle, Settings2, Mic, FileText, MessageCircle, Instagram, Facebook } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import { getUserPermissions } from '@/lib/permissions';
 
 type Channel = 'whatsapp' | 'messenger' | 'instagram';
 
@@ -23,6 +24,7 @@ const DEFAULT_TEMPLATES = [
 export default function AutomationsPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   
@@ -44,6 +46,14 @@ export default function AutomationsPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.canManageAI) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
+
       const { data: tenant } = await supabase.from('tenants').select('*').eq('user_id', session.user.id).single();
       if (tenant) {
         setTenantId(tenant.id);
@@ -136,6 +146,17 @@ export default function AutomationsPage() {
   };
 
   if (loading) return <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--accent-primary)', fontWeight: 600 }}>جاري تحميل الإعدادات...</div>;
+
+  if (isAuthorized === false) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center', maxWidth: '1200px', margin: '0 auto', color: 'var(--text-main)' }}>
+        <div style={{ background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.1)', padding: '3rem 2rem', borderRadius: '24px', textAlign: 'center' }}>
+          <h1 style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>غير مصرح لك بالدخول</h1>
+          <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>عذراً، هذه الصفحة مخصصة لمدير النظام أو المشرفين على الذكاء الاصطناعي فقط.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', animation: 'fadeIn 0.5s ease' }}>

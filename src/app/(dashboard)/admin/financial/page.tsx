@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { getUserPermissions } from '@/lib/permissions';
 
 import FinancialKPIs from '@/components/financial/FinancialKPIs';
 import AgencyTable from '@/components/financial/AgencyTable';
@@ -32,17 +33,17 @@ export default function FinancialPage() {
       
       let determinedRole = '';
 
+      const perms = await getUserPermissions(supabase, session.user);
+      const isAuth = perms && perms.canViewRevenue;
+
       if (isMasterAdmin) {
         determinedRole = 'master_admin';
       } else {
         const { data: agency } = await supabase.from('agencies').select('id').eq('user_id', session.user.id).maybeSingle();
         if (agency) {
           determinedRole = 'super_admin';
-        } else {
-          const { data: profile } = await supabase.from('profiles').select('role').eq('id', session.user.id).maybeSingle();
-          if (profile?.role === 'admin' || profile?.role === 'staff') {
-            determinedRole = 'admin';
-          }
+        } else if (isAuth) {
+          determinedRole = 'admin';
         }
       }
 

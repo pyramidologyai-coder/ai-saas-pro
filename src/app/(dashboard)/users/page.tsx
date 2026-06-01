@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { UserPlus, Shield, UserCog, Trash2 } from 'lucide-react';
 import { getDictionary } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
+import { getUserPermissions } from '@/lib/permissions';
 
 interface Profile {
   id: string;
@@ -26,6 +27,7 @@ export default function UsersPage() {
   const [users, setUsers] = useState<Profile[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [dict, setDict] = useState(() => getDictionary('clinic'));
 
@@ -45,6 +47,14 @@ export default function UsersPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
+
+      const perms = await getUserPermissions(supabase, session.user);
+      if (!perms || !perms.canManageUsers) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
 
       const tenantData = await getActiveTenant(session.user);
 
@@ -160,6 +170,15 @@ export default function UsersPage() {
   };
 
   if (loading) return <div className={styles.container}>جاري التحميل...</div>;
+
+  if (isAuthorized === false) {
+    return (
+      <div className={styles.container} style={{ textAlign: 'center', padding: '5rem 2rem' }}>
+        <h1 style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>غير مصرح لك بالدخول</h1>
+        <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>عذراً، هذه الصفحة مخصصة لمدير النظام فقط.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

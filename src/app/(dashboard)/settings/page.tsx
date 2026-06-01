@@ -7,10 +7,12 @@ import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon
 import { getActiveTenant } from '@/lib/tenant';
 import { saveTenantSettingsAction } from './actions';
 import { getDictionary } from '@/lib/dictionary';
+import { getUserPermissions } from '@/lib/permissions';
 
 const SettingsPage = () => {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [tenantId, setTenantId] = useState<string | null>(null);
   const [subscriptionTier, setSubscriptionTier] = useState<string>('trial');
@@ -59,6 +61,21 @@ const SettingsPage = () => {
         window.location.href = '/auth';
         return;
       }
+
+      const perms = await getUserPermissions(supabase, session.user);
+
+      // Verify if they are a registered agency owner (they manage their reseller settings in /settings)
+      const { data: agencyRes } = await supabase.from('agencies').select('id').eq('user_id', session.user.id).limit(1);
+      const isAgency = agencyRes && agencyRes.length > 0;
+
+      const isAuth = (perms && perms.canManageSettings) || isAgency || (session.user.app_metadata?.role === 'master_admin');
+
+      if (!isAuth) {
+        setIsAuthorized(false);
+        setLoading(false);
+        return;
+      }
+      setIsAuthorized(true);
       
       const data = await getActiveTenant(session.user);
       
@@ -191,6 +208,15 @@ const SettingsPage = () => {
   };
 
   if (loading) return <div className={styles.container}>جاري التحميل...</div>;
+
+  if (isAuthorized === false) {
+    return (
+      <div className={styles.container} style={{ textAlign: 'center', padding: '5rem 2rem' }}>
+        <h1 style={{ color: '#ef4444', fontSize: '2rem', marginBottom: '1rem', fontWeight: 'bold' }}>غير مصرح لك بالدخول</h1>
+        <p style={{ color: 'var(--text-dim)', fontSize: '1.1rem' }}>عذراً، هذه الصفحة مخصصة لمدير النظام فقط.</p>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.container}>

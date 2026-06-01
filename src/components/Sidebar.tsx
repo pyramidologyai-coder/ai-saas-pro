@@ -46,6 +46,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { getDictionary, BusinessType } from '@/lib/dictionary';
 import { getActiveTenant, getAllTenants } from '@/lib/tenant';
 import { useBusinessConfig } from '@/hooks/useBusinessConfig';
+import { getUserPermissions, UserPermissions } from '@/lib/permissions';
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -57,6 +58,7 @@ const Sidebar = () => {
   const [isAgencyOwner, setIsAgencyOwner] = useState(() => pathname?.startsWith('/agency-admin') || pathname?.startsWith('/admin/agency-plans'));
   const [isMasterAdmin, setIsMasterAdmin] = useState(() => pathname?.startsWith('/master-admin'));
   const [tenants, setTenants] = useState<any[]>([]);
+  const [permissions, setPermissions] = useState<UserPermissions | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,8 +113,12 @@ const Sidebar = () => {
            }
          }
 
-         // 2. Default User Role
-         setUserRole('admin');
+         // 2. Fetch Real User Permissions and Role
+         const perms = await getUserPermissions(supabaseClient, finalSession.user);
+         if (perms) {
+           setPermissions(perms);
+           setUserRole(perms.role);
+         }
 
          // 3. Check if Agency Owner
          const { data: agencyData } = await supabaseClient
@@ -158,7 +164,7 @@ const Sidebar = () => {
   };
 
   // Real user role fetched from DB, defaults to empty until loaded
-  const [userRole, setUserRole] = useState<'admin' | 'staff'>('admin');
+  const [userRole, setUserRole] = useState<'admin' | 'staff' | 'doctor'>('admin');
 
   const { sidebarLabels } = useBusinessConfig(tenantType || undefined);
   const dict = getDictionary(tenantType);
@@ -324,15 +330,29 @@ const Sidebar = () => {
   // ─── Compute final navItems ───────────────────────────────────────────────
   let navItems: Array<{ icon: React.ElementType; label: string; href: string }>;
 
-  if (userRole === 'staff') {
-    navItems = staffNavItems;
-  } else if (isMasterAdmin) {
+  if (isMasterAdmin) {
     navItems = masterNavItems;
   } else if (isAgencyOwner) {
     navItems = agencyNavItems;
   } else {
-    const type = tenantType || 'realestate';
-    navItems = adminMenuByType[type] || adminMenuByType['realestate'];
+    const type = tenantType || 'clinic';
+    const baseMenu = adminMenuByType[type] || adminMenuByType['clinic'];
+
+    if (permissions) {
+      // 1. Dynamic RBAC filtration based on active user permissions
+      navItems = baseMenu.filter(item => {
+        if (item.href === '/users') return permissions.canManageUsers;
+        if (item.href === '/settings') return permissions.canManageSettings;
+        if (item.href === '/admin/financial') return permissions.canViewRevenue;
+        if (item.href === '/billing') return permissions.canViewRevenue;
+        if (item.href === '/automations') return permissions.canManageAI;
+        return true; // Keep other standard items (bookings, services, team, customers, messages, etc.)
+      });
+    } else {
+      // 2. Safe loading state: Hide sensitive pages until permissions are loaded
+      const sensitive = ['/users', '/settings', '/admin/financial', '/billing', '/automations'];
+      navItems = baseMenu.filter(item => !sensitive.includes(item.href));
+    }
   }
 
   return (
