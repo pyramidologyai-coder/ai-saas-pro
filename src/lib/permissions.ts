@@ -20,6 +20,17 @@ export interface UserPermissions {
   billing: boolean;
 }
 
+// Client-only cache variables (Never modified or read on the server to prevent cross-user leakage)
+let clientPermissionsPromise: Promise<UserPermissions | null> | null = null;
+let clientCachedUserId: string | null = null;
+
+export function clearPermissionsCache() {
+  if (typeof window !== 'undefined') {
+    clientPermissionsPromise = null;
+    clientCachedUserId = null;
+  }
+}
+
 /**
  * Safely fetches and resolves user roles and permissions.
  * Supports both Server and Client Supabase clients by accepting the supabase instance as an argument.
@@ -33,6 +44,33 @@ export async function getUserPermissions(
 ): Promise<UserPermissions | null> {
   if (!sessionUser) return null;
 
+  const isClient = typeof window !== 'undefined';
+
+  // 1. If on server: bypass cache entirely and query directly for absolute data isolation (stateless)
+  if (!isClient) {
+    return fetchUserPermissionsFromDb(supabase, sessionUser);
+  }
+
+  // 2. If on client: securely use shared cache (exclusive to current user's browser context)
+  if (clientCachedUserId !== sessionUser.id) {
+    clearPermissionsCache();
+    clientCachedUserId = sessionUser.id;
+  }
+
+  if (!clientPermissionsPromise) {
+    clientPermissionsPromise = fetchUserPermissionsFromDb(supabase, sessionUser);
+  }
+
+  return clientPermissionsPromise;
+}
+
+/**
+ * Core database query function for fetching user permissions.
+ */
+async function fetchUserPermissionsFromDb(
+  supabase: any,
+  sessionUser: any
+): Promise<UserPermissions | null> {
   // 1. Get active tenant using the unified race-condition-resistant method
   const tenant = await getActiveTenant(sessionUser);
   if (!tenant) return null;

@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import styles from './Sidebar.module.css';
 import {
   LayoutDashboard,
@@ -50,6 +50,7 @@ import { getUserPermissions, UserPermissions } from '@/lib/permissions';
 
 const Sidebar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const { t } = useLanguage();
   const [businessName, setBusinessName] = useState('جارِ التحميل...');
   const [tenantType, setTenantType] = useState<string | null>(null);
@@ -365,6 +366,25 @@ const Sidebar = () => {
       navItems = baseMenu.filter(item => !sensitive.includes(item.href));
     }
   }
+
+  // Prefetch allowed routes after a 2.5 second delay (RBAC-safe)
+  const routesToPrefetch = navItems.map(item => item.href).join(',');
+
+  useEffect(() => {
+    const isStandardUser = !isMasterAdmin && !isAgencyOwner;
+    if (isStandardUser && !permissions) return;
+
+    const timer = setTimeout(() => {
+      const routes = routesToPrefetch.split(',');
+      routes.forEach(href => {
+        if (href && href.startsWith('/')) {
+          router.prefetch(href);
+        }
+      });
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, [routesToPrefetch, permissions, isMasterAdmin, isAgencyOwner, router]);
 
   return (
     <aside className={styles.sidebar}>
