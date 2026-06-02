@@ -406,6 +406,7 @@ const Sidebar = () => {
               key={index}
               href={item.href}
               className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+              prefetch={false}
             >
               <item.icon className={styles.navIcon} />
               <span>{item.label}</span>

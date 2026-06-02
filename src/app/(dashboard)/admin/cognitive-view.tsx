@@ -34,8 +34,9 @@ export default function CognitiveDashboard({ tenantId, isAgency = false, industr
     : `/api/bi/metrics?tenantId=${tenantId}&industry=${industryType}`;
     
   const { data, error, isLoading } = useSWR(tenantId ? endpoint : null, fetcher, {
-    refreshInterval: 30000, // Background updates every 30s
-    revalidateOnFocus: true,
+    refreshInterval: 120000, // Background updates every 2m
+    revalidateOnFocus: false,
+    dedupingInterval: 10000, // Prevent redundant fetches within 10s
   });
 
   if (isLoading) return <div className="p-8 text-center animate-pulse text-[var(--text-dim)]">جاري تحميل بيانات العقل التحليلي...</div>;

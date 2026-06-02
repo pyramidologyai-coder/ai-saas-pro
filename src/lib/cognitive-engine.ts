@@ -87,8 +87,17 @@ export class CognitiveEngine {
 
     const monthlyApiCost = (interactionCount || 0) * COST_PER_INTERACTION;
 
-    // 2. Wallet Balance & Burn Rate
-    const { verifiedBalance } = await this.verifyLedgerIntegrity(tenantId);
+    // 2. Wallet Balance & Burn Rate (Option A: Fast summary aggregation directly on wallet_ledger)
+    const { data: sumData } = await supabase
+      .from('wallet_ledger')
+      .select('credit, debit')
+      .eq('tenant_id', tenantId);
+
+    let verifiedBalance = 0;
+    sumData?.forEach(entry => {
+      verifiedBalance += (Number(entry.credit) - Number(entry.debit));
+    });
+
     const avgDailyCost = monthlyApiCost / 30;
     
     // How many days until the wallet is empty?
