@@ -110,8 +110,8 @@ export default function ClientDashboard() {
 
         const { count: bookingCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
         
-        const { data: customers } = await supabase.from('bookings').select('customer_phone').eq('tenant_id', tenant.id);
-        const uniqueCustomers = new Set(customers?.map(c => c.customer_phone)).size;
+        const { data: uniqueCount } = await supabase.rpc('get_unique_customers_count', { p_tenant_id: tenant.id });
+        const uniqueCustomers = uniqueCount || 0;
 
         const { data: bookings } = await supabase
           .from('bookings')
@@ -148,8 +148,8 @@ export default function ClientDashboard() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {isMaster && !tenantId && <CognitiveDashboard isAgency={true} tenantId="master" industryType="clinic" />}
-      {tenantId && <CognitiveDashboard tenantId={tenantId} isAgency={isMaster} industryType={currentType as any} />}
+      {!loading && isMaster && !tenantId && <CognitiveDashboard isAgency={true} tenantId="master" industryType="clinic" />}
+      {!loading && tenantId && <CognitiveDashboard tenantId={tenantId} isAgency={isMaster} industryType={currentType as any} />}
       
       {!isMaster && (
         <div style={{ 

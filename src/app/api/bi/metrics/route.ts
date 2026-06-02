@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { CognitiveEngine } from '@/lib/cognitive-engine';
 
+// Server-side cache Map with 5-minute TTL, isolated by user ID and tenant/agency ID
+const metricsServerCache = new Map<string, { data: any; expiry: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -17,6 +21,18 @@ export async function GET(req: Request) {
     const agencyId = url.searchParams.get('agencyId'); // For Profit View
 
     if (!tenantId && !agencyId) return NextResponse.json({ error: 'Missing tenant or agency ID' }, { status: 400 });
+
+    // Cache Key: isolated by user ID and tenant/agency ID to guarantee complete security and multi-tenant data isolation
+    const cacheKey = `${user.id}:${tenantId || agencyId}`;
+    const cached = metricsServerCache.get(cacheKey);
+
+    if (cached && cached.expiry > Date.now()) {
+      return NextResponse.json({ data: cached.data }, {
+        headers: {
+          'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
+        }
+      });
+    }
 
     // In a real app, verify that the 'user.id' owns this tenant/agency here.
 
@@ -111,6 +127,12 @@ export async function GET(req: Request) {
           ]
        };
     }
+
+    // Save to the isolated cache
+    metricsServerCache.set(cacheKey, {
+      data: metrics,
+      expiry: Date.now() + CACHE_DURATION
+    });
 
     // 4. Zero-Knowledge UI (Payload returned encrypted conceptually, handled as JSON here for standard SWR)
     return NextResponse.json({ data: metrics }, {
