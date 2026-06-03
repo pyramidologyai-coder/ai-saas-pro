@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { deleteCalendarEvent } from '@/lib/googleCalendar';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
+);
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -22,13 +28,13 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     const bookingId = params.id;
     
     // 1. Fetch booking to get google_event_id and tenant_id
-    const { data: booking } = await supabase.from('bookings').select('*').eq('id', bookingId).single();
+    const { data: booking } = await supabaseAdmin.from('bookings').select('*').eq('id', bookingId).single();
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
     // OBJECT-LEVEL AUTHORIZATION: Verify user owns the tenant that owns this booking
-    const { data: tenantData } = await supabase
+    const { data: tenantData } = await supabaseAdmin
       .from('tenants')
       .select('id')
       .eq('id', booking.tenant_id)
@@ -36,7 +42,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
       .single();
 
     if (!tenantData) {
-      const { data: profileAccess } = await supabase
+      const { data: profileAccess } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .eq('tenant_id', booking.tenant_id)
@@ -51,14 +57,14 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
 
     // 2. Delete from Google Calendar if event exists
     if (booking.google_event_id) {
-      const { data: teamMembers } = await supabase
+      const { data: teamMembers } = await supabaseAdmin
         .from('team_members')
         .select('google_calendar_refresh_token')
         .eq('tenant_id', booking.tenant_id)
         .not('google_calendar_refresh_token', 'is', null)
         .limit(1);
 
-      const { data: tenant } = await supabase.from('tenants').select('google_calendar_refresh_token').eq('id', booking.tenant_id).single();
+      const { data: tenant } = await supabaseAdmin.from('tenants').select('google_calendar_refresh_token').eq('id', booking.tenant_id).single();
 
       const refreshToken = teamMembers && teamMembers.length > 0 
         ? teamMembers[0].google_calendar_refresh_token 
@@ -74,12 +80,12 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
     }
 
     // 3. Delete from Supabase
-    const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
+    const { error } = await supabaseAdmin.from('bookings').delete().eq('id', bookingId);
     if (error) throw error;
 
     // 4. Send WhatsApp Cancellation Message
     if (booking.customer_phone) {
-      const { data: tenantDetails } = await supabase
+      const { data: tenantDetails } = await supabaseAdmin
         .from('tenants')
         .select('name, meta_token, whatsapp_number_id')
         .eq('id', booking.tenant_id)
@@ -90,8 +96,8 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
           const appointmentDate = new Date(booking.booking_time).toLocaleString('ar-EG', { 
             timeZone: 'Africa/Cairo',
             weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
             hour: 'numeric',
             minute: 'numeric'
@@ -102,7 +108,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
           await sendWhatsAppMessage(booking.customer_phone, message, tenantDetails.whatsapp_number_id, tenantDetails.meta_token);
 
           // Save cancellation message to history so AI knows!
-          await supabase.from('messages').insert({
+          await supabaseAdmin.from('messages').insert({
             tenant_id: booking.tenant_id,
             session_id: booking.customer_phone,
             sender: 'ai',

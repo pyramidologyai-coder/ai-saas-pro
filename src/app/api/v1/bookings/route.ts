@@ -3,38 +3,29 @@ import { createClient } from '@supabase/supabase-js';
 import { TenantRateLimiter } from '@/lib/rate-limiter';
 import { GhostDefender } from '@/lib/ghost-defender';
 
+const crypto = require('crypto');
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
 );
 
-// Helper to validate API Key
 async function authenticate(req: Request) {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
   }
   const apiKey = authHeader.split('Bearer ')[1];
-  
-  // Use supabaseAdmin because RLS blocks anonymous access to the tenants table
-  const { data: tenants } = await supabaseAdmin
-    .from('tenants')
-    .select('id, status, type, api_key');
-    
-  if (!tenants) return null;
+  const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-  const crypto = require('crypto');
-  
-  // SECURE: Prevent Timing Attacks by using constant-time comparison
-  for (const tenant of tenants) {
-    if (tenant.api_key && tenant.api_key.length === apiKey.length) {
-      if (crypto.timingSafeEqual(Buffer.from(tenant.api_key), Buffer.from(apiKey))) {
-        return tenant;
-      }
-    }
-  }
-    
-  return null;
+  const { data: tenant, error } = await supabaseAdmin
+    .from('tenants')
+    .select('id, status, type, api_key_hash')
+    .eq('api_key_hash', hash)
+    .maybeSingle();
+
+  if (error || !tenant) return null;
+  return tenant;
 }
 
 // POST: Create a new booking via direct API Integration

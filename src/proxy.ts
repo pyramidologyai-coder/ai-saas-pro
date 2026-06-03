@@ -54,6 +54,26 @@ export default async function middleware(req: NextRequest) {
     }
   );
 
+  // === GHOST DEFENDER: master-admin guard ===
+  if (url.pathname.startsWith('/master-admin')) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.redirect(new URL('/auth', req.url));
+    const { data: isMaster } = await supabase.rpc('verify_master_admin_role');
+    if (!isMaster) return NextResponse.redirect(new URL('/auth', req.url));
+  }
+
+  // === GHOST DEFENDER: agency-admin guard ===
+  if (url.pathname.startsWith('/agency-admin')) {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.redirect(new URL('/auth', req.url));
+    const { data: agencyData } = await supabase
+      .from('agencies')
+      .select('id')
+      .eq('user_id', session.user.id)
+      .single();
+    if (!agencyData) return NextResponse.redirect(new URL('/auth', req.url));
+  }
+
   // ✅ كل المسارات المحمية والداخلية
   const isExemptPath =
     url.pathname.startsWith('/api') ||

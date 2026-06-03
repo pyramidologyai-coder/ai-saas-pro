@@ -12,14 +12,15 @@ export function clearTenantCache() {
     }
 }
 
-export async function getActiveTenant(sessionUser: any) {
+export async function getActiveTenant(sessionUser: any, supabase?: any) {
     if (!sessionUser) return null;
 
     const isClient = typeof window !== 'undefined';
+    const db = supabase || createClient();
 
     // 1. إذا كنا على السيرفر: تخطى الكاش بالكامل واستعلم مباشرة لضمان عزل البيانات 100%
     if (!isClient) {
-        return fetchActiveTenantFromDb(sessionUser);
+        return fetchActiveTenantFromDb(sessionUser, db);
     }
 
     // 2. إذا كنا على المتصفح: استخدم الكاش المشترك بأمان كامل (خاص بمتصفح المستخدم الحالي فقط)
@@ -29,14 +30,14 @@ export async function getActiveTenant(sessionUser: any) {
     }
 
     if (!clientActiveTenantPromise) {
-        clientActiveTenantPromise = fetchActiveTenantFromDb(sessionUser);
+        clientActiveTenantPromise = fetchActiveTenantFromDb(sessionUser, db);
     }
 
     return clientActiveTenantPromise;
 }
 
 // دالة جلب البيانات الفعلية من الداتابيز
-async function fetchActiveTenantFromDb(sessionUser: any) {
+async function fetchActiveTenantFromDb(sessionUser: any, supabase: any) {
     // 1. الاستعلام عن ملف الموظف أولاً لتحديد طبيعة حسابه فوراً وتجنب أي حلقة انتظار
     const { data: profile } = await supabase
         .from('profiles')

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { createBooking } from '@/lib/bookings';
 import { createCalendarEvent } from '@/lib/googleCalendar';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
+);
 
 export async function POST(req: Request) {
   try {
@@ -25,16 +31,16 @@ export async function POST(req: Request) {
     }
 
     // IDOR Protection: Verify that the authenticated user actually owns/has access to this tenant_id
-    const { data: tenantData } = await supabase
+    const { data: tenantData } = await supabaseAdmin
       .from('tenants')
       .select('id')
       .eq('id', tenant_id)
       .eq('user_id', user.id)
       .single();
-      
+    
     if (!tenantData) {
       // Try to check if they have access via profiles (RBAC)
-      const { data: profileAccess } = await supabase
+      const { data: profileAccess } = await supabaseAdmin
         .from('profiles')
         .select('id')
         .eq('tenant_id', tenant_id)
@@ -52,7 +58,7 @@ export async function POST(req: Request) {
       formattedPhone = '2' + formattedPhone;
     }
 
-    const { data: booking, error: dbError } = await supabase
+    const { data: booking, error: dbError } = await supabaseAdmin
       .from('bookings')
       .insert({
         tenant_id,
@@ -68,14 +74,14 @@ export async function POST(req: Request) {
     if (dbError) throw dbError;
 
     // 2. Sync to Google Calendar
-    const { data: teamMembers } = await supabase
+    const { data: teamMembers } = await supabaseAdmin
       .from('team_members')
       .select('google_calendar_refresh_token')
       .eq('tenant_id', tenant_id)
       .not('google_calendar_refresh_token', 'is', null)
       .limit(1);
 
-    const { data: tenant } = await supabase
+    const { data: tenant } = await supabaseAdmin
       .from('tenants')
       .select('google_calendar_refresh_token, meta_token, whatsapp_number_id, name')
       .eq('id', tenant_id)
@@ -98,7 +104,7 @@ export async function POST(req: Request) {
         });
         
         if (calResponse.id && booking) {
-          await supabase.from('bookings').update({ google_event_id: calResponse.id }).eq('id', booking.id);
+          await supabaseAdmin.from('bookings').update({ google_event_id: calResponse.id }).eq('id', booking.id);
         }
       } catch (calError) {
         console.error('Failed to sync manual booking to Calendar:', calError);
@@ -111,8 +117,8 @@ export async function POST(req: Request) {
         const appointmentDate = new Date(booking_time).toLocaleString('ar-EG', { 
           timeZone: 'Africa/Cairo',
           weekday: 'long', 
-          year: 'numeric', 
-          month: 'long', 
+          year: 'numeric',
+          month: 'long',
           day: 'numeric',
           hour: 'numeric',
           minute: 'numeric'

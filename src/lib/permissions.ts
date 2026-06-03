@@ -72,7 +72,7 @@ async function fetchUserPermissionsFromDb(
   sessionUser: any
 ): Promise<UserPermissions | null> {
   // 1. Get active tenant using the unified race-condition-resistant method
-  const tenant = await getActiveTenant(sessionUser);
+  const tenant = await getActiveTenant(sessionUser, supabase);
   if (!tenant) return null;
 
   // 2. Owner Check: If user is the primary workspace owner, grant absolute permissions
