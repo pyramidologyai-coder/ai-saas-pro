@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // 10,000-YEAR HACKER FIX: Never use NEXT_PUBLIC_ for API keys. It exposes your private keys to the browser!
 const apiKey = process.env.GEMINI_API_KEY;
@@ -24,25 +24,42 @@ export interface AIResponse {
 /**
  * Advanced Generic AI Processing for Multi-tenant SaaS
  */
-export const processIncomingMessage = async (message: string, tenantId: string, history: any[] = [], customerPhone?: string): Promise<AIResponse> => {
+export const processIncomingMessage = async (
+  message: string,
+  tenantId: string,
+  history: any[] = [],
+  customerPhone?: string,
+  db?: SupabaseClient
+): Promise<AIResponse> => {
   try {
+    if (!db) {
+      throw new Error('Server-side Supabase client is required for AI message processing.');
+    }
+
     // 1. Fetch Tenant Info
-    const { data: tenant } = await supabase.from('tenants').select('*').eq('id', tenantId).single();
+    const { data: tenant } = await db
+      .from('tenants')
+      .select('id, name, type, timezone, working_hours, custom_prompt, main_location_url, google_review_link')
+      .eq('id', tenantId)
+      .single();
     if (!tenant) throw new Error('Tenant not found');
 
     // 2. Fetch Services/Menu Items
-    const { data: items } = await supabase.from('items').select('*').eq('tenant_id', tenantId);
+    const { data: items } = await db.from('items').select('id, name, price').eq('tenant_id', tenantId);
     const itemsInfo = items?.map(i => `${i.name} (${i.price} ج.م)`).join(', ');
 
     // 2.1 Fetch Branches
-    const { data: branches } = await supabase.from('branches').select('name, location, google_maps_url, google_review_url').eq('tenant_id', tenantId);
+    const { data: branches } = await db.from('branches').select('name, location, google_maps_url, google_review_url').eq('tenant_id', tenantId);
     let branchesInfo = '';
     if (branches && branches.length > 0) {
       branchesInfo = `الفروع المتاحة: ${branches.map(b => `${b.name} (${b.location || ''}) ${b.google_maps_url ? `[رابط الخريطة: ${b.google_maps_url}]` : ''} ${b.google_review_url ? `[رابط التقييم: ${b.google_review_url}]` : ''}`).join('، ')}. إذا كان هناك أكثر من فرع، يجب سؤال العميل عن الفرع الذي يفضله للحجز إذا لم يحدده.`;
     }
 
     // 2.2 Fetch Team Members (Doctors/Sales/Agents)
-    const { data: teamMembers } = await supabase.from('team_members').select('*').eq('tenant_id', tenantId);
+    const { data: teamMembers } = await db
+      .from('team_members')
+      .select('id, name, role_or_specialty, working_hours, provided_services')
+      .eq('tenant_id', tenantId);
     let teamInfo = '';
     if (teamMembers && teamMembers.length > 0) {
       teamInfo = `أعضاء الفريق (أطباء / وكلاء / موظفين) المتاحين:\n`;
@@ -62,9 +79,9 @@ export const processIncomingMessage = async (message: string, tenantId: string, 
     // 2.5 Fetch Upcoming Bookings for this customer
     let upcomingBookingsText = 'هذا العميل (ليس لديه) أي حجوزات مسجلة حالياً في النظام.';
     if (customerPhone) {
-      const { data: userBookings } = await supabase
+      const { data: userBookings } = await db
         .from('bookings')
-        .select('*')
+        .select('customer_name, service_name, booking_time')
         .eq('tenant_id', tenantId)
         .eq('customer_phone', customerPhone)
         .gte('booking_time', new Date().toISOString())
@@ -77,7 +94,7 @@ export const processIncomingMessage = async (message: string, tenantId: string, 
     }
 
     // 2.6 Fetch All Upcoming Bookings for this Tenant (To prevent double bookings)
-    const { data: allUpcomingBookings } = await supabase
+    const { data: allUpcomingBookings } = await db
       .from('bookings')
       .select('booking_time')
       .eq('tenant_id', tenantId)

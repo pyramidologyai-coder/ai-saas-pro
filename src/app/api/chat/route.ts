@@ -2,16 +2,22 @@ export const maxDuration = 60;
 import { NextResponse } from 'next/server';
 import { processIncomingMessage } from '@/lib/ai-agent';
 import { createBooking } from '@/lib/bookings';
-import { createClient } from '@supabase/supabase-js';
-
-// Admin client to bypass RLS for system-level checks
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 // 1000-Year Hacker Defense: In-memory rate limiter (protects against Script Kiddies & DoW)
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
+
+const normalizeHost = (value: string | null | undefined) => {
+  if (!value) return null;
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return value.split('/')[0]?.split(':')[0]?.toLowerCase() || null;
+  }
+};
+
+const isLocalHost = (host: string | null) =>
+  host === 'localhost' || host === '127.0.0.1' || host === '::1';
 
 export async function POST(req: Request) {
   try {
@@ -29,8 +35,9 @@ export async function POST(req: Request) {
       rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 }); // 60 seconds window
     }
 
+    const supabaseAdmin = getSupabaseAdminClient();
     const body = await req.json();
-    let { message, tenantId, history } = body;
+    let { message, tenantId, history, domain } = body;
 
     if (!tenantId || tenantId === '13814bff-a653-439a-8891-2c5a81124eb8') {
       return NextResponse.json({ error: 'Valid Tenant ID is required' }, { status: 400 });
@@ -53,7 +60,7 @@ export async function POST(req: Request) {
     // 2. Tenant Status & Quota Validation
     const { data: tenant } = await supabaseAdmin
       .from('tenants')
-      .select('status, subscription_tier')
+      .select('id, status, subscription_tier, custom_domain')
       .eq('id', tenantId)
       .single();
 
@@ -65,17 +72,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ replyMessage: 'عذراً يا فندم، يتم الآن الصيانة الدورية للنظام. برجاء التواصل معنا هاتفياً أو ترك رسالتك.' }, { status: 403 });
     }
 
-    // 1000-Year Hacker Defense: Strict Origin Validation (Prevent Quota Drain via Botnets)
-    // Here we ensure the request comes from the actual widget embedded in the client's site
-    const origin = req.headers.get('origin') || req.headers.get('referer');
-    const { data: tenantSettings } = await supabaseAdmin
-      .from('platform_settings') // Assuming allowed_domains could be in platform_settings or tenants
-      .select('id') // We just verify the query doesn't fail. In a real scenario, check allowed_domains.
-      .limit(1)
-      .single();
-      
-    // If the system has 'allowed_domains' configured per tenant in the future, we validate it here.
-    // For now, we rely on the IP rate limit + CORS policies.
+    const requestHost = normalizeHost(req.headers.get('origin') || req.headers.get('referer'));
+    const submittedDomain = normalizeHost(domain);
+    const tenantDomain = normalizeHost(tenant.custom_domain);
+    const domainMatches = Boolean(tenantDomain && (requestHost === tenantDomain || submittedDomain === tenantDomain));
+    const localDevBypass = process.env.NODE_ENV !== 'production' && isLocalHost(requestHost);
+
+    if (tenantDomain && !domainMatches && !localDevBypass) {
+      return NextResponse.json({ error: 'Forbidden: Invalid tenant domain.' }, { status: 403 });
+    }
 
     // 1000-Year Hacker Defense: Enforce Plan Quotas (Prevent Infinite Cost Drain)
     const { count: aiMessageCount, error: countError } = await supabaseAdmin
@@ -99,7 +104,9 @@ export async function POST(req: Request) {
     const response = await processIncomingMessage(
       message, 
       tenantId,
-      history || []
+      history || [],
+      undefined,
+      supabaseAdmin
     );
 
     // 4. Record Bookings securely
@@ -110,7 +117,7 @@ export async function POST(req: Request) {
         booking_time: response.bookings[0].bookingTime,
         service_name: response.bookings[0].serviceName || 'استشارة',
         source: 'web'
-      });
+      }, supabaseAdmin);
     }
 
     return NextResponse.json({ replyMessage: response.replyMessage });

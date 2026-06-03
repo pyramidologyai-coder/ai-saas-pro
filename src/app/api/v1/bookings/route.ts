@@ -1,14 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { TenantRateLimiter } from '@/lib/rate-limiter';
-import { GhostDefender } from '@/lib/ghost-defender';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const crypto = require('crypto');
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
-);
 
 async function authenticate(req: Request) {
   const authHeader = req.headers.get('Authorization');
@@ -18,7 +12,7 @@ async function authenticate(req: Request) {
   const apiKey = authHeader.split('Bearer ')[1];
   const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-  const { data: tenant, error } = await supabaseAdmin
+  const { data: tenant, error } = await getSupabaseAdminClient()
     .from('tenants')
     .select('id, status, type, api_key_hash')
     .eq('api_key_hash', hash)
@@ -53,7 +47,7 @@ export async function POST(req: Request) {
     }
 
     // Insert booking using Admin client
-    const { data: booking, error } = await supabaseAdmin.from('bookings').insert({
+    const { data: booking, error } = await getSupabaseAdminClient().from('bookings').insert({
       tenant_id: tenant.id,
       customer_name: body.customerName,
       service_name: body.serviceName,
@@ -86,9 +80,9 @@ export async function GET(req: Request) {
     }
 
     // Use Admin client to bypass RLS for API key authenticated requests
-    const { data: bookings, error } = await supabaseAdmin
+    const { data: bookings, error } = await getSupabaseAdminClient()
       .from('bookings')
-      .select('*')
+      .select('id, customer_name, service_name, booking_time, branch, status, phone_number, created_at')
       .eq('tenant_id', tenant.id)
       .order('created_at', { ascending: false });
 

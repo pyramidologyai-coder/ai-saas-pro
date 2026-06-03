@@ -1,24 +1,8 @@
 import 'server-only';
 
 import React from 'react';
-import { createClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
-
-function createSupabaseAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Custom domain page requires Supabase URL and service-role configuration.');
-  }
-
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
-}
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export default async function CustomDomainPage({
   params,
@@ -26,7 +10,7 @@ export default async function CustomDomainPage({
   params: { domain: string };
 }) {
   const { domain } = params;
-  const supabaseAdmin = createSupabaseAdminClient();
+  const supabaseAdmin = getSupabaseAdminClient();
 
   // 1. Fetch active tenant by custom domain. This uses a server-only admin
   // client so public RLS policies can remain closed for tenant data.

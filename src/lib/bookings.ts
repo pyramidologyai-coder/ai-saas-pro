@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface BookingData {
   tenant_id: string;
@@ -10,10 +10,10 @@ export interface BookingData {
   source: 'whatsapp' | 'instagram' | 'facebook' | 'web';
 }
 
-export const createBooking = async (data: BookingData) => {
+export const createBooking = async (data: BookingData, db: SupabaseClient) => {
   try {
     // 1. Find the service ID from the name (fuzzy match or simple search)
-    const { data: services } = await supabase
+    const { data: services } = await db
       .from('items')
       .select('id')
       .eq('tenant_id', data.tenant_id)
@@ -25,7 +25,7 @@ export const createBooking = async (data: BookingData) => {
     // 2. Find the team member ID from the provider name
     let teamMemberId = null;
     if (data.provider_name) {
-      const { data: members } = await supabase
+      const { data: members } = await db
         .from('team_members')
         .select('id')
         .eq('tenant_id', data.tenant_id)
@@ -36,7 +36,7 @@ export const createBooking = async (data: BookingData) => {
     }
 
     // 3. Insert the booking
-    const { data: booking, error } = await supabase
+    const { data: booking, error } = await db
       .from('bookings')
       .insert({
         tenant_id: data.tenant_id,

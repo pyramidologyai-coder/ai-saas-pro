@@ -7,18 +7,14 @@ import { createCalendarEvent } from '@/lib/googleCalendar';
 import { KMS } from '@/lib/kms';
 import { GhostDefender } from '@/lib/ghost-defender';
 import crypto from 'crypto';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN;
 
 // Webhooks use Admin Client to bypass RLS — Meta sends no Bearer token
 // Environment variables will be checked gracefully during runtime if missing
 
 // Webhooks use Admin Client to bypass RLS — Meta sends no Bearer token
-const supabaseAdmin = createClient(supabaseUrl as string, serviceRoleKey as string);
-
 // Webhook Verification (GET)
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -36,6 +32,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
+    const supabaseAdmin = getSupabaseAdminClient();
     
     // Webhook Spoofing Protection (X-Hub-Signature-256) via Zero Trust KMS
     const signature = req.headers.get('x-hub-signature-256');
@@ -170,7 +167,7 @@ export async function POST(req: Request) {
         const history = (historyData || []).reverse();
 
         // 4. Process with AI
-        const aiResponse = await processIncomingMessage(text, tenant.id, history, from);
+        const aiResponse = await processIncomingMessage(text, tenant.id, history, from, supabaseAdmin);
 
         // 4. Send Message back to WhatsApp FIRST so the user doesn't wait
         console.log(`[Webhook] Enqueuing reply to ***${String(from).slice(-4)}`);
@@ -412,5 +409,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ status: 'error' }, { status: 500 });
   }
 }
-
-

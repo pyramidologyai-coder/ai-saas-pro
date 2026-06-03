@@ -1,13 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
 import { deleteCalendarEvent } from '@/lib/googleCalendar';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy'
-);
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function DELETE(req: Request, props: { params: Promise<{ id: string }> }) {
   try {
@@ -26,6 +21,7 @@ export async function DELETE(req: Request, props: { params: Promise<{ id: string
 
     const params = await props.params;
     const bookingId = params.id;
+    const supabaseAdmin = getSupabaseAdminClient();
     
     // 1. Fetch booking to get google_event_id and tenant_id
     const { data: booking } = await supabaseAdmin.from('bookings').select('*').eq('id', bookingId).single();

@@ -1,15 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 /**
  * 2126 Cyber Security: Multilingual Template Engine
  * Fetches dynamic, language-specific templates for system messages.
  */
 export class TemplateEngine {
-    private static supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://dummy.supabase.co',
-        process.env.SUPABASE_SERVICE_ROLE_KEY || 'dummy'
-    );
-
     // Fallback templates to guarantee the system never crashes if DB fails
     private static fallbacks: Record<string, Record<string, string>> = {
         'ar': {
@@ -32,7 +27,7 @@ export class TemplateEngine {
      */
     static async getMessage(tenantId: string, intent: string, defaultLang: string = 'ar'): Promise<string> {
         try {
-            const { data } = await this.supabaseAdmin
+            const { data } = await getSupabaseAdminClient()
                 .from('bot_templates')
                 .select('template_text')
                 .eq('tenant_id', tenantId)

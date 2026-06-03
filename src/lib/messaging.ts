@@ -1,4 +1,5 @@
 import { processIncomingMessage, AIResponse } from './ai-agent';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 /**
  * Universal Webhook Handler
@@ -11,7 +12,7 @@ export const handleIncomingMessage = async (payload: any) => {
   console.log(`[MSG] Received ${platform} message from ${maskedSender}`);
 
   // 2. Process with AI Agent
-  const aiResult: AIResponse = await processIncomingMessage(text, tenantId);
+  const aiResult: AIResponse = await processIncomingMessage(text, tenantId, [], sender, getSupabaseAdminClient());
 
   // 3. Log to Database (Supabase)
   // Real logic: Save the incoming and outgoing message to the 'messages' table
