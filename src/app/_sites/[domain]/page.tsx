@@ -1,6 +1,24 @@
+import 'server-only';
+
 import React from 'react';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { notFound } from 'next/navigation';
+
+function createSupabaseAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('Custom domain page requires Supabase URL and service-role configuration.');
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
 
 export default async function CustomDomainPage({
   params,
@@ -8,23 +26,34 @@ export default async function CustomDomainPage({
   params: { domain: string };
 }) {
   const { domain } = params;
+  const supabaseAdmin = createSupabaseAdminClient();
 
-  // 1. Fetch tenant by custom domain
-  const { data: tenant } = await supabase
+  // 1. Fetch active tenant by custom domain. This uses a server-only admin
+  // client so public RLS policies can remain closed for tenant data.
+  const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
-    .select('*')
+    .select('id, name, status, custom_logo_url, custom_brand_name')
     .eq('custom_domain', domain)
+    .eq('status', 'active')
     .single();
 
-  if (!tenant) {
+  if (tenantError || !tenant) {
+    if (tenantError && tenantError.code !== 'PGRST116') {
+      console.error('[CustomDomainPage] Failed to fetch tenant for custom domain:', tenantError.message);
+    }
     return notFound();
   }
 
-  // 2. Fetch public services or menu
-  const { data: services } = await supabase
+  // 2. Fetch public services/menu for this tenant only. Keep the selected
+  // columns narrow because service-role bypasses RLS.
+  const { data: services, error: servicesError } = await supabaseAdmin
     .from('items')
-    .select('*')
+    .select('id, name, price')
     .eq('tenant_id', tenant.id);
+
+  if (servicesError) {
+    console.error('[CustomDomainPage] Failed to fetch services for custom domain:', servicesError.message);
+  }
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color)', color: 'var(--text-main)', padding: '2rem' }}>
