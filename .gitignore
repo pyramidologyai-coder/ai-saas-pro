@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local executor bridge
+.antigravity-bridge/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
