@@ -1,7 +1,7 @@
 'use server';
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/server';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 async function checkMasterRole(supabase: any, userId: string): Promise<boolean> {
   try {
@@ -57,9 +57,7 @@ export async function addWalletCreditAction(
   const cleanDescription = description ? description.trim().substring(0, 500) : 'شحن يدوي بواسطة المدير العام';
 
   // 4. Update WORM double-entry ledger in database using Admin Client
-  const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = getSupabaseAdminClient();
 
   // Try RPC first, fallback to direct insertion if missing
   const { data: rpcData, error: rpcError } = await supabaseAdmin.rpc('add_wallet_credit', {
@@ -149,9 +147,7 @@ export async function addTenantCreditAction(
   const cleanDescription = description ? description.trim().substring(0, 500) : 'شحن يدوي للعميل المباشر';
 
   // 4. Update ledger in database using Admin Client
-  const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = getSupabaseAdminClient();
 
   // Verify direct tenant exists manually
   const { data: tenantExists } = await supabaseAdmin

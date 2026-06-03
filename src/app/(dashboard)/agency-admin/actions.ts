@@ -1,8 +1,8 @@
 'use server';
 
-import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/utils/supabase/server';
 import { TenantCrypto } from '@/lib/crypto';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 /**
  * 2126 Cyber Security: Secure Settings Saving for Agencies
@@ -56,9 +56,7 @@ export async function saveAgencySettingsAction(
   }
 
   // 4. Save to Database using the Admin Client
-  const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = getSupabaseAdminClient();
 
   const { error: updateError } = await supabaseAdmin
     .from('agencies')
@@ -125,9 +123,7 @@ export async function toggleTenantStatusAction(
   const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended';
 
   // 4. Update Status using Admin Client
-  const supabaseUrlSanitized = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-  const supabaseAdmin = createSupabaseClient(supabaseUrlSanitized, supabaseServiceKey);
+  const supabaseAdmin = getSupabaseAdminClient();
 
   const { error: updateError } = await supabaseAdmin
     .from('tenants')

@@ -1,17 +1,8 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase environment variables.');
-}
-
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get('authorization');
@@ -20,6 +11,7 @@ export async function GET(req: Request) {
   }
 
   try {
+    const supabaseAdmin = getSupabaseAdminClient();
     const now = new Date();
 
     // 1. Reminders — bookings in the next 24 hours

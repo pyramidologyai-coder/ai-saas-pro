@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const getAdminClient = async (token: string) => {
     if (!token || token.length < 10) {
@@ -9,9 +10,8 @@ const getAdminClient = async (token: string) => {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error('Missing required Supabase environment variables.');
     }
 
@@ -40,7 +40,7 @@ const getAdminClient = async (token: string) => {
     }
 
     // 3. Return secure Service Role Client
-    return createClient(supabaseUrl, serviceRoleKey);
+    return getSupabaseAdminClient();
 };
 
 export async function fetchSuperAdminData(token: string) {

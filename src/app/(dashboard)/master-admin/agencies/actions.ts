@@ -1,15 +1,10 @@
 'use server';
 
-import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-
-// Sanitize keys to remove invisible BOM characters injected by copy-paste
-const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
-const supabaseServiceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function createAgencyAction(agencyData: any, adminId: string) {
+  const supabaseAdmin = getSupabaseAdminClient();
   // 1. التحقق من المدخلات أولاً
   if (!agencyData.email || !agencyData.email.includes('@')) {
     throw new Error('invalid_email');
@@ -203,6 +198,7 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
 }
 
 export async function updateAgencyCommissionAction(agencyId: string, newRate: number, adminId: string) {
+  const supabaseAdmin = getSupabaseAdminClient();
   const { error } = await supabaseAdmin.from('agencies')
     .update({ commission_rate: newRate })
     .eq('id', agencyId);

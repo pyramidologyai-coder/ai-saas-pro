@@ -1,20 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { KMS } from '@/lib/kms';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !serviceRoleKey) {
-  throw new Error('Missing Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.');
-}
-
-// Service Role Client — bypasses RLS intentionally (Stripe webhooks carry no user token)
-const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function POST(req: Request) {
   try {
+    const supabaseAdmin = getSupabaseAdminClient();
     const rawBody = await req.text();
     const signature = req.headers.get('stripe-signature');
 

@@ -223,14 +223,11 @@ export async function POST(req: Request) {
                 .single();
 
               if (notif?.id) {
-                await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-notification-email`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
-                    'Content-Type': 'application/json'
-                  },
-                  body: JSON.stringify({ notification_id: notif.id })
-                }).catch(e => console.error('Edge function email trigger error:', e));
+                await supabaseAdmin.functions
+                  .invoke('send-notification-email', {
+                    body: { notification_id: notif.id }
+                  })
+                  .catch(e => console.error('Edge function email trigger error:', e));
               }
             }
           }

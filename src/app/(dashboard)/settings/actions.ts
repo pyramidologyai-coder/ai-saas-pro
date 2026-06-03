@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { TenantCrypto } from '@/lib/crypto';
 import { AgencyRateLimiter } from '@/lib/rate-limiter';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 /**
  * 2126 Cyber Security: Server-side Settings Update
@@ -87,10 +88,7 @@ export async function saveTenantSettingsAction(token: string, tenantId: string, 
     }
     
     // 4. Save to Database using Admin Client (since we verified BOLA manually)
-    const supabaseAdmin = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL || '', 
-        process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-    );
+    const supabaseAdmin = getSupabaseAdminClient();
     
     const { error } = await supabaseAdmin.from('tenants').update(safeData).eq('id', tenantId);
     

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 export async function POST(req: Request) {
   try {
@@ -28,16 +29,14 @@ export async function POST(req: Request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
     // Sanitize credentials to strip any terminal corruption
     const sanitizedUrl = supabaseUrl.replace(/[^\x20-\x7E]/g, '').trim();
     const sanitizedAnonKey = supabaseAnonKey.replace(/[^\x20-\x7E]/g, '').trim();
-    const sanitizedServiceKey = serviceRoleKey.replace(/[^\x20-\x7E]/g, '').trim();
 
     // 2. Auth Check: Verify owner credentials via anon client under user context
     const supabaseUserClient = createClient(sanitizedUrl, sanitizedAnonKey, {
@@ -80,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     // 3. Authorization verified. Instantiate secure Admin client
-    const supabaseAdmin = createClient(sanitizedUrl, sanitizedServiceKey);
+    const supabaseAdmin = getSupabaseAdminClient();
 
     // 4. Validate target employee belongs to the same tenant to prevent cross-tenant hijacking
     const { data: targetProfile, error: targetError } = await supabaseAdmin
