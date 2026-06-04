@@ -16,6 +16,18 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Public Chat Authorization
+
+`/api/chat` requires a server-signed public chat token in production. Configure `PUBLIC_CHAT_TOKEN_SECRET` only on the server and send the issued token in the `x-public-chat-token` request header. The token is bound to `tenantId`, the serving host/domain, and an expiry timestamp.
+
+The public widget/page obtains a token from `GET /api/chat/token` before calling `/api/chat`.
+
+- On the configured app host from `NEXT_PUBLIC_APP_URL`, call `/api/chat/token?tenantId=<tenant-uuid>`.
+- On a tenant custom domain, call `/api/chat/token`; the server resolves the tenant from `tenants.custom_domain`.
+- The endpoint returns a short-lived token and never exposes `PUBLIC_CHAT_TOKEN_SECRET`.
+
+Set `PUBLIC_CHAT_TOKEN_SECRET` in the Vercel/server environment before preview or production traffic is enabled. Do not place this value in browser-exposed env vars or client code.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

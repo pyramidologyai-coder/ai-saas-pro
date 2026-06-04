@@ -1,23 +1,20 @@
 export const maxDuration = 60;
+export const runtime = 'nodejs';
+
 import { NextResponse } from 'next/server';
 import { processIncomingMessage } from '@/lib/ai-agent';
 import { createBooking } from '@/lib/bookings';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
+import {
+  getTrustedPublicChatRequestHost,
+  isLocalPublicChatHost,
+  isValidPublicChatTenantId,
+  normalizePublicChatHost,
+  verifyPublicChatToken,
+} from '@/lib/public-chat-token';
 
 // 1000-Year Hacker Defense: In-memory rate limiter (protects against Script Kiddies & DoW)
 const rateLimitMap = new Map<string, { count: number, resetTime: number }>();
-
-const normalizeHost = (value: string | null | undefined) => {
-  if (!value) return null;
-  try {
-    return new URL(value).hostname.toLowerCase();
-  } catch {
-    return value.split('/')[0]?.split(':')[0]?.toLowerCase() || null;
-  }
-};
-
-const isLocalHost = (host: string | null) =>
-  host === 'localhost' || host === '127.0.0.1' || host === '::1';
 
 export async function POST(req: Request) {
   try {
@@ -35,11 +32,10 @@ export async function POST(req: Request) {
       rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 }); // 60 seconds window
     }
 
-    const supabaseAdmin = getSupabaseAdminClient();
     const body = await req.json();
-    let { message, tenantId, history, domain } = body;
+    let { message, tenantId, history } = body;
 
-    if (!tenantId || tenantId === '13814bff-a653-439a-8891-2c5a81124eb8') {
+    if (!isValidPublicChatTenantId(tenantId) || tenantId === '13814bff-a653-439a-8891-2c5a81124eb8') {
       return NextResponse.json({ error: 'Valid Tenant ID is required' }, { status: 400 });
     }
 
@@ -57,6 +53,29 @@ export async function POST(req: Request) {
       history = history.slice(-20); // Only keep the last 20 messages
     }
 
+    const requestHost = getTrustedPublicChatRequestHost(req.headers);
+    const localDevBypass = process.env.NODE_ENV !== 'production' && isLocalPublicChatHost(requestHost);
+
+    if (!localDevBypass) {
+      if (!requestHost) {
+        return NextResponse.json({ error: 'Forbidden: Untrusted request host.' }, { status: 403 });
+      }
+
+      const token = req.headers.get('x-public-chat-token');
+      const verification = verifyPublicChatToken({
+        token,
+        tenantId,
+        host: requestHost,
+      });
+
+      if (!verification.ok) {
+        const status = verification.reason === 'missing_secret' ? 503 : token ? 403 : 401;
+        return NextResponse.json({ error: 'Forbidden: Invalid public chat token.' }, { status });
+      }
+    }
+
+    const supabaseAdmin = getSupabaseAdminClient();
+
     // 2. Tenant Status & Quota Validation
     const { data: tenant } = await supabaseAdmin
       .from('tenants')
@@ -72,14 +91,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ replyMessage: 'عذراً يا فندم، يتم الآن الصيانة الدورية للنظام. برجاء التواصل معنا هاتفياً أو ترك رسالتك.' }, { status: 403 });
     }
 
-    const requestHost = normalizeHost(req.headers.get('origin') || req.headers.get('referer'));
-    const submittedDomain = normalizeHost(domain);
-    const tenantDomain = normalizeHost(tenant.custom_domain);
-    const domainMatches = Boolean(tenantDomain && (requestHost === tenantDomain || submittedDomain === tenantDomain));
-    const localDevBypass = process.env.NODE_ENV !== 'production' && isLocalHost(requestHost);
+    const browserSourceHost = normalizePublicChatHost(req.headers.get('origin') || req.headers.get('referer'));
+    const tenantDomain = normalizePublicChatHost(tenant.custom_domain);
+    const appHost = normalizePublicChatHost(process.env.NEXT_PUBLIC_APP_URL);
+    const hostMatchesTenantDomain = Boolean(tenantDomain && requestHost === tenantDomain);
+    const hostMatchesAppHost = Boolean(appHost && requestHost === appHost);
 
-    if (tenantDomain && !domainMatches && !localDevBypass) {
+    if (!localDevBypass && !hostMatchesTenantDomain && !hostMatchesAppHost) {
       return NextResponse.json({ error: 'Forbidden: Invalid tenant domain.' }, { status: 403 });
+    }
+
+    if (!localDevBypass && browserSourceHost && browserSourceHost !== requestHost) {
+      return NextResponse.json({ error: 'Forbidden: Invalid tenant origin.' }, { status: 403 });
     }
 
     // 1000-Year Hacker Defense: Enforce Plan Quotas (Prevent Infinite Cost Drain)
