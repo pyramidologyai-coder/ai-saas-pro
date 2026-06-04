@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cron-auth';
 import { getDictionary } from '@/lib/dictionary';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 
 // Important: This endpoint should be triggered by a Cron Job (e.g., Vercel Cron) every hour.
 export async function GET(request: Request) {
-  // SECURITY: Enforce CRON_SECRET to prevent unauthenticated execution (DoS / Spam)
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized Cron Execution Blocked' }, { status: 401 });
-  }
+  const authError = authorizeCronRequest(request);
+  if (authError) return authError;
 
   try {
     const supabaseAdmin = getSupabaseAdminClient();

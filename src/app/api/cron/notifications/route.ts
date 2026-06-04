@@ -1,14 +1,13 @@
 import { NextResponse } from 'next/server';
+import { authorizeCronRequest } from '@/lib/cron-auth';
 import { getSupabaseAdminClient } from '@/lib/supabase-admin';
 import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-  const authHeader = req.headers.get('authorization');
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const authError = authorizeCronRequest(req);
+  if (authError) return authError;
 
   try {
     const supabaseAdmin = getSupabaseAdminClient();
