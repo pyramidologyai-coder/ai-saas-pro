@@ -45,3 +45,17 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# local session notes / scratch DB scripts
+/CHANGES_THIS_SESSION.md
+/scratch_*.js
+/check_*.js
+/check-*.js
+/fix_*.js
+/test-*.js
+/test_*.js
+/run_test_*.js
+/update_token.js
+
+# compiled TypeScript artifacts under src/lib; keep source in .ts files
+/src/lib/*.js

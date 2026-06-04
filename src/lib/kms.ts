@@ -9,7 +9,11 @@ export class KMS {
         const key = process.env.DATABASE_ENCRYPTION_KEY;
         if (!key || key.length !== 32) {
             console.error('[FATAL] DATABASE_ENCRYPTION_KEY must be exactly 32 bytes.');
-            // For development fallback (NEVER IN PROD)
+            if (process.env.NODE_ENV === 'production') {
+                throw new Error('KMS: DATABASE_ENCRYPTION_KEY is missing or malformed.');
+            }
+
+            // Development-only fallback so local builds do not encrypt with production material.
             return crypto.createHash('sha256').update('dummy-fallback-key-do-not-use-in-prod').digest();
         }
         return Buffer.from(key, 'utf-8');
