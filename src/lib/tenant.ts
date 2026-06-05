@@ -1,6 +1,37 @@
 import { createClient } from '@/utils/supabase/client';
 const supabase = createClient();
 
+const ACTIVE_TENANT_SELECT = [
+    'id',
+    'user_id',
+    'agency_id',
+    'name',
+    'slug',
+    'type',
+    'business_type',
+    'subscription_tier',
+    'status',
+    'trial_ends_at',
+    'whatsapp_number_id',
+    'zapier_webhook',
+    'google_review_link',
+    'custom_domain',
+    'custom_logo_url',
+    'custom_brand_name',
+    'plan_type',
+    'messages_used',
+    'messages_limit',
+    'voice_minutes_used',
+    'voice_minutes_limit',
+    'subscription_end_date',
+    'enable_reminders',
+    'enable_reviews',
+    'reminder_enabled',
+    'reminder_credits',
+    'voice_reminder_enabled',
+    'created_at',
+].join(', ');
+
 // Client-only cache variables (Never modified or read on the server to prevent cross-user leakage)
 let clientActiveTenantPromise: Promise<any> | null = null;
 let clientCachedUserId: string | null = null;
@@ -51,7 +82,7 @@ async function fetchActiveTenantFromDb(sessionUser: any, supabase: any) {
     if (profile && profile.tenant_id) {
         const { data: employerTenant } = await supabase
             .from('tenants')
-            .select('*')
+            .select(ACTIVE_TENANT_SELECT)
             .eq('id', profile.tenant_id)
             .maybeSingle();
             
@@ -64,7 +95,7 @@ async function fetchActiveTenantFromDb(sessionUser: any, supabase: any) {
     if (!activeTenant) {
         let tenants = null;
         for (let attempt = 0; attempt < 2; attempt++) {
-            const { data } = await supabase.from('tenants').select('*');
+            const { data } = await supabase.from('tenants').select(ACTIVE_TENANT_SELECT);
             if (data && data.length > 0) {
                 tenants = data;
                 break;
@@ -94,6 +125,6 @@ async function fetchActiveTenantFromDb(sessionUser: any, supabase: any) {
 
 export async function getAllTenants(sessionUser: any) {
     if (!sessionUser) return [];
-    const { data: tenants } = await supabase.from('tenants').select('id, name, type');
+    const { data: tenants } = await supabase.from('tenants').select('id, name, type, agency_id');
     return tenants || [];
 }

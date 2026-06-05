@@ -3,11 +3,27 @@
 import React, { useState, useEffect } from 'react';
 import styles from './Settings.module.css';
 import { createClient } from '@/utils/supabase/client';
-import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock } from 'lucide-react';
+import { Settings, GitBranch, Stethoscope, MessageSquare, Plus, Link as LinkIcon, Database, CheckCircle2, Lock, KeyRound, RefreshCw, Trash2, Copy } from 'lucide-react';
 import { getActiveTenant } from '@/lib/tenant';
 import { saveTenantSettingsAction } from './actions';
+import { createTenantApiKeyAction, listTenantApiKeysAction, regenerateTenantApiKeyAction, revokeTenantApiKeyAction } from './api-key-actions';
 import { getDictionary } from '@/lib/dictionary';
 import { getUserPermissions } from '@/lib/permissions';
+
+type ApiKeyScope = 'bookings:create' | 'bookings:read';
+
+type ApiKeyRow = {
+  id: string;
+  keyPrefix: string;
+  name: string;
+  scopes: ApiKeyScope[];
+  status: string;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  lastUsedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const SettingsPage = () => {
   const supabase = createClient();
@@ -36,9 +52,17 @@ const SettingsPage = () => {
     meta_token: '',
     instagram_id: '',
     zapier_webhook: '',
-    custom_domain: '',
-    api_key: ''
+    custom_domain: ''
   });
+
+  const [apiKeys, setApiKeys] = useState<ApiKeyRow[]>([]);
+  const [apiKeyName, setApiKeyName] = useState('Bookings integration');
+  const [apiKeyScopes, setApiKeyScopes] = useState<Record<ApiKeyScope, boolean>>({
+    'bookings:create': true,
+    'bookings:read': true
+  });
+  const [oneTimeApiKey, setOneTimeApiKey] = useState('');
+  const [apiKeyBusy, setApiKeyBusy] = useState(false);
 
   // White Label Settings State
   const [whiteLabelData, setWhiteLabelData] = useState({
@@ -53,6 +77,14 @@ const SettingsPage = () => {
   const [doctorName, setDoctorName] = useState('');
   const [doctorSpecialty, setDoctorSpecialty] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  const loadApiKeys = async (sessionToken: string, activeTenantId: string) => {
+    const result = await listTenantApiKeysAction(sessionToken, activeTenantId);
+    if (!result.success) {
+      throw new Error(result.error);
+    }
+    setApiKeys(result.data);
+  };
 
   useEffect(() => {
     async function loadSettings() {
@@ -93,16 +125,20 @@ const SettingsPage = () => {
           meta_token: data.meta_token || '',
           instagram_id: data.instagram_id || '',
           zapier_webhook: data.zapier_webhook || '',
-          custom_domain: data.custom_domain || '',
-          api_key: data.api_key || ''
+          custom_domain: data.custom_domain || ''
         });
+        await loadApiKeys(session.access_token, data.id);
       }
 
       // Check Role
       if (session.user.app_metadata?.role === 'master_admin') {
         setRole('master_admin');
       } else {
-        const { data: agencyRes } = await supabase.from('agencies').select('*').eq('user_id', session.user.id).limit(1);
+        const { data: agencyRes } = await supabase
+          .from('agencies')
+          .select('id, name, logo_url, primary_color, custom_domain')
+          .eq('user_id', session.user.id)
+          .limit(1);
         if (agencyRes && agencyRes.length > 0) {
           setRole('agency');
           setAgencyData(agencyRes[0]);
@@ -147,6 +183,90 @@ const SettingsPage = () => {
       alert('حدث خطأ أثناء الحفظ.');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const selectedApiKeyScopes = () =>
+    (Object.entries(apiKeyScopes) as Array<[ApiKeyScope, boolean]>)
+      .filter(([, enabled]) => enabled)
+      .map(([scope]) => scope);
+
+  const handleCreateApiKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tenantId || apiKeyBusy) return;
+
+    const scopes = selectedApiKeyScopes();
+    if (scopes.length === 0) {
+      alert('Select at least one API scope.');
+      return;
+    }
+
+    setApiKeyBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
+
+      const result = await createTenantApiKeyAction(session.access_token, tenantId, {
+        name: apiKeyName,
+        scopes,
+      });
+
+      if (!result.success) throw new Error(result.error);
+
+      setOneTimeApiKey(result.data.plaintextKey);
+      await loadApiKeys(session.access_token, tenantId);
+      setSuccessMsg('API key created. Copy it now; it will not be shown again.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to create API key.');
+    } finally {
+      setApiKeyBusy(false);
+    }
+  };
+
+  const handleRevokeApiKey = async (apiKeyId: string) => {
+    if (!tenantId || apiKeyBusy) return;
+    if (!window.confirm('Revoke this API key? Existing integrations using it will stop working.')) return;
+
+    setApiKeyBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
+
+      const result = await revokeTenantApiKeyAction(session.access_token, tenantId, apiKeyId);
+      if (!result.success) throw new Error(result.error);
+
+      setOneTimeApiKey('');
+      await loadApiKeys(session.access_token, tenantId);
+      setSuccessMsg('API key revoked.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to revoke API key.');
+    } finally {
+      setApiKeyBusy(false);
+    }
+  };
+
+  const handleRegenerateApiKey = async (apiKeyId: string) => {
+    if (!tenantId || apiKeyBusy) return;
+    if (!window.confirm('Regenerate this API key? The old key will be revoked immediately.')) return;
+
+    setApiKeyBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No session');
+
+      const result = await regenerateTenantApiKeyAction(session.access_token, tenantId, apiKeyId);
+      if (!result.success) throw new Error(result.error);
+
+      setOneTimeApiKey(result.data.plaintextKey);
+      await loadApiKeys(session.access_token, tenantId);
+      setSuccessMsg('API key regenerated. Copy the new key now; it will not be shown again.');
+      setTimeout(() => setSuccessMsg(''), 4000);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to regenerate API key.');
+    } finally {
+      setApiKeyBusy(false);
     }
   };
 
@@ -416,10 +536,10 @@ const SettingsPage = () => {
 
           {/* TAB 4: API & Custom Domain */}
           {activeTab === 'api' && (
-            <form onSubmit={handleSaveGeneral}>
+            <div>
               <h2 className={styles.sectionTitle}><Database size={24} color="var(--accent-primary)"/> الدومين الخاص والربط المباشر (API)</h2>
               
-              <div className={styles.quickAddCard} style={{ borderColor: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }}>
+              <form className={styles.quickAddCard} onSubmit={handleSaveGeneral} style={{ borderColor: '#6366f1', background: 'rgba(99, 102, 241, 0.05)' }}>
                 <h4 style={{ color: '#6366f1' }}>الدومين الخاص (White-Label)</h4>
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                   يمكنك استخدام نطاق خاص بنشاطك أو وكالتك (مثال: myclinic.com). 
@@ -436,40 +556,88 @@ const SettingsPage = () => {
                     <input type="text" name="custom_domain" value={formData.custom_domain} onChange={handleChange} className={styles.input} placeholder="بدون https:// مثال: clinic.com" />
                   </div>
                 )}
-              </div>
+                <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '1rem' }}>
+                  Save custom domain
+                </button>
+              </form>
 
               <div className={styles.quickAddCard} style={{ borderColor: '#8b5cf6', background: 'rgba(139, 92, 246, 0.05)' }}>
-                <h4 style={{ color: '#8b5cf6' }}>مفتاح الربط البرمجي (API Key)</h4>
+                <h4 style={{ color: '#8b5cf6', display: 'flex', gap: '0.5rem', alignItems: 'center' }}><KeyRound size={20} /> API Keys</h4>
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  استخدم هذا مفتاح إذا كان لديك مطورين يريدون ربط النظام بتطبيقك الخاص لإرسال الحجوزات مباشرة للـ API الخاص بنا (<code>/api/v1/bookings</code>).
+                  Create scoped keys for <code>/api/v1/bookings</code>. The full key is shown once only.
                 </p>
-                <div className={styles.formGroup}>
-                  <label>مفتاح الـ API</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="text" name="api_key" value={formData.api_key} readOnly className={styles.input} style={{ flex: 1, backgroundColor: 'var(--bg-color)', color: 'var(--accent-primary)', opacity: 0.8 }} placeholder="اضغط على توليد لإنشاء مفتاح" />
-                    <button 
-                      type="button" 
-                      className={styles.saveBtn} 
-                      style={{ width: 'auto', background: '#8b5cf6' }}
-                      onClick={() => {
-                        // SECURITY: Use Cryptographically Secure PRNG for API Keys
-                        const array = new Uint8Array(16);
-                        window.crypto.getRandomValues(array);
-                        const secureRandomStr = Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-                        const newKey = 'sk_live_' + secureRandomStr;
-                        setFormData({...formData, api_key: newKey});
-                      }}
-                    >
-                      توليد مفتاح
-                    </button>
+
+                {oneTimeApiKey && (
+                  <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', marginBottom: '1rem', color: '#10b981' }}>
+                    <div style={{ fontWeight: 800, marginBottom: '0.5rem' }}>Copy this key now. It will not be shown again.</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input type="text" value={oneTimeApiKey} readOnly className={styles.input} style={{ flex: 1, fontFamily: 'monospace', color: '#10b981' }} />
+                      <button type="button" className={styles.saveBtn} style={{ width: 'auto', background: '#10b981' }} onClick={() => navigator.clipboard.writeText(oneTimeApiKey)}>
+                        <Copy size={18} /> Copy
+                      </button>
+                    </div>
                   </div>
+                )}
+
+                <form onSubmit={handleCreateApiKey} style={{ marginBottom: '1.5rem' }}>
+                  <div className={styles.grid2}>
+                    <div className={styles.formGroup}>
+                      <label>Key name</label>
+                      <input type="text" value={apiKeyName} onChange={(e) => setApiKeyName(e.target.value)} className={styles.input} maxLength={80} required />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label>Scopes</label>
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', paddingTop: '0.5rem' }}>
+                        {(['bookings:create', 'bookings:read'] as ApiKeyScope[]).map((scope) => (
+                          <label key={scope} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-main)', fontSize: '0.9rem' }}>
+                            <input
+                              type="checkbox"
+                              checked={apiKeyScopes[scope]}
+                              onChange={(e) => setApiKeyScopes({ ...apiKeyScopes, [scope]: e.target.checked })}
+                            />
+                            {scope}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="submit" className={styles.saveBtn} disabled={apiKeyBusy} style={{ marginTop: '0.5rem', background: '#8b5cf6' }}>
+                    <Plus size={18} /> {apiKeyBusy ? 'Working...' : 'Create API Key'}
+                  </button>
+                </form>
+
+                <div style={{ display: 'grid', gap: '0.75rem' }}>
+                  {apiKeys.length === 0 ? (
+                    <div style={{ color: 'var(--text-dim)', padding: '1rem', border: '1px dashed var(--glass-border)', borderRadius: '10px' }}>
+                      No API keys created yet.
+                    </div>
+                  ) : (
+                    apiKeys.map((key) => (
+                      <div key={key.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr 1fr auto', gap: '0.75rem', alignItems: 'center', padding: '1rem', border: '1px solid var(--glass-border)', borderRadius: '10px', background: 'rgba(255,255,255,0.03)' }}>
+                        <div>
+                          <div style={{ fontWeight: 800 }}>{key.name}</div>
+                          <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem', fontFamily: 'monospace' }}>ak_live_{key.keyPrefix}_...</div>
+                        </div>
+                        <div style={{ color: key.status === 'active' ? '#10b981' : '#ef4444', fontWeight: 700 }}>{key.status}</div>
+                        <div style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>
+                          <div>{key.scopes.join(', ')}</div>
+                          <div>Created: {key.createdAt ? new Date(key.createdAt).toLocaleDateString() : '-'}</div>
+                          <div>Last used: {key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleDateString() : 'Never'}</div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button type="button" title="Regenerate" disabled={apiKeyBusy || key.status !== 'active'} onClick={() => handleRegenerateApiKey(key.id)} style={{ background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-main)', padding: '0.5rem', cursor: key.status === 'active' ? 'pointer' : 'not-allowed' }}>
+                            <RefreshCw size={16} />
+                          </button>
+                          <button type="button" title="Revoke" disabled={apiKeyBusy || key.status !== 'active'} onClick={() => handleRevokeApiKey(key.id)} style={{ background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.35)', borderRadius: '8px', color: '#ef4444', padding: '0.5rem', cursor: key.status === 'active' ? 'pointer' : 'not-allowed' }}>
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-
-              <button type="submit" className={styles.saveBtn} disabled={saving} style={{ marginTop: '1rem' }}>
-                حفظ الإعدادات
-              </button>
-            </form>
+            </div>
           )}
 
           {/* TAB 5: Account & Security */}

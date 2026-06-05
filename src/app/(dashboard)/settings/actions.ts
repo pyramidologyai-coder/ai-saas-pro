@@ -59,23 +59,13 @@ export async function saveTenantSettingsAction(token: string, tenantId: string, 
 
     // 3. Encrypt Sensitive Data & PREVENT MASS ASSIGNMENT (Privilege Escalation Defense)
     // Only allow specific non-sensitive fields to be updated. Block 'subscription_tier', 'status', etc.
-    const allowedFields = ['whatsapp_number_id', 'zapier_webhook', 'theme_color', 'custom_domain', 'language', 'api_key'];
+    const allowedFields = ['whatsapp_number_id', 'zapier_webhook', 'theme_color', 'custom_domain', 'language'];
     const safeData: any = {};
     
     for (const field of allowedFields) {
         if (formData[field] !== undefined) {
             safeData[field] = formData[field];
         }
-    }
-
-    if (formData.api_key && formData.api_key.trim() !== '') {
-        const crypto = require('crypto');
-        safeData.api_key = formData.api_key;
-        safeData.api_key_hash = crypto.createHash('sha256').update(formData.api_key).digest('hex');
-    } else if (formData.api_key === '') {
-        // Explicit clear
-        safeData.api_key = '';
-        safeData.api_key_hash = null;
     }
 
     if (formData.meta_token) {
