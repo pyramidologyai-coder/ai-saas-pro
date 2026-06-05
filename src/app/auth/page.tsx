@@ -36,10 +36,9 @@ export default function AuthPage() {
         }
 
         const user = session.user;
-        const role = user?.user_metadata?.role;
-        let isAgency = role === 'super_admin';
+        let isAgency = false;
 
-        if (!isMaster && !isAgency) {
+        if (!isMaster) {
           const { data: agencyRow } = await supabaseClient
             .from('agencies')
             .select('id')
@@ -90,10 +89,9 @@ export default function AuthPage() {
         }
 
         const user = authData.user;
-        const role = user?.user_metadata?.role;
-        let isAgency = role === 'super_admin';
+        let isAgency = false;
 
-        if (user && !isMaster && !isAgency) {
+        if (user && !isMaster) {
           const { data: agencyRow } = await supabaseClient
             .from('agencies')
             .select('id')

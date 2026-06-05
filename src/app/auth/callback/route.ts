@@ -31,10 +31,9 @@ export async function GET(request: Request) {
           // Ignore
         }
 
-        const role = user.user_metadata?.role;
-        let isAgency = role === 'super_admin';
+        let isAgency = false;
 
-        if (!isMaster && !isAgency) {
+        if (!isMaster) {
           // Query the agencies table
           const { data: agencyRow } = await supabase
             .from('agencies')

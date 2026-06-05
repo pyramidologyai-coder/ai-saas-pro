@@ -76,7 +76,7 @@ export async function createAgencyAction(agencyData: any, adminId: string) {
       email: cleanEmail,
       password: 'TempPass' + Math.random().toString(36).slice(2) + '!A1',
       email_confirm: true,
-      user_metadata: { role: 'super_admin' }
+      app_metadata: { role: 'agency_admin' }
     });
     
     if (authError) {
