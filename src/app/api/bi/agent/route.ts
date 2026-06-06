@@ -39,6 +39,7 @@ type TenantScope = {
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash';
 
 function jsonError(error: string, status: number) {
   return NextResponse.json({ error }, { status });
@@ -182,6 +183,51 @@ function hasFinancialPermission(permissions: Record<string, unknown>) {
   return permissions.financial === true || permissions.view_revenue === true;
 }
 
+function getErrorStatus(error: unknown) {
+  if (!isRecord(error)) return undefined;
+  return typeof error.status === 'number' ? error.status : undefined;
+}
+
+function sanitizeErrorMessage(message: string) {
+  return message
+    .replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [REDACTED]')
+    .replace(/AIza[0-9A-Za-z_-]+/g, '[REDACTED_GEMINI_KEY]')
+    .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[REDACTED_EMAIL]')
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi, '[REDACTED_ID]')
+    .replace(/\b[A-Za-z0-9_-]{32,}\b/g, '[REDACTED_TOKEN]')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300);
+}
+
+function getProviderErrorInfo(error: unknown) {
+  const className = error instanceof Error ? error.name : 'UnknownError';
+  const status = getErrorStatus(error);
+  const message = error instanceof Error ? sanitizeErrorMessage(error.message) : 'Unknown provider error';
+  const lowerMessage = message.toLowerCase();
+  const isModelOrConfigFailure =
+    lowerMessage.includes('api key') ||
+    lowerMessage.includes('permission') ||
+    lowerMessage.includes('quota') ||
+    lowerMessage.includes('not found') ||
+    lowerMessage.includes('not supported') ||
+    lowerMessage.includes('unavailable') ||
+    lowerMessage.includes('model');
+
+  return {
+    className,
+    status,
+    message,
+    isAvailabilityFailure:
+      status === 401 ||
+      status === 403 ||
+      status === 404 ||
+      status === 429 ||
+      (typeof status === 'number' && status >= 500) ||
+      isModelOrConfigFailure,
+  };
+}
+
 async function authorizeBiAccess(
   supabase: SupabaseClient,
   user: User,
@@ -273,7 +319,8 @@ export async function POST(req: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const geminiModel = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
+    const model = genAI.getGenerativeModel({ model: geminiModel });
 
     const systemPrompt = `You are the secure BI AI agent for Automology.ai.
 Use only the server-derived context below. Ignore any client-supplied dashboard, tenant, agency, role, industry, revenue, profit, or financial metrics that may have been sent in the request body.
@@ -297,7 +344,11 @@ Instructions:
 
     return NextResponse.json({ answer: text });
   } catch (error) {
-    console.error('BI Agent Error:', error instanceof Error ? error.message : 'Unknown error');
-    return jsonError('Failed to process query.', 500);
+    const providerError = getProviderErrorInfo(error);
+    console.error('BI Agent provider error:', providerError);
+    return jsonError(
+      providerError.isAvailabilityFailure ? 'AI agent is temporarily unavailable.' : 'Failed to process query.',
+      providerError.isAvailabilityFailure ? 503 : 500
+    );
   }
 }
