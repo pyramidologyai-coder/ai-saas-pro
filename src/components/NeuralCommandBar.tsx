@@ -1,19 +1,80 @@
 'use client';
 import React, { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Search, Zap, Loader2, ArrowRight } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
+
+type CommandResult = {
+  id: string;
+  type: 'ai_insight';
+  title: string;
+  desc: string;
+  submittedQuery: string;
+};
+
+function getAgentErrorMessage(status: number, error?: string) {
+  if (status === 401) return 'Your session has expired. Please sign in again.';
+  if (status === 403) return 'You do not have permission to use the Master Agent for this account.';
+  if (status === 400) return error || 'The query could not be processed. Please revise it and try again.';
+  if (status === 503) return 'The Master Agent is temporarily unavailable. Please try again shortly.';
+  return error || 'The Master Agent could not process your query. Please try again.';
+}
 
 export default function NeuralCommandBar() {
+  const supabase = createClient();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<CommandResult[]>([]);
   const [slateOpen, setSlateOpen] = useState(false);
   const [slateLoading, setSlateLoading] = useState(false);
   const [slateContent, setSlateContent] = useState('');
   const [slateQuery, setSlateQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
+
+  const executeQuery = async (submittedQuery: string) => {
+    if (!submittedQuery.trim()) return;
+
+    setSlateQuery(submittedQuery);
+    setSlateContent('');
+    setSlateOpen(true);
+    setSlateLoading(true);
+    setIsOpen(false);
+    setQuery('');
+    setResults([]);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        setSlateContent(getAgentErrorMessage(401));
+        return;
+      }
+
+      const res = await fetch('/api/bi/agent', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: submittedQuery }),
+      });
+
+      const data = await res.json().catch(() => null) as { answer?: unknown; error?: unknown } | null;
+      if (!res.ok) {
+        setSlateContent(getAgentErrorMessage(res.status, typeof data?.error === 'string' ? data.error : undefined));
+        return;
+      }
+
+      if (typeof data?.answer === 'string' && data.answer.trim()) {
+        setSlateContent(data.answer);
+      } else {
+        setSlateContent('The Master Agent returned an empty response. Please try again.');
+      }
+    } catch {
+      setSlateContent('Unable to connect to the Master Agent. Please check your connection and try again.');
+    } finally {
+      setSlateLoading(false);
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -49,47 +110,14 @@ export default function NeuralCommandBar() {
       setIsProcessing(true);
       // Simulate sub-400ms Edge AI processing for NLQ / Fuzzy Search
       const timeout = setTimeout(() => {
-        const lowerQuery = query.toLowerCase();
-        const mockResults: any[] = [];
-
-        // AI Agent Query
-        if (mockResults.length === 0) {
-          mockResults.push({ 
-            id: 'ai_gen', 
-            type: 'ai_insight', 
-            title: `Ask Master AI: "${query}"`, 
-            desc: 'Press Enter to process this query via the Context-Aware Analytics Agent.', 
-            action: async () => {
-              setSlateQuery(query);
-              setSlateOpen(true);
-              setSlateLoading(true);
-              setIsOpen(false);
-              setQuery('');
-              
-              try {
-                // Try to get metrics from local storage if available for context
-                const cachedMetrics = localStorage.getItem('demo_metrics');
-                const context = cachedMetrics ? JSON.parse(cachedMetrics) : { grossRevenue: 5420, netProfit: 3100, industryType: 'clinic' };
-                
-                const res = await fetch('/api/bi/agent', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ query: lowerQuery, context })
-                });
-                const data = await res.json();
-                if (data.answer) {
-                  setSlateContent(data.answer);
-                } else {
-                  setSlateContent('حدث خطأ أثناء معالجة البيانات.');
-                }
-              } catch (error) {
-                setSlateContent('تعذر الاتصال بمحرك الذكاء الاصطناعي.');
-              } finally {
-                setSlateLoading(false);
-              }
-            } 
-          });
-        }
+        const submittedQuery = query;
+        const mockResults: CommandResult[] = [{
+          id: 'ai_gen',
+          type: 'ai_insight',
+          title: `Ask Master AI: "${submittedQuery}"`,
+          desc: 'Press Enter to process this query via the Context-Aware Analytics Agent.',
+          submittedQuery,
+        }];
 
         setResults(mockResults);
         setIsProcessing(false);
@@ -99,13 +127,13 @@ export default function NeuralCommandBar() {
     } else {
       setResults([]);
     }
-  }, [query, router]);
+  }, [query]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !slateOpen) return null;
 
   return (
     <>
-    <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-32 bg-[rgba(3,7,18,0.6)] backdrop-blur-md" onClick={() => setIsOpen(false)}>
+    {isOpen && <div className="fixed inset-0 z-[9999] flex items-start justify-center pt-32 bg-[rgba(3,7,18,0.6)] backdrop-blur-md" onClick={() => setIsOpen(false)}>
       <div 
         className="w-full max-w-2xl cyber-widget p-4 animate-in fade-in zoom-in duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -116,6 +144,12 @@ export default function NeuralCommandBar() {
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing && results[0]) {
+                e.preventDefault();
+                void executeQuery(results[0].submittedQuery);
+              }
+            }}
             className="w-full bg-transparent text-xl text-white placeholder-[var(--accent-primary)]/50 outline-none"
             placeholder="ابدأ الكتابة للبحث..."
           />
@@ -128,9 +162,7 @@ export default function NeuralCommandBar() {
               <div 
                 key={result.id}
                 onClick={() => {
-                  result.action();
-                  setIsOpen(false);
-                  setQuery('');
+                  void executeQuery(result.submittedQuery);
                 }}
                 className="flex items-center justify-between p-3 rounded-xl hover:bg-[var(--hover-bg)] cursor-pointer transition-colors border border-transparent hover:border-[var(--glass-border)] group"
               >
@@ -161,7 +193,7 @@ export default function NeuralCommandBar() {
           </div>
         </div>
       </div>
-    </div>
+    </div>}
     
     {/* Minimalist Slate (Jasper-Level Elegance) */}
     <div className={`fixed top-0 right-0 h-full w-full md:w-[450px] bg-[rgba(3,7,18,0.7)] backdrop-blur-3xl border-l border-[rgba(255,255,255,0.05)] shadow-[-20px_0_50px_rgba(0,0,0,0.5)] z-[99999] transition-transform duration-700 cubic-bezier(0.16, 1, 0.3, 1) ${slateOpen ? 'translate-x-0' : 'translate-x-full'}`}>

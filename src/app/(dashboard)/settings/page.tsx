@@ -63,6 +63,8 @@ const SettingsPage = () => {
   });
   const [oneTimeApiKey, setOneTimeApiKey] = useState('');
   const [apiKeyBusy, setApiKeyBusy] = useState(false);
+  const [apiKeyError, setApiKeyError] = useState('');
+  const [settingsError, setSettingsError] = useState('');
 
   // White Label Settings State
   const [whiteLabelData, setWhiteLabelData] = useState({
@@ -78,79 +80,97 @@ const SettingsPage = () => {
   const [doctorSpecialty, setDoctorSpecialty] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  const loadApiKeys = async (sessionToken: string, activeTenantId: string) => {
-    const result = await listTenantApiKeysAction(sessionToken, activeTenantId);
-    if (!result.success) {
-      throw new Error(result.error);
+  const loadApiKeys = async (sessionToken: string, activeTenantId: string, throwOnError = true) => {
+    try {
+      const result = await listTenantApiKeysAction(sessionToken, activeTenantId);
+      if (!result.success) {
+        throw new Error(result.error || 'Unable to load API keys.');
+      }
+      setApiKeyError('');
+      setApiKeys(result.data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to load API keys.';
+      setApiKeyError(message);
+      if (throwOnError) {
+        throw error;
+      }
     }
-    setApiKeys(result.data);
   };
 
   useEffect(() => {
     async function loadSettings() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        window.location.href = '/auth';
-        return;
-      }
-
-      const perms = await getUserPermissions(supabase, session.user);
-
-      // Verify if they are a registered agency owner (they manage their reseller settings in /settings)
-      const { data: agencyRes } = await supabase.from('agencies').select('id').eq('user_id', session.user.id).limit(1);
-      const isAgency = agencyRes && agencyRes.length > 0;
-
-      const isAuth = (perms && perms.role === 'admin') || isAgency || (session.user.app_metadata?.role === 'master_admin');
-
-      if (!isAuth) {
-        setIsAuthorized(false);
-        setLoading(false);
-        return;
-      }
-      setIsAuthorized(true);
-      
-      const data = await getActiveTenant(session.user);
-      
-      if (data) {
-        setTenantId(data.id);
-        setDict(getDictionary(data.type));
-        setSubscriptionTier(data.subscription_tier || 'trial');
-        setFormData({
-          name: data.name || '',
-          google_review_link: data.google_review_link || '',
-          main_location_url: data.main_location_url || '',
-          working_hours: data.working_hours || '',
-          custom_prompt: data.custom_prompt || '',
-          whatsapp_number_id: data.whatsapp_number_id || '',
-          meta_token: data.meta_token || '',
-          instagram_id: data.instagram_id || '',
-          zapier_webhook: data.zapier_webhook || '',
-          custom_domain: data.custom_domain || ''
-        });
-        await loadApiKeys(session.access_token, data.id);
-      }
-
-      // Check Role
-      if (session.user.app_metadata?.role === 'master_admin') {
-        setRole('master_admin');
-      } else {
-        const { data: agencyRes } = await supabase
-          .from('agencies')
-          .select('id, name, logo_url, primary_color, custom_domain')
-          .eq('user_id', session.user.id)
-          .limit(1);
-        if (agencyRes && agencyRes.length > 0) {
-          setRole('agency');
-          setAgencyData(agencyRes[0]);
-          setWhiteLabelData({
-            brand_name: agencyRes[0].name || '',
-            logo_url: agencyRes[0].logo_url || '',
-            primary_color: agencyRes[0].primary_color || '#6366f1',
-            custom_domain: agencyRes[0].custom_domain || ''
-          });
+      let authorizationEstablished = false;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          window.location.href = '/auth';
+          return;
         }
+
+        const perms = await getUserPermissions(supabase, session.user);
+
+        // Verify if they are a registered agency owner (they manage their reseller settings in /settings)
+        const { data: agencyRes } = await supabase.from('agencies').select('id').eq('user_id', session.user.id).limit(1);
+        const isAgency = agencyRes && agencyRes.length > 0;
+
+        const isAuth = (perms && perms.role === 'admin') || isAgency || (session.user.app_metadata?.role === 'master_admin');
+
+        if (!isAuth) {
+          setIsAuthorized(false);
+          return;
+        }
+        setIsAuthorized(true);
+        authorizationEstablished = true;
+
+        const data = await getActiveTenant(session.user);
+
+        if (data) {
+          setTenantId(data.id);
+          setDict(getDictionary(data.type));
+          setSubscriptionTier(data.subscription_tier || 'trial');
+          setFormData({
+            name: data.name || '',
+            google_review_link: data.google_review_link || '',
+            main_location_url: data.main_location_url || '',
+            working_hours: data.working_hours || '',
+            custom_prompt: data.custom_prompt || '',
+            whatsapp_number_id: data.whatsapp_number_id || '',
+            meta_token: data.meta_token || '',
+            instagram_id: data.instagram_id || '',
+            zapier_webhook: data.zapier_webhook || '',
+            custom_domain: data.custom_domain || ''
+          });
+          await loadApiKeys(session.access_token, data.id, false);
+        }
+
+        // Check Role
+        if (session.user.app_metadata?.role === 'master_admin') {
+          setRole('master_admin');
+        } else {
+          const { data: agencyRes } = await supabase
+            .from('agencies')
+            .select('id, name, logo_url, primary_color, custom_domain')
+            .eq('user_id', session.user.id)
+            .limit(1);
+          if (agencyRes && agencyRes.length > 0) {
+            setRole('agency');
+            setAgencyData(agencyRes[0]);
+            setWhiteLabelData({
+              brand_name: agencyRes[0].name || '',
+              logo_url: agencyRes[0].logo_url || '',
+              primary_color: agencyRes[0].primary_color || '#6366f1',
+              custom_domain: agencyRes[0].custom_domain || ''
+            });
+          }
+        }
+      } catch {
+        if (!authorizationEstablished) {
+          setIsAuthorized(false);
+        }
+        setSettingsError('Unable to load all settings. Please refresh and try again.');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
     loadSettings();
   }, []);
@@ -396,6 +416,11 @@ const SettingsPage = () => {
               <CheckCircle2 size={20} /> {successMsg}
             </div>
           )}
+          {settingsError && (
+            <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', borderRadius: '12px', marginBottom: '1.5rem', fontWeight: 600 }}>
+              {settingsError}
+            </div>
+          )}
 
           {/* TAB 1: General Settings */}
           {activeTab === 'general' && (
@@ -566,6 +591,11 @@ const SettingsPage = () => {
                 <p style={{ color: 'var(--text-dim)', marginBottom: '1rem', fontSize: '0.9rem' }}>
                   Create scoped keys for <code>/api/v1/bookings</code>. The full key is shown once only.
                 </p>
+                {apiKeyError && (
+                  <div style={{ padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', marginBottom: '1rem', color: '#ef4444' }}>
+                    API keys could not be loaded: {apiKeyError}
+                  </div>
+                )}
 
                 {oneTimeApiKey && (
                   <div style={{ padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '10px', marginBottom: '1rem', color: '#10b981' }}>
