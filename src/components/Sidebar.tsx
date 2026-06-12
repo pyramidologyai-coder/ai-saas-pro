@@ -177,7 +177,6 @@ const Sidebar = () => {
       { id: 'agency', icon: Network, label: 'لوحة الوكالة (Agency)', href: '/agency-admin' },
       { id: 'agency_plans', icon: CreditCard, label: 'إدارة الباقات والأسعار', href: '/admin/agency-plans' }
     ] : []),
-    { id: 'master_plans', icon: Shield, label: 'باقات المنصة (Master)', href: '/admin/plans' },
     { id: 'services', icon: Briefcase, label: sidebarLabels.services, href: '/services' },
     { id: 'bookings', icon: Calendar, label: sidebarLabels.bookings, href: '/bookings' },
     { id: 'messages', icon: MessageSquare, label: t.messages, href: '/messages' },

@@ -82,7 +82,10 @@ export async function GET(req: Request) {
       fingerprint: currentFingerprint
     });
 
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error('BI verification error:', {
+      name: error instanceof Error ? error.name : 'UnknownError',
+    });
+    return NextResponse.json({ error: 'Unable to verify BI integrity.' }, { status: 500 });
   }
 }

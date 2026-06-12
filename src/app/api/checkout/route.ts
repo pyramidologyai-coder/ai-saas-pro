@@ -119,8 +119,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ error: 'Invalid gateway' }, { status: 400 });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('[CHECKOUT ERROR]', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to create checkout session.' }, { status: 500 });
   }
 }

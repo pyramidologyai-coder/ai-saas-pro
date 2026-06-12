@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { KMS } from './kms';
 
@@ -76,10 +77,10 @@ export class CognitiveEngine {
   /**
    * Analyzes AI Usage, predicts Churn, and calculates Burn Rate.
    */
-  static async calculateProfitAndChurn(tenantId: string) {
+  static async calculateProfitAndChurn(tenantId: string, db: SupabaseClient = supabase) {
     // 1. Calculate API Costs (Assuming $0.005 per AI interaction)
     const COST_PER_INTERACTION = 0.005;
-    const { count: interactionCount } = await supabase
+    const { count: interactionCount } = await db
       .from('messages')
       .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
@@ -88,7 +89,7 @@ export class CognitiveEngine {
     const monthlyApiCost = (interactionCount || 0) * COST_PER_INTERACTION;
 
     // 2. Wallet Balance & Burn Rate (Option A: Fast summary aggregation directly on wallet_ledger)
-    const { data: sumData } = await supabase
+    const { data: sumData } = await db
       .from('wallet_ledger')
       .select('credit, debit')
       .eq('tenant_id', tenantId);
@@ -120,9 +121,9 @@ export class CognitiveEngine {
   /**
    * Conversion Funnel: Calculates the Lead-to-Booking ratio
    */
-  static async getConversionFunnel(tenantId: string) {
-    const { count: totalLeads } = await supabase.from('messages').select('customer_phone', { count: 'exact', head: true }).eq('tenant_id', tenantId);
-    const { count: totalBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+  static async getConversionFunnel(tenantId: string, db: SupabaseClient = supabase) {
+    const { count: totalLeads } = await db.from('messages').select('customer_phone', { count: 'exact', head: true }).eq('tenant_id', tenantId);
+    const { count: totalBookings } = await db.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId);
 
     // Approximate unique leads (divided by avg messages per lead, e.g., 5)
     const uniqueLeads = (totalLeads || 0) / 5; 
@@ -136,10 +137,10 @@ export class CognitiveEngine {
   // 4. ZERO-LATENCY AI PERFORMANCE
   // =======================================================================
 
-  static async getAIPerformanceMetrics(tenantId: string) {
+  static async getAIPerformanceMetrics(tenantId: string, db: SupabaseClient = supabase) {
     // In a real Edge Function, latency would be logged per request.
     // Resolution Rate = Bookings created successfully by AI without human intervention.
-    const { count: aiBookings } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('source', 'WhatsApp');
+    const { count: aiBookings } = await db.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenantId).eq('source', 'WhatsApp');
     
     return {
       averageLatencyMs: 1200, // Gemini + Vercel cold start average

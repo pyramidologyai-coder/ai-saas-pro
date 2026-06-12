@@ -32,12 +32,12 @@ export async function GET(req: Request) {
 
     if (analyticsError) {
       console.error('Error calling get_channel_analytics RPC:', analyticsError);
-      return NextResponse.json({ error: analyticsError.message }, { status: 500 });
+      return NextResponse.json({ error: 'Unable to load analytics.' }, { status: 500 });
     }
 
     return NextResponse.json({ data: analyticsData });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Master Admin Analytics API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to load analytics.' }, { status: 500 });
   }
 }

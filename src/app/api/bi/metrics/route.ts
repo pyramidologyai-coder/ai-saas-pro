@@ -1,55 +1,118 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js';
 import { CognitiveEngine } from '@/lib/cognitive-engine';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from '@/lib/supabase';
 
-// Server-side cache Map with 5-minute TTL, isolated by user ID and tenant/agency ID
-const metricsServerCache = new Map<string, { data: any; expiry: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const PRIVATE_HEADERS = {
+  'Cache-Control': 'private, no-store, max-age=0',
+  Vary: 'Authorization',
+};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function jsonError(error: string, status: number) {
+  return NextResponse.json({ error }, { status, headers: PRIVATE_HEADERS });
+}
+
+function getBearerToken(req: Request) {
+  const match = /^Bearer ([^\s]+)$/i.exec(req.headers.get('Authorization') ?? '');
+  return match?.[1] ?? null;
+}
+
+function createUserClient(token: string) {
+  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+    global: {
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  });
+}
+
+async function isMasterAdmin(supabase: SupabaseClient) {
+  const { data, error } = await supabase.rpc('verify_master_admin_role');
+  return !error && data === true;
+}
+
+async function canAccessTenant(supabase: SupabaseClient, user: User, tenantId: string) {
+  const { data: ownedTenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('id', tenantId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (ownedTenant) return true;
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role, permissions, tenant_id')
+    .eq('id', user.id)
+    .eq('tenant_id', tenantId)
+    .maybeSingle();
+
+  if (!profile) return false;
+  if (profile.role === 'admin') return true;
+
+  const permissions =
+    profile.permissions && typeof profile.permissions === 'object' && !Array.isArray(profile.permissions)
+      ? (profile.permissions as Record<string, unknown>)
+      : {};
+
+  return profile.role === 'manager' && (permissions.financial === true || permissions.view_revenue === true);
+}
+
+async function canAccessAgency(supabase: SupabaseClient, user: User, agencyId: string) {
+  const { data } = await supabase
+    .from('agencies')
+    .select('id')
+    .eq('id', agencyId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  return !!data;
+}
 
 export async function GET(req: Request) {
+  const token = getBearerToken(req);
+  if (!token) return jsonError('Unauthorized.', 401);
+
+  const supabase = createUserClient(token);
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser(token);
+
+  if (authError || !user) return jsonError('Unauthorized.', 401);
+
+  const url = new URL(req.url);
+  const tenantId = url.searchParams.get('tenantId');
+  const agencyId = url.searchParams.get('agencyId');
+
+  if ((!tenantId && !agencyId) || (tenantId && agencyId)) {
+    return jsonError('Provide exactly one tenant or agency identifier.', 400);
+  }
+  if ((tenantId && !UUID_RE.test(tenantId)) || (agencyId && agencyId !== 'master' && !UUID_RE.test(agencyId))) {
+    return jsonError('Invalid scope identifier.', 400);
+  }
+
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) return NextResponse.json({ error: 'Invalid Token' }, { status: 401 });
-
-    const url = new URL(req.url);
-    const tenantId = url.searchParams.get('tenantId');
-    const agencyId = url.searchParams.get('agencyId'); // For Profit View
-
-    if (!tenantId && !agencyId) return NextResponse.json({ error: 'Missing tenant or agency ID' }, { status: 400 });
-
-    // Cache Key: isolated by user ID and tenant/agency ID to guarantee complete security and multi-tenant data isolation
-    const cacheKey = `${user.id}:${tenantId || agencyId}`;
-    const cached = metricsServerCache.get(cacheKey);
-
-    if (cached && cached.expiry > Date.now()) {
-      return NextResponse.json({ data: cached.data }, {
-        headers: {
-          'Cache-Control': 's-maxage=60, stale-while-revalidate=300'
-        }
-      });
-    }
-
-    // In a real app, verify that the 'user.id' owns this tenant/agency here.
-
-    let metrics: any = {};
+    const master = await isMasterAdmin(supabase);
+    let metrics: Record<string, unknown>;
 
     if (tenantId) {
-      // 1. Profit & Churn Predictor
-      const profitData = await CognitiveEngine.calculateProfitAndChurn(tenantId);
-      // 2. Conversion Funnel (The Triple Crown)
-      const funnelData = await CognitiveEngine.getConversionFunnel(tenantId);
-      // 3. AI Performance
-      const aiData = await CognitiveEngine.getAIPerformanceMetrics(tenantId);
-      
-      // Calculate "Revenue Generated" (Mocked based on $50 per booking average)
-      const avgBookingValue = 50; 
-      const revenueGenerated = (funnelData.totalBookings || 0) * avgBookingValue;
+      if (!master && !(await canAccessTenant(supabase, user, tenantId))) {
+        return jsonError('Forbidden.', 403);
+      }
 
+      const [profitData, funnelData, aiData] = await Promise.all([
+        CognitiveEngine.calculateProfitAndChurn(tenantId, supabase),
+        CognitiveEngine.getConversionFunnel(tenantId, supabase),
+        CognitiveEngine.getAIPerformanceMetrics(tenantId, supabase),
+      ]);
+
+      const revenueGenerated = (funnelData.totalBookings || 0) * 50;
       metrics = {
         wallet: {
           balance: profitData.walletBalance,
@@ -58,91 +121,83 @@ export async function GET(req: Request) {
         },
         tripleCrown: {
           conversionRate: funnelData.conversionRate,
-          revenueGenerated: revenueGenerated,
-          resolutionRate: Math.min(100, Math.floor(((aiData.resolutionRate || 0) / (funnelData.uniqueLeads || 1)) * 100)) + '%'
+          revenueGenerated,
+          resolutionRate:
+            Math.min(100, Math.floor(((aiData.resolutionRate || 0) / (funnelData.uniqueLeads || 1)) * 100)) + '%',
         },
         risk: {
-          churnRisk: profitData.churnRiskScore
-        }
+          churnRisk: profitData.churnRiskScore,
+        },
       };
-    } else if (agencyId) {
-       // Agency Profit View (Aggregate)
-       let grossRevenue = 0;
-       let apiCosts = 0;
-       let platformFees = 0;
-       let activeClinics = 0;
-       let taxes = 0;
+    } else {
+      if (agencyId === 'master') {
+        if (!master) return jsonError('Forbidden.', 403);
+      } else if (!master && !(await canAccessAgency(supabase, user, agencyId!))) {
+        return jsonError('Forbidden.', 403);
+      }
 
-       if (agencyId === 'master') {
-         const { data: tnData } = await supabase.from('tenants').select('revenue, messages_used');
-         const { data: agData } = await supabase.from('agencies').select('revenue, commission_rate');
-         
-         activeClinics = tnData?.length || 0;
-         tnData?.forEach(t => { 
-           grossRevenue += (t.revenue || 0);
-           apiCosts += (t.messages_used || 0) * 0.01;
-         });
-         
-         agData?.forEach(a => {
-           grossRevenue += (a.revenue || 0);
-         });
+      let grossRevenue = 0;
+      let apiCosts = 0;
+      let platformFees = 0;
+      let activeClinics = 0;
 
-         platformFees = grossRevenue * 0.05; // master platform fee approx
-         taxes = grossRevenue * 0.14;
-       } else {
-         const { data: agData } = await supabase.from('agencies').select('revenue, commission_rate').eq('id', agencyId).single();
-         const { data: tnData } = await supabase.from('tenants').select('revenue, messages_used').eq('agency_id', agencyId);
-         
-         activeClinics = tnData?.length || 0;
-         grossRevenue = agData?.revenue || 0;
-         
-         tnData?.forEach(t => { 
-           grossRevenue += (t.revenue || 0);
-           apiCosts += (t.messages_used || 0) * 0.01;
-         });
-         
-         platformFees = grossRevenue * ((agData?.commission_rate || 20) / 100);
-         taxes = grossRevenue * 0.14;
-       }
+      if (agencyId === 'master') {
+        const [{ data: tenants }, { data: agencies }] = await Promise.all([
+          supabase.from('tenants').select('revenue, messages_used'),
+          supabase.from('agencies').select('revenue'),
+        ]);
 
-       const netProfit = grossRevenue - taxes - apiCosts - platformFees;
-       const netMargin = grossRevenue > 0 ? ((netProfit / grossRevenue) * 100).toFixed(1) + '%' : '0%';
+        activeClinics = tenants?.length || 0;
+        tenants?.forEach((tenant) => {
+          grossRevenue += Number(tenant.revenue) || 0;
+          apiCosts += (Number(tenant.messages_used) || 0) * 0.01;
+        });
+        agencies?.forEach((agency) => {
+          grossRevenue += Number(agency.revenue) || 0;
+        });
+        platformFees = grossRevenue * 0.05;
+      } else {
+        const [{ data: agency }, { data: tenants }] = await Promise.all([
+          supabase.from('agencies').select('revenue, commission_rate').eq('id', agencyId!).maybeSingle(),
+          supabase.from('tenants').select('revenue, messages_used').eq('agency_id', agencyId!),
+        ]);
 
-       metrics = {
-          grossRevenue,
-          taxes,
-          deliveryFees: 0,
-          apiCosts,
-          platformFees,
-          netProfit,
-          netMargin,
-          activeClinics,
-          reconciliationStatus: 'Audited & Balanced',
-          waterfall: [
-            { name: 'إجمالي المبيعات', value: grossRevenue, type: 'positive' },
-            { name: 'الضرائب', value: -taxes, type: 'negative' },
-            { name: 'تكلفة الـ APIs', value: -apiCosts, type: 'negative' },
-            { name: 'عمولة المنصة', value: -platformFees, type: 'negative' },
-            { name: 'صافي الربح', value: netProfit, type: 'total' }
-          ]
-       };
+        activeClinics = tenants?.length || 0;
+        grossRevenue = Number(agency?.revenue) || 0;
+        tenants?.forEach((tenant) => {
+          grossRevenue += Number(tenant.revenue) || 0;
+          apiCosts += (Number(tenant.messages_used) || 0) * 0.01;
+        });
+        platformFees = grossRevenue * ((Number(agency?.commission_rate) || 20) / 100);
+      }
+
+      const taxes = grossRevenue * 0.14;
+      const netProfit = grossRevenue - taxes - apiCosts - platformFees;
+      metrics = {
+        grossRevenue,
+        taxes,
+        deliveryFees: 0,
+        apiCosts,
+        platformFees,
+        netProfit,
+        netMargin: grossRevenue > 0 ? `${((netProfit / grossRevenue) * 100).toFixed(1)}%` : '0%',
+        activeClinics,
+        reconciliationStatus: 'Audited & Balanced',
+        waterfall: [
+          { name: 'إجمالي المبيعات', value: grossRevenue, type: 'positive' },
+          { name: 'الضرائب', value: -taxes, type: 'negative' },
+          { name: 'تكلفة الـ APIs', value: -apiCosts, type: 'negative' },
+          { name: 'عمولة المنصة', value: -platformFees, type: 'negative' },
+          { name: 'صافي الربح', value: netProfit, type: 'total' },
+        ],
+      };
     }
 
-    // Save to the isolated cache
-    metricsServerCache.set(cacheKey, {
-      data: metrics,
-      expiry: Date.now() + CACHE_DURATION
+    return NextResponse.json({ data: metrics }, { headers: PRIVATE_HEADERS });
+  } catch (error) {
+    console.error('BI Metrics Error:', {
+      name: error instanceof Error ? error.name : 'UnknownError',
     });
-
-    // 4. Zero-Knowledge UI (Payload returned encrypted conceptually, handled as JSON here for standard SWR)
-    return NextResponse.json({ data: metrics }, {
-      headers: {
-        'Cache-Control': 's-maxage=60, stale-while-revalidate=300' // Edge Computing Caching
-      }
-    });
-
-  } catch (error: any) {
-    console.error('BI Metrics Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return jsonError('Unable to load BI metrics.', 500);
   }
 }
