@@ -57,8 +57,9 @@ export async function POST(req: Request) {
 
     if (gateway === 'stripe') {
       // 3. Create Stripe Checkout Session via direct HTTP request (no SDK required)
-      const successUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/billing?success=true`;
-      const cancelUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/billing?canceled=true`;
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+      const successUrl = `${appUrl}/billing?success=true`;
+      const cancelUrl = `${appUrl}/billing?canceled=true`;
 
       const params = new URLSearchParams({
         'payment_method_types[0]': 'card',

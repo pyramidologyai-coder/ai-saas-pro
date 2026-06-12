@@ -14,7 +14,6 @@ import {
   AlertTriangle 
 } from 'lucide-react';
 import { addWalletCreditAction, addTenantCreditAction } from '@/app/(dashboard)/master-admin/wallet/actions';
-import * as XLSX from 'xlsx';
 
 interface Transaction {
   id: string;
@@ -48,6 +47,24 @@ interface WalletUIProps {
   directTenants?: any[];
   initialLang: 'ar' | 'en' | 'fr';
 }
+
+const escapeCsvCell = (value: unknown) => {
+  const text = value == null ? '' : String(value);
+  const formulaSafeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${formulaSafeText.replace(/"/g, '""')}"`;
+};
+
+const downloadCsv = (rows: unknown[][], filename: string) => {
+  const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
 
 const DICT = {
   ar: {
@@ -284,24 +301,24 @@ export function WalletUI({
     return matchesAgency && matchesType;
   });
 
-  const handleExportExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(filteredTransactions.map(t => {
-      // Find tenant name defensively
-      const matchingTenant = t.tenant_id ? safeDirectTenants.find(dt => dt.id === t.tenant_id) : null;
-      const finalTenantName = t.tenant_name || matchingTenant?.name || null;
+  const handleExportCsv = () => {
+    const rows: unknown[][] = [
+      [t.colAgency, t.colType, t.colAmount, t.colDesc, t.colRef, t.colDate],
+      ...filteredTransactions.map(transaction => {
+        const matchingTenant = transaction.tenant_id ? safeDirectTenants.find(dt => dt.id === transaction.tenant_id) : null;
+        const finalTenantName = transaction.tenant_name || matchingTenant?.name || null;
 
-      return {
-        'الوكالة / العميل': t.agency_name || finalTenantName || (isRtl ? 'المنصة الرئيسية' : 'Master Platform'),
-        'نوع العملية': getTransactionTypeLabel(t.transaction_type),
-        'المبلغ ($)': t.credit > 0 ? t.credit : -t.debit,
-        'الوصف': t.description,
-        'المرجع': t.reference_id || '-',
-        'التاريخ': new Date(t.created_at).toLocaleDateString('ar-EG')
-      };
-    }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'المعاملات');
-    XLSX.writeFile(wb, `wallet_transactions_${new Date().toISOString().split('T')[0]}.xlsx`);
+        return [
+          transaction.agency_name || finalTenantName || (isRtl ? 'المنصة الرئيسية' : 'Master Platform'),
+          getTransactionTypeLabel(transaction.transaction_type),
+          transaction.credit > 0 ? transaction.credit : -transaction.debit,
+          transaction.description,
+          transaction.reference_id || '-',
+          new Date(transaction.created_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-US')
+        ];
+      })
+    ];
+    downloadCsv(rows, `wallet_transactions_${new Date().toISOString().split('T')[0]}.csv`);
   };
 
   return (
@@ -685,9 +702,9 @@ export function WalletUI({
               </select>
             </div>
 
-            {/* Export Excel Button */}
+            {/* Export CSV Button */}
             <button
-              onClick={handleExportExcel}
+              onClick={handleExportCsv}
               style={{
                 padding: '0.5rem 1.2rem',
                 borderRadius: '10px',
@@ -704,7 +721,7 @@ export function WalletUI({
                 boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
               }}
             >
-              <span>{lang === 'ar' ? 'تصدير Excel 📊' : lang === 'fr' ? 'Exporter Excel 📊' : 'Export to Excel 📊'}</span>
+              <span>{lang === 'ar' ? 'تصدير CSV 📊' : lang === 'fr' ? 'Exporter CSV 📊' : 'Export to CSV 📊'}</span>
             </button>
 
           </div>

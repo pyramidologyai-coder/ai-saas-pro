@@ -20,7 +20,6 @@ import {
   Inbox,
   AlertCircle
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -67,6 +66,24 @@ interface MessagesUIProps {
   tenants?: { id: string; name: string; agency_id: string | null }[];
 }
 
+const escapeCsvCell = (value: unknown) => {
+  const text = value == null ? '' : String(value);
+  const formulaSafeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${formulaSafeText.replace(/"/g, '""')}"`;
+};
+
+const downloadCsv = (rows: unknown[][], filename: string) => {
+  const csv = rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
 const DICTIONARY = {
   ar: {
     title: 'نظام مراقبة القنوات والمحادثات الموحد',
@@ -89,7 +106,7 @@ const DICTIONARY = {
     colChannel: 'القناة',
     colMsgCount: 'عدد الرسائل',
     colLastActivity: 'آخر نشاط',
-    exportExcel: 'تصدير تقرير Excel 📥',
+    exportExcel: 'تصدير تقرير CSV 📥',
     noData: 'لا توجد بيانات حركة أو رسائل متوفرة في الفترة المحددة.',
     searchPlaceholder: 'بحث باسم العميل...',
     filterAgency: 'كل الوكالات',
@@ -123,7 +140,7 @@ const DICTIONARY = {
     colChannel: 'Channel',
     colMsgCount: 'Messages Count',
     colLastActivity: 'Last Activity',
-    exportExcel: 'Export Excel Report 📥',
+    exportExcel: 'Export CSV Report 📥',
     noData: 'No messaging traffic data available for the selected period.',
     searchPlaceholder: 'Search by client name...',
     filterAgency: 'All Agencies',
@@ -157,7 +174,7 @@ const DICTIONARY = {
     colChannel: 'Canal',
     colMsgCount: 'Nombre de Messages',
     colLastActivity: 'Dernière Activité',
-    exportExcel: 'Exporter le Rapport Excel 📥',
+    exportExcel: 'Exporter le Rapport CSV 📥',
     noData: 'Aucune donnée de trafic disponible pour la période sélectionnée.',
     searchPlaceholder: 'Rechercher par client...',
     filterAgency: 'Toutes les Agences',
@@ -281,44 +298,35 @@ export function MessagesUI({
     }
   };
 
-  // Excel multi-sheet export using SheetJS
-  const handleExportExcel = () => {
+  // CSV export with labeled sections because CSV does not support worksheets.
+  const handleExportCsv = () => {
     if (!analytics) return;
     try {
-      const wb = XLSX.utils.book_new();
-
-      // Sheet 1: General KPI Summary
-      const summarySheetData = [
-        { [isRtl ? 'المقياس' : 'Metric']: isRtl ? 'رسائل اليوم' : "Today's Messages", [isRtl ? 'القيمة' : 'Value']: analytics.total_today },
-        { [isRtl ? 'المقياس' : 'Metric']: isRtl ? 'رسائل الأسبوع' : "This Week's Messages", [isRtl ? 'القيمة' : 'Value']: analytics.total_week },
-        { [isRtl ? 'المقياس' : 'Metric']: isRtl ? 'رسائل الشهر' : "This Month's Messages", [isRtl ? 'القيمة' : 'Value']: analytics.total_month },
-        { [isRtl ? 'المقياس' : 'Metric']: isRtl ? 'إجمالي الرسائل' : 'Total Messages (All Time)', [isRtl ? 'القيمة' : 'Value']: analytics.total_all },
+      const rows: unknown[][] = [
+        [isRtl ? 'ملخص الإحصاءات' : 'Summary'],
+        [isRtl ? 'المقياس' : 'Metric', isRtl ? 'القيمة' : 'Value'],
+        [isRtl ? 'رسائل اليوم' : "Today's Messages", analytics.total_today],
+        [isRtl ? 'رسائل الأسبوع' : "This Week's Messages", analytics.total_week],
+        [isRtl ? 'رسائل الشهر' : "This Month's Messages", analytics.total_month],
+        [isRtl ? 'إجمالي الرسائل' : 'Total Messages (All Time)', analytics.total_all],
+        [],
+        [isRtl ? 'المحادثات المراقبة' : 'Monitored Conversations'],
+        [d.colAgency, d.colClient, d.colChannel, d.colMsgCount, d.colLastActivity],
+        ...filteredConversations.map((c) => [
+          c.agency_name,
+          c.tenant_name,
+          c.channel.toUpperCase(),
+          c.message_count,
+          formatTimestamp(c.last_message_time)
+        ]),
+        [],
+        [isRtl ? 'توزيع القنوات' : 'Channel Distribution'],
+        [d.colChannel, d.colMsgCount],
+        ...(analytics.channels || []).map((ch) => [ch.channel.toUpperCase(), ch.count])
       ];
-      const ws1 = XLSX.utils.json_to_sheet(summarySheetData);
-      XLSX.utils.book_append_sheet(wb, ws1, isRtl ? 'ملخص الإحصاءات' : 'Summary');
-
-      // Sheet 2: Conversation detail list (GDPR Compliant, absolutely no messages or phone numbers)
-      const convSheetData = filteredConversations.map((c) => ({
-        [isRtl ? 'الوكالة' : 'Agency']: c.agency_name,
-        [isRtl ? 'العميل' : 'Client']: c.tenant_name,
-        [isRtl ? 'القناة' : 'Channel']: c.channel.toUpperCase(),
-        [isRtl ? 'عدد الرسائل' : 'Messages Count']: c.message_count,
-        [isRtl ? 'آخر نشاط' : 'Last Activity']: formatTimestamp(c.last_message_time)
-      }));
-      const ws2 = XLSX.utils.json_to_sheet(convSheetData);
-      XLSX.utils.book_append_sheet(wb, ws2, isRtl ? 'المحادثات المراقبة' : 'Monitored Conversations');
-
-      // Sheet 3: Channel volume distribution
-      const channelSheetData = (analytics.channels || []).map((ch) => ({
-        [isRtl ? 'القناة' : 'Channel']: ch.channel.toUpperCase(),
-        [isRtl ? 'عدد الرسائل' : 'Messages Count']: ch.count
-      }));
-      const ws3 = XLSX.utils.json_to_sheet(channelSheetData);
-      XLSX.utils.book_append_sheet(wb, ws3, isRtl ? 'توزيع القنوات' : 'Channel Distribution');
-
-      XLSX.writeFile(wb, `Omnichannel_Analytics_Report_${period}_Days.xlsx`);
+      downloadCsv(rows, `Omnichannel_Analytics_Report_${period}_Days.csv`);
     } catch (err) {
-      console.error('Failed to export Excel:', err);
+      console.error('Failed to export CSV:', err);
     }
   };
 
@@ -390,10 +398,10 @@ export function MessagesUI({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 self-end md:self-auto">
-          {/* Export Excel Button */}
+          {/* Export CSV Button */}
           {analytics && !isDatabaseEmpty && (
             <button
-              onClick={handleExportExcel}
+              onClick={handleExportCsv}
               className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-md border border-emerald-500/20 transition-all text-sm cursor-pointer"
             >
               <FileSpreadsheet size={16} />
