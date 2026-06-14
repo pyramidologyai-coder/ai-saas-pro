@@ -4,6 +4,9 @@ Status: **LOCAL-ONLY DRAFT - NOT APPLIED**
 
 Migration: `supabase/migrations/20260612120000_local_only_db_rls_grant_hardening_draft.sql`
 
+Required prerequisite migration:
+`supabase/migrations/20260612121000_local_only_is_master_admin_search_path_prerequisite.sql`
+
 This package requires Hermes review and separate explicit approval before any
 staging apply. It is not approved for production.
 
@@ -38,6 +41,13 @@ V2.2 preserves the v2.1 protections and adds fail-closed migration assertions:
 - `public.is_master_admin()` must be `SECURITY DEFINER` with an approved fixed
   `search_path`; its exact live definition/configuration must also be captured
   and approved before staging.
+- The separate local-only prerequisite draft preserves the verified live
+  `is_master_admin()` body and grants while adding
+  `SET search_path = pg_catalog, public`. It must pass Hermes review and be
+  approved/applied before v2.2 so the v2.2 preflight can pass.
+- Its preflight and postflight pair whitespace-insensitive structural checks
+  with exact critical authorization-literal and signal checks, so whitespace
+  changes inside `'role'` or `'master_admin'` fail closed.
 - `get_agency_commission(uuid)` treats NULL from `is_master_admin()` as denial.
 - Preflight blocks inherited dangerous grants to roles inherited by `anon` or
   `authenticated`; role membership is never silently changed.
@@ -57,7 +67,8 @@ V2.2 preserves the v2.1 protections and adds fail-closed migration assertions:
   replacement, 11 unresolved missing-search-path functions remain vulnerable;
   grant reduction limits but does not remove that risk.
 - The migration intentionally blocks until `is_master_admin()` has an approved
-  fixed search path. Its body is not guessed or replaced by this draft.
+  fixed search path. The separate prerequisite draft supplies that change, but
+  neither prerequisite nor v2.2 is approved for staging or production apply.
 - `get_channel_analytics(integer)`, `get_unique_customers_count(uuid)`,
   dashboard/calculation RPCs, `is_master_admin()`,
   `verify_master_admin_role()`, and `get_wallet_transactions(...)` are
@@ -72,12 +83,13 @@ V2.2 preserves the v2.1 protections and adds fail-closed migration assertions:
 
 ## 3. Recommendation
 
-Approve v2.2 for Hermes review only. Before staging apply, capture exact function
+Approve the prerequisite and v2.2 for Hermes review only. Before staging apply,
+capture exact function
 definitions, owners, configurations, ACLs/effective grants, and table privilege
 rows, including direct `PUBLIC` ACLs, inherited/effective dangerous privileges,
 and an explicit `is_master_admin()` body/search-path snapshot.
-Harden `is_master_admin()` in a separate reviewed migration if the preflight
-does not accept its live configuration. After staging apply, reconcile
+Review and separately approve/apply the prerequisite migration before v2.2.
+After staging apply, reconcile
 service-only breakage, prove retained authenticated functions authorize
 correctly, and prepare a separate evidence-backed search-path/RLS-policy phase.
 
@@ -88,8 +100,8 @@ correctly, and prepare a separate evidence-backed search-path/RLS-policy phase.
    live 42-signature inventory to the expected manifest.
 3. Capture and approve the exact `is_master_admin()` live body, owner,
    `proconfig`, search path, ACL, and effective grants.
-4. If required, separately approve/apply a body-preserving
-   `is_master_admin()` search-path hardening migration.
+4. Hermes reviews the body-preserving `is_master_admin()` prerequisite; Ahmad
+   separately approves applying it in staging before v2.2.
 5. Ahmad separately approves a staging DB-write window.
 6. Apply v2.2 in staging only.
 7. Run the post-apply SELECT verification and role-based behavior tests.
@@ -101,6 +113,7 @@ correctly, and prepare a separate evidence-backed search-path/RLS-policy phase.
 ## 5. Files Affected
 
 - `supabase/migrations/20260612120000_local_only_db_rls_grant_hardening_draft.sql`
+- `supabase/migrations/20260612121000_local_only_is_master_admin_search_path_prerequisite.sql`
 - `docs/security/20260612-local-only-db-rls-grant-hardening-review.md`
 
 No environment, secret, application, schema, storage, edge-function, or
@@ -312,6 +325,10 @@ authenticated/non-master/cross-tenant staging denial tests. Client dependency
 alone is not safety evidence.
 
 ## 8. Database Impact
+
+The prerequisite replaces `public.is_master_admin()` with its verified live
+body plus `SET search_path = pg_catalog, public`; it asserts preservation of
+its existing EXECUTE grants and changes no table data or policies.
 
 V2.2 replaces one function body, changes EXECUTE grants on asserted existing
 `public` functions, and revokes `TRUNCATE`/`REFERENCES`/`TRIGGER` from
@@ -592,9 +609,10 @@ calls, and every workflow changed to `service_only`.
   `authenticated`, with zero inherited dangerous grants through parent roles.
 - Investigation and separate remediation of any effective dangerous privilege
   not explained by a direct grant that v2.2 revokes.
-- Exact live-body/search-path snapshot and approval for `is_master_admin()`.
-- Separate approved search-path hardening migration if `is_master_admin()`
-  fails the v2.2 preflight.
+- Hermes approval and separate staging-apply approval for
+  `20260612121000_local_only_is_master_admin_search_path_prerequisite.sql`.
+- Successful staging apply and SELECT/behavior verification of the prerequisite
+  before v2.2; the current live `proconfig=NULL` still blocks v2.2.
 - Pre-apply proof of exactly 42 expected and zero unexpected public
   `SECURITY DEFINER` signatures.
 - Explicit staging DB-write approval from Ahmad.
@@ -617,3 +635,8 @@ calls, and every workflow changed to `service_only`.
 V2.2 remains local-only. No Supabase connection, migration apply, DB write/DDL/DML,
 environment or secret edit, auth/storage/edge-function change, commit, push, or
 deployment was performed.
+
+The `is_master_admin()` prerequisite also remains a local-only draft. Production
+remains blocked pending prerequisite and v2.2 Hermes review, explicit staging
+write approval, staging verification, closure of all production blockers, and
+separate production approval.

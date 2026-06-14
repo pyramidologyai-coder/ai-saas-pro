@@ -4,7 +4,10 @@ import {
   TrendingUp, 
   Users, 
   CalendarCheck, 
-  MessageCircle 
+  MessageCircle,
+  Sparkles,
+  Settings,
+  AlertTriangle
 } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { createClient } from '@/utils/supabase/client';
@@ -150,6 +153,141 @@ export default function ClientDashboard() {
       
       {!loading && isMaster && !tenantId && <CognitiveDashboard isAgency={true} tenantId="master" industryType="clinic" />}
       {!loading && tenantId && <CognitiveDashboard tenantId={tenantId} isAgency={isMaster} industryType={currentType as any} />}
+
+      {!loading && !isMaster && tenantId && (
+        <section
+          dir="rtl"
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
+            border: '1px solid rgba(139, 92, 246, 0.3)',
+            borderRadius: '20px',
+            padding: 'clamp(1.25rem, 3vw, 2rem)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            boxShadow: '0 20px 60px rgba(76, 29, 149, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+          }}
+        >
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              top: '-80px',
+              left: '-60px',
+              width: '220px',
+              height: '220px',
+              borderRadius: '50%',
+              background: 'rgba(139, 92, 246, 0.18)',
+              filter: 'blur(60px)',
+              pointerEvents: 'none'
+            }}
+          />
+
+          <div style={{ position: 'relative' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div
+                style={{
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '48px',
+                  height: '48px',
+                  borderRadius: '14px',
+                  color: '#c4b5fd',
+                  background: 'rgba(139, 92, 246, 0.18)',
+                  border: '1px solid rgba(196, 181, 253, 0.22)',
+                  boxShadow: '0 0 24px rgba(139, 92, 246, 0.22)'
+                }}
+              >
+                <Sparkles size={24} />
+              </div>
+              <div>
+                <h2 style={{ color: 'var(--text-bright)', margin: '0 0 0.5rem', fontSize: 'clamp(1.15rem, 2.5vw, 1.45rem)' }}>
+                  🚀 وضع التجربة المحكومة (Controlled Pilot Mode)
+                </h2>
+                <p style={{ color: 'var(--text-dim)', margin: 0, lineHeight: 1.8, fontSize: '0.95rem' }}>
+                  أهلاً بك في المرحلة التجريبية الأولى لمنصة Automology.ai. لقد تم إعداد حسابك وتفعيله كشريك تجريبي.
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+              {[
+                {
+                  icon: Settings,
+                  text: '⚙️ ضبط ساعات العمل: ادخل إلى صفحة الإعدادات لتحديد تخصص النشاط التجاري ومواعيد العمل والمدة الافتراضية للجلسات.'
+                },
+                {
+                  icon: MessageCircle,
+                  text: '💬 اختبار السكرتير الذكي: استخدم المحادثة التفاعلية في لوحة التحكم لمشاهدة كيف يقوم الذكاء الاصطناعي بإدارة وحجز المواعيد تلقائياً.'
+                },
+                {
+                  icon: CalendarCheck,
+                  text: '📅 أول حجز تجريبي يدوي: توجه إلى صفحة الحجوزات وأضف حجزاً يدوياً بنفسك لملاحظة كيف يظهر العميل مباشرة في قائمة العملاء.'
+                }
+              ].map((step, index) => (
+                <div
+                  key={step.text}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.8rem',
+                    padding: '1rem',
+                    borderRadius: '16px',
+                    background: 'rgba(255, 255, 255, 0.035)',
+                    border: '1px solid rgba(196, 181, 253, 0.14)'
+                  }}
+                >
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '10px',
+                      color: '#c4b5fd',
+                      background: 'rgba(139, 92, 246, 0.16)'
+                    }}
+                  >
+                    <step.icon size={18} />
+                  </div>
+                  <div>
+                    <div style={{ color: '#a78bfa', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
+                      الخطوة {index + 1}
+                    </div>
+                    <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.75, fontSize: '0.88rem' }}>
+                      {step.text}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '0.75rem',
+                marginTop: '1rem',
+                padding: '0.9rem 1rem',
+                borderRadius: '14px',
+                color: '#fde68a',
+                background: 'rgba(245, 158, 11, 0.08)',
+                border: '1px solid rgba(245, 158, 11, 0.2)'
+              }}
+            >
+              <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '0.15rem' }} />
+              <p style={{ margin: 0, lineHeight: 1.7, fontSize: '0.88rem' }}>
+                🚨 تنبيه هام: يرجى استخدام بيانات تجريبية وافتراضية فقط وعدم إدخال أي أرقام أو بيانات عملاء حقيقية خلال هذه المرحلة.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
       
       {!isMaster && (
         <div style={{ 
