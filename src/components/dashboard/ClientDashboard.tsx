@@ -11,12 +11,44 @@ import {
 } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { createClient } from '@/utils/supabase/client';
-import { getDictionary } from '@/lib/dictionary';
+import { getDictionary, type Locale } from '@/lib/dictionary';
 import { getActiveTenant } from '@/lib/tenant';
 import CognitiveDashboard from '../../app/(dashboard)/admin/cognitive-view';
 
+const pilotGuide = {
+  ar: {
+    title: 'وضع التجربة المحكومة (Controlled Pilot Mode)',
+    description: 'أهلاً بك في المرحلة التجريبية الأولى لمنصة Automology.ai. لقد تم إعداد حسابك وتفعيله كشريك تجريبي.',
+    stepLabel: 'الخطوة',
+    steps: [
+      '⚙️ ضبط ساعات العمل: ادخل إلى صفحة الإعدادات لتحديد تخصص النشاط التجاري ومواعيد العمل والمدة الافتراضية للجلسات.',
+      '💬 اختبار السكرتير الذكي: استخدم المحادثة التفاعلية في لوحة التحكم لمشاهدة كيف يقوم الذكاء الاصطناعي بإدارة وحجز المواعيد تلقائياً.',
+      '📅 أول حجز تجريبي يدوي: توجه إلى صفحة الحجوزات وأضف حجزاً يدوياً بنفسك لملاحظة كيف يظهر العميل مباشرة في قائمة العملاء.',
+    ],
+    warning: '🚨 تنبيه هام: يرجى استخدام بيانات تجريبية وافتراضية فقط وعدم إدخال أي أرقام أو بيانات عملاء حقيقية خلال هذه المرحلة.',
+  },
+  en: {
+    title: '🚀 Controlled Pilot Mode',
+    description: 'Welcome to the first pilot phase of Automology.ai. Your account has been set up and activated as a pilot partner.',
+    stepLabel: 'Step',
+    steps: [
+      '⚙️ Set Business Hours: Go to Settings to specify your business specialty, working hours, and default session durations.',
+      '💬 Test the Smart Agent: Use the interactive chat in your dashboard to see how the AI manages and books appointments automatically.',
+      '📅 First Manual Booking: Head to the Bookings page and add a manual booking yourself to see how the customer appears instantly in your customers list.',
+    ],
+    warning: '🚨 Important Notice: Please use dummy/mock data only. Do not enter any real customer names, phone numbers, or actual bookings during this phase.',
+  },
+} satisfies Record<Locale, {
+  title: string;
+  description: string;
+  stepLabel: string;
+  steps: [string, string, string];
+  warning: string;
+}>;
+
 export default function ClientDashboard() {
   const supabase = createClient();
+  const [locale, setLocale] = useState<Locale>('ar');
   const [dict, setDict] = useState(() => getDictionary('clinic'));
   const [aiStats, setAiStats] = useState({ ai: 0, human: 0 });
   const [stats, setStats] = useState([
@@ -34,10 +66,10 @@ export default function ClientDashboard() {
   const handleTypeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newType = e.target.value;
     setCurrentType(newType);
-    setDict(getDictionary(newType));
+    setDict(getDictionary(newType, locale));
     
     // Update labels instantly
-    const newDict = getDictionary(newType);
+    const newDict = getDictionary(newType, locale);
     setStats(prev => [
       { ...prev[0], label: newDict.totalBookings },
       { ...prev[1], label: newDict.newCustomers },
@@ -52,9 +84,28 @@ export default function ClientDashboard() {
     window.location.reload();
   };
 
+  const handleLocaleChange = () => {
+    const newLocale: Locale = locale === 'ar' ? 'en' : 'ar';
+    const newDict = getDictionary(currentType, newLocale);
+
+    setLocale(newLocale);
+    setDict(newDict);
+    setStats(prev => [
+      { ...prev[0], label: newDict.totalBookings },
+      { ...prev[1], label: newDict.newCustomers },
+      { ...prev[2] },
+      { ...prev[3], label: newDict.revenue }
+    ]);
+    localStorage.setItem('dashboard_locale', newLocale);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const storedLocale = localStorage.getItem('dashboard_locale');
+        const activeLocale: Locale = storedLocale === 'en' ? 'en' : 'ar';
+        setLocale(activeLocale);
+
         const params = new URLSearchParams(window.location.search);
         const oauthCode = params.get('code');
         if (oauthCode) {
@@ -108,7 +159,7 @@ export default function ClientDashboard() {
         setTenantId(tenant.id);
         setCurrentType(tenant.type || 'clinic');
 
-        const currentDict = getDictionary(tenant.type);
+        const currentDict = getDictionary(tenant.type, activeLocale);
         setDict(currentDict);
 
         const { count: bookingCount } = await supabase.from('bookings').select('*', { count: 'exact', head: true }).eq('tenant_id', tenant.id);
@@ -156,11 +207,14 @@ export default function ClientDashboard() {
 
       {!loading && !isMaster && tenantId && (
         <section
-          dir="rtl"
+          dir={locale === 'ar' ? 'rtl' : 'ltr'}
           style={{
             position: 'relative',
             overflow: 'hidden',
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
+            textAlign: locale === 'ar' ? 'right' : 'left',
+            background: locale === 'ar'
+              ? 'linear-gradient(225deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))'
+              : 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
             border: '1px solid rgba(139, 92, 246, 0.3)',
             borderRadius: '20px',
             padding: 'clamp(1.25rem, 3vw, 2rem)',
@@ -174,7 +228,8 @@ export default function ClientDashboard() {
             style={{
               position: 'absolute',
               top: '-80px',
-              left: '-60px',
+              left: locale === 'en' ? '-60px' : 'auto',
+              right: locale === 'ar' ? '-60px' : 'auto',
               width: '220px',
               height: '220px',
               borderRadius: '50%',
@@ -205,10 +260,10 @@ export default function ClientDashboard() {
               </div>
               <div>
                 <h2 style={{ color: 'var(--text-bright)', margin: '0 0 0.5rem', fontSize: 'clamp(1.15rem, 2.5vw, 1.45rem)' }}>
-                  🚀 وضع التجربة المحكومة (Controlled Pilot Mode)
+                  {pilotGuide[locale].title}
                 </h2>
                 <p style={{ color: 'var(--text-dim)', margin: 0, lineHeight: 1.8, fontSize: '0.95rem' }}>
-                  أهلاً بك في المرحلة التجريبية الأولى لمنصة Automology.ai. لقد تم إعداد حسابك وتفعيله كشريك تجريبي.
+                  {pilotGuide[locale].description}
                 </p>
               </div>
             </div>
@@ -217,15 +272,15 @@ export default function ClientDashboard() {
               {[
                 {
                   icon: Settings,
-                  text: '⚙️ ضبط ساعات العمل: ادخل إلى صفحة الإعدادات لتحديد تخصص النشاط التجاري ومواعيد العمل والمدة الافتراضية للجلسات.'
+                  text: pilotGuide[locale].steps[0]
                 },
                 {
                   icon: MessageCircle,
-                  text: '💬 اختبار السكرتير الذكي: استخدم المحادثة التفاعلية في لوحة التحكم لمشاهدة كيف يقوم الذكاء الاصطناعي بإدارة وحجز المواعيد تلقائياً.'
+                  text: pilotGuide[locale].steps[1]
                 },
                 {
                   icon: CalendarCheck,
-                  text: '📅 أول حجز تجريبي يدوي: توجه إلى صفحة الحجوزات وأضف حجزاً يدوياً بنفسك لملاحظة كيف يظهر العميل مباشرة في قائمة العملاء.'
+                  text: pilotGuide[locale].steps[2]
                 }
               ].map((step, index) => (
                 <div
@@ -257,7 +312,7 @@ export default function ClientDashboard() {
                   </div>
                   <div>
                     <div style={{ color: '#a78bfa', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
-                      الخطوة {index + 1}
+                      {pilotGuide[locale].stepLabel} {index + 1}
                     </div>
                     <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.75, fontSize: '0.88rem' }}>
                       {step.text}
@@ -282,7 +337,7 @@ export default function ClientDashboard() {
             >
               <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '0.15rem' }} />
               <p style={{ margin: 0, lineHeight: 1.7, fontSize: '0.88rem' }}>
-                🚨 تنبيه هام: يرجى استخدام بيانات تجريبية وافتراضية فقط وعدم إدخال أي أرقام أو بيانات عملاء حقيقية خلال هذه المرحلة.
+                {pilotGuide[locale].warning}
               </p>
             </div>
           </div>
@@ -304,28 +359,47 @@ export default function ClientDashboard() {
             <h3 style={{ color: '#10b981', margin: '0 0 0.2rem 0', fontSize: '1rem' }}>وضع تجربة المجالات (Demo Mode)</h3>
             <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', margin: 0 }}>غيّر المجال من هنا وشوف إزاي لوحة التحكم والمصطلحات هتتغير أوتوماتيك!</p>
           </div>
-          <select 
-            value={currentType} 
-            onChange={handleTypeChange}
-            style={{
-              background: 'var(--card-bg)',
-              color: 'var(--text-main)',
-              border: '1px solid var(--glass-border)',
-              padding: '0.8rem 1.2rem',
-              borderRadius: '12px',
-              outline: 'none',
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              minWidth: '200px'
-            }}
-          >
-            <option value="clinic">عيادة / مركز طبي</option>
-            <option value="real_estate">شركة عقارات</option>
-            <option value="salon">مركز تجميل / سبا</option>
-            <option value="car_rental">معرض سيارات</option>
-            <option value="ecommerce">متجر إلكتروني</option>
-            <option value="restaurant">مطعم / كافيه</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+            <button
+              type="button"
+              onClick={handleLocaleChange}
+              aria-label={locale === 'ar' ? 'Switch dashboard to English' : 'تغيير لغة لوحة التحكم إلى العربية'}
+              style={{
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                color: 'var(--text-main)',
+                border: '1px solid rgba(139, 92, 246, 0.35)',
+                padding: '0.8rem 1.1rem',
+                borderRadius: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {locale === 'ar' ? 'English' : 'العربية'}
+            </button>
+            <select 
+              value={currentType} 
+              onChange={handleTypeChange}
+              style={{
+                background: 'var(--card-bg)',
+                color: 'var(--text-main)',
+                border: '1px solid var(--glass-border)',
+                padding: '0.8rem 1.2rem',
+                borderRadius: '12px',
+                outline: 'none',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                minWidth: '200px'
+              }}
+            >
+              <option value="clinic">عيادة / مركز طبي</option>
+              <option value="real_estate">شركة عقارات</option>
+              <option value="salon">مركز تجميل / سبا</option>
+              <option value="car_rental">معرض سيارات</option>
+              <option value="ecommerce">متجر إلكتروني</option>
+              <option value="restaurant">مطعم / كافيه</option>
+            </select>
+          </div>
         </div>
       )}
 
