@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { 
   TrendingUp, 
   Users, 
@@ -7,7 +8,8 @@ import {
   MessageCircle,
   Sparkles,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  ArrowRight
 } from 'lucide-react';
 import { CardSkeleton } from '@/components/ui/Skeleton';
 import { createClient } from '@/utils/supabase/client';
@@ -19,30 +21,45 @@ const pilotGuide = {
   ar: {
     title: 'وضع التجربة المحكومة (Controlled Pilot Mode)',
     description: 'أهلاً بك في المرحلة التجريبية الأولى لمنصة Automology.ai. لقد تم إعداد حسابك وتفعيله كشريك تجريبي.',
+    status: 'حساب تجريبي نشط',
+    journeyLabel: 'مسار البدء السريع',
     stepLabel: 'الخطوة',
     steps: [
       '⚙️ ضبط ساعات العمل: ادخل إلى صفحة الإعدادات لتحديد تخصص النشاط التجاري ومواعيد العمل والمدة الافتراضية للجلسات.',
       '💬 اختبار السكرتير الذكي: استخدم المحادثة التفاعلية في لوحة التحكم لمشاهدة كيف يقوم الذكاء الاصطناعي بإدارة وحجز المواعيد تلقائياً.',
       '📅 أول حجز تجريبي يدوي: توجه إلى صفحة الحجوزات وأضف حجزاً يدوياً بنفسك لملاحظة كيف يظهر العميل مباشرة في قائمة العملاء.',
     ],
+    actionsLabel: 'إجراءات سريعة',
+    settingsAction: 'فتح الإعدادات',
+    bookingsAction: 'فتح الحجوزات',
     warning: '🚨 تنبيه هام: يرجى استخدام بيانات تجريبية وافتراضية فقط وعدم إدخال أي أرقام أو بيانات عملاء حقيقية خلال هذه المرحلة.',
   },
   en: {
     title: '🚀 Controlled Pilot Mode',
     description: 'Welcome to the first pilot phase of Automology.ai. Your account has been set up and activated as a pilot partner.',
+    status: 'Pilot account active',
+    journeyLabel: 'Quick-start journey',
     stepLabel: 'Step',
     steps: [
       '⚙️ Set Business Hours: Go to Settings to specify your business specialty, working hours, and default session durations.',
       '💬 Test the Smart Agent: Use the interactive chat in your dashboard to see how the AI manages and books appointments automatically.',
       '📅 First Manual Booking: Head to the Bookings page and add a manual booking yourself to see how the customer appears instantly in your customers list.',
     ],
+    actionsLabel: 'Quick actions',
+    settingsAction: 'Open settings',
+    bookingsAction: 'Open bookings',
     warning: '🚨 Important Notice: Please use dummy/mock data only. Do not enter any real customer names, phone numbers, or actual bookings during this phase.',
   },
 } satisfies Record<Locale, {
   title: string;
   description: string;
+  status: string;
+  journeyLabel: string;
   stepLabel: string;
   steps: [string, string, string];
+  actionsLabel: string;
+  settingsAction: string;
+  bookingsAction: string;
   warning: string;
 }>;
 
@@ -207,20 +224,21 @@ export default function ClientDashboard() {
 
       {!loading && !isMaster && tenantId && (
         <section
+          aria-labelledby="controlled-pilot-title"
           dir={locale === 'ar' ? 'rtl' : 'ltr'}
           style={{
             position: 'relative',
             overflow: 'hidden',
             textAlign: locale === 'ar' ? 'right' : 'left',
             background: locale === 'ar'
-              ? 'linear-gradient(225deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))'
-              : 'linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1))',
-            border: '1px solid rgba(139, 92, 246, 0.3)',
-            borderRadius: '20px',
+              ? 'linear-gradient(225deg, rgba(30, 27, 75, 0.88), rgba(17, 24, 39, 0.94) 52%, rgba(49, 46, 129, 0.72))'
+              : 'linear-gradient(135deg, rgba(30, 27, 75, 0.88), rgba(17, 24, 39, 0.94) 52%, rgba(49, 46, 129, 0.72))',
+            border: '1px solid rgba(196, 181, 253, 0.3)',
+            borderRadius: '24px',
             padding: 'clamp(1.25rem, 3vw, 2rem)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            boxShadow: '0 20px 60px rgba(76, 29, 149, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            boxShadow: '0 28px 80px rgba(15, 23, 42, 0.34), 0 0 42px rgba(124, 58, 237, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
           }}
         >
           <div
@@ -230,44 +248,67 @@ export default function ClientDashboard() {
               top: '-80px',
               left: locale === 'en' ? '-60px' : 'auto',
               right: locale === 'ar' ? '-60px' : 'auto',
-              width: '220px',
-              height: '220px',
+              width: '260px',
+              height: '260px',
               borderRadius: '50%',
-              background: 'rgba(139, 92, 246, 0.18)',
-              filter: 'blur(60px)',
+              background: 'rgba(167, 139, 250, 0.22)',
+              filter: 'blur(72px)',
               pointerEvents: 'none'
             }}
           />
 
           <div style={{ position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem', maxWidth: '760px' }}>
               <div
                 style={{
                   flexShrink: 0,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '14px',
-                  color: '#c4b5fd',
-                  background: 'rgba(139, 92, 246, 0.18)',
-                  border: '1px solid rgba(196, 181, 253, 0.22)',
-                  boxShadow: '0 0 24px rgba(139, 92, 246, 0.22)'
+                  width: '52px',
+                  height: '52px',
+                  borderRadius: '16px',
+                  color: '#ede9fe',
+                  background: 'linear-gradient(145deg, rgba(167, 139, 250, 0.28), rgba(99, 102, 241, 0.14))',
+                  border: '1px solid rgba(221, 214, 254, 0.3)',
+                  boxShadow: '0 0 28px rgba(139, 92, 246, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.14)'
                 }}
               >
                 <Sparkles size={24} />
               </div>
               <div>
-                <h2 style={{ color: 'var(--text-bright)', margin: '0 0 0.5rem', fontSize: 'clamp(1.15rem, 2.5vw, 1.45rem)' }}>
+                <h2 id="controlled-pilot-title" style={{ color: '#fafafa', margin: '0 0 0.5rem', fontSize: 'clamp(1.2rem, 2.5vw, 1.55rem)', letterSpacing: '-0.02em' }}>
                   {pilotGuide[locale].title}
                 </h2>
-                <p style={{ color: 'var(--text-dim)', margin: 0, lineHeight: 1.8, fontSize: '0.95rem' }}>
+                <p style={{ color: '#cbd5e1', margin: 0, lineHeight: 1.8, fontSize: '0.95rem' }}>
                   {pilotGuide[locale].description}
                 </p>
               </div>
+              </div>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.55rem',
+                  padding: '0.55rem 0.8rem',
+                  borderRadius: '999px',
+                  color: '#ddd6fe',
+                  background: 'rgba(124, 58, 237, 0.16)',
+                  border: '1px solid rgba(196, 181, 253, 0.24)',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <span aria-hidden="true" style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 12px rgba(52, 211, 153, 0.9)' }} />
+                {pilotGuide[locale].status}
+              </div>
             </div>
 
+            <div style={{ color: '#c4b5fd', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+              {pilotGuide[locale].journeyLabel}
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
               {[
                 {
@@ -289,10 +330,11 @@ export default function ClientDashboard() {
                     display: 'flex',
                     alignItems: 'flex-start',
                     gap: '0.8rem',
-                    padding: '1rem',
-                    borderRadius: '16px',
-                    background: 'rgba(255, 255, 255, 0.035)',
-                    border: '1px solid rgba(196, 181, 253, 0.14)'
+                    padding: '1.05rem',
+                    borderRadius: '18px',
+                    background: 'linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025))',
+                    border: '1px solid rgba(221, 214, 254, 0.16)',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)'
                   }}
                 >
                   <div
@@ -304,8 +346,9 @@ export default function ClientDashboard() {
                       width: '36px',
                       height: '36px',
                       borderRadius: '10px',
-                      color: '#c4b5fd',
-                      background: 'rgba(139, 92, 246, 0.16)'
+                      color: '#ddd6fe',
+                      background: 'rgba(139, 92, 246, 0.2)',
+                      border: '1px solid rgba(196, 181, 253, 0.16)'
                     }}
                   >
                     <step.icon size={18} />
@@ -314,7 +357,7 @@ export default function ClientDashboard() {
                     <div style={{ color: '#a78bfa', fontSize: '0.75rem', fontWeight: 700, marginBottom: '0.35rem' }}>
                       {pilotGuide[locale].stepLabel} {index + 1}
                     </div>
-                    <p style={{ color: 'var(--text-main)', margin: 0, lineHeight: 1.75, fontSize: '0.88rem' }}>
+                    <p style={{ color: '#e2e8f0', margin: 0, lineHeight: 1.75, fontSize: '0.88rem' }}>
                       {step.text}
                     </p>
                   </div>
@@ -322,17 +365,52 @@ export default function ClientDashboard() {
               ))}
             </div>
 
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginTop: '1.1rem' }}>
+              <div style={{ color: '#cbd5e1', fontSize: '0.8rem', fontWeight: 700 }}>
+                {pilotGuide[locale].actionsLabel}
+              </div>
+              <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
+                {[
+                  { href: '/settings', label: pilotGuide[locale].settingsAction, icon: Settings },
+                  { href: '/bookings', label: pilotGuide[locale].bookingsAction, icon: CalendarCheck }
+                ].map((action, index) => (
+                  <Link
+                    key={action.href}
+                    href={action.href}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.65rem 0.85rem',
+                      borderRadius: '12px',
+                      color: index === 0 ? '#f5f3ff' : '#ddd6fe',
+                      background: index === 0 ? 'linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(79, 70, 229, 0.88))' : 'rgba(255, 255, 255, 0.06)',
+                      border: index === 0 ? '1px solid rgba(196, 181, 253, 0.38)' : '1px solid rgba(196, 181, 253, 0.2)',
+                      boxShadow: index === 0 ? '0 10px 28px rgba(76, 29, 149, 0.3)' : 'none',
+                      textDecoration: 'none',
+                      fontSize: '0.82rem',
+                      fontWeight: 700
+                    }}
+                  >
+                    <action.icon size={16} aria-hidden="true" />
+                    {action.label}
+                    <ArrowRight size={15} aria-hidden="true" style={{ transform: locale === 'ar' ? 'rotate(180deg)' : undefined }} />
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             <div
               style={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: '0.75rem',
-                marginTop: '1rem',
+                marginTop: '1.1rem',
                 padding: '0.9rem 1rem',
                 borderRadius: '14px',
                 color: '#fde68a',
-                background: 'rgba(245, 158, 11, 0.08)',
-                border: '1px solid rgba(245, 158, 11, 0.2)'
+                background: 'rgba(245, 158, 11, 0.09)',
+                border: '1px solid rgba(251, 191, 36, 0.24)'
               }}
             >
               <AlertTriangle size={20} style={{ flexShrink: 0, marginTop: '0.15rem' }} />
@@ -377,8 +455,8 @@ export default function ClientDashboard() {
             >
               {locale === 'ar' ? 'English' : 'العربية'}
             </button>
-            <select 
-              value={currentType} 
+            <select
+              value={currentType}
               onChange={handleTypeChange}
               style={{
                 background: 'var(--card-bg)',
