@@ -279,7 +279,9 @@ export async function POST(req: Request) {
       tenantRecord = tnBySlug;
     }
 
-    // 14 days trial duration limit
+    // For a new tenant, set a 14 days trial duration limit.
+    // For an existing tenant, we preserve the existing trial_ends_at by default
+    // and only renew it to 14 days if it has expired and the record is confirmed to belong to this user.
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
@@ -308,12 +310,22 @@ export async function POST(req: Request) {
       statusMap.tenantRecord.reused = false;
     } else {
       statusMap.tenantRecord.reused = true;
+
+      // Determine if the existing test tenant's trial is expired
+      const isExpired = tenantRecord.trial_ends_at 
+        ? new Date(tenantRecord.trial_ends_at).getTime() < Date.now() 
+        : true;
+
+      const trialEndsAtVal = isExpired 
+        ? trialEndsAt.toISOString() 
+        : tenantRecord.trial_ends_at;
+
       // Idempotently repair required test fields and linkage
       const tenantUpdate: any = {
         user_id: tenantUser.id,
         status: 'active',
         subscription_tier: 'trial',
-        trial_ends_at: trialEndsAt.toISOString(),
+        trial_ends_at: trialEndsAtVal,
         agency_id: agencyRecord.id
       };
 
