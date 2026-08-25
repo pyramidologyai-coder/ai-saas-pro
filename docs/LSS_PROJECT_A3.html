@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automology — LSS Project (A3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#17191B;--paper:#F1EFE8;--paper2:#E5E2D7;--line:#CDC9BB;
+  --rust:#9E3B2A;--verd:#2C6B5E;--ochre:#B8862B;--grey:#5D625E;
+  --D:#2C6B5E;--M:#B8862B;--A:#9E3B2A;--I:#3E6B8C;--C:#5A4A7A;
+  --disp:'Archivo',sans-serif;--body:'Newsreader',Georgia,serif;--mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0E0F10;color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px 0}
+.page{max-width:1180px;margin:0 auto;background:var(--paper);padding:0}
+:focus-visible{outline:2px solid var(--ochre);outline-offset:2px}
+
+.hd{background:var(--ink);color:var(--paper);padding:26px 34px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.hd .l .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#8B9089}
+.hd .l h1{font-family:var(--disp);font-weight:900;font-size:clamp(24px,3.6vw,40px);line-height:.98;letter-spacing:-.02em;text-transform:uppercase;margin-top:8px}
+.hd .l h1 span{color:var(--rust)}
+.hd .r{font-family:var(--mono);font-size:11px;color:#B9BCB5;text-align:right;line-height:1.9}
+.hd .r b{color:var(--paper);font-weight:400}
+
+.band{display:flex;background:var(--ink);border-top:1px solid #2C3033}
+.band a{flex:1;text-align:center;padding:9px 4px;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;text-decoration:none;color:#8B9089;border-right:1px solid #2C3033}
+.band a:last-child{border-right:0}
+.band a:hover{color:var(--paper);background:#202426}
+.band a b{display:block;font-size:14px;font-family:var(--disp);font-weight:900;margin-bottom:2px}
+.band a.d b{color:var(--D)}.band a.m b{color:var(--M)}.band a.a b{color:var(--A)}.band a.i b{color:var(--I)}.band a.c b{color:var(--C)}
+
+.sec{padding:26px 34px;border-bottom:1px solid var(--line)}
+.sec h2{font-family:var(--disp);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:20px;margin-bottom:3px;display:flex;align-items:baseline;gap:12px}
+.sec h2 .ph{font-family:var(--mono);font-size:11px;letter-spacing:.14em;padding:3px 9px;color:#fff}
+.ph.D{background:var(--D)}.ph.M{background:var(--M)}.ph.A{background:var(--A)}.ph.I{background:var(--I)}.ph.C{background:var(--C)}
+.sec .cap{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);margin-bottom:16px}
+.sec h3{font-family:var(--disp);font-weight:800;font-size:12.5px;letter-spacing:.05em;text-transform:uppercase;margin:18px 0 9px;color:var(--rust)}
+p{margin-bottom:11px;max-width:80ch}
+strong{font-weight:600}
+code,.m{font-family:var(--mono);font-size:.85em;background:var(--paper2);padding:1px 5px}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+
+.kv{width:100%;border-collapse:collapse;font-size:14px}
+.kv td{padding:8px 10px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.kv td:first-child{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);width:150px;white-space:nowrap}
+
+table.t{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0 14px}
+table.t th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);text-align:left;border-bottom:1.5px solid var(--ink);padding:7px 8px 7px 0;vertical-align:bottom}
+table.t td{padding:8px 8px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+table.t td:last-child,table.t th:last-child{padding-right:0}
+.num{font-family:var(--mono);white-space:nowrap}
+.ctr{text-align:center}
+
+.sipoc{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);font-size:12.5px}
+.sipoc .h{background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;padding:8px;text-align:center}
+.sipoc .c{background:#fff;padding:11px 10px;line-height:1.45}
+.sipoc .c ol,.sipoc .c ul{margin:0;padding-left:15px}
+.sipoc .c li{margin-bottom:4px}
+
+.metric{display:grid;grid-template-columns:1fr 62px 62px;gap:0;font-size:13px;border-top:1.5px solid var(--ink)}
+.metric>div{padding:8px 6px;border-bottom:1px solid var(--line)}
+.metric .mh{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--grey);border-bottom:1.5px solid var(--ink)}
+.metric .now{font-family:var(--mono);color:var(--rust);text-align:center}
+.metric .tgt{font-family:var(--mono);color:var(--verd);text-align:center}
+
+.bone{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.bone .b{border:1px solid var(--line);background:#fff;padding:11px 13px}
+.bone .b h4{font-family:var(--disp);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--rust);margin-bottom:7px}
+.bone .b ul{margin:0;padding-left:15px;font-size:12.5px;line-height:1.45}
+.bone .b li{margin-bottom:4px}
+
+.why{border-left:3px solid var(--rust);padding-left:16px;margin:6px 0 12px}
+.why div{margin-bottom:8px;font-size:13.5px}
+.why b{font-family:var(--mono);font-size:10px;color:var(--rust);letter-spacing:.09em;display:block}
+.root{background:var(--ink);color:var(--paper);padding:13px 17px;margin-top:8px;font-size:14px}
+.root b{color:var(--ochre)}
+
+.gate{border:1px solid var(--ink);margin-bottom:10px}
+.gate .gh{color:#fff;padding:8px 13px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.gate.D .gh{background:var(--D)}.gate.M .gh{background:var(--M)}.gate.A .gh{background:var(--A)}.gate.I .gh{background:var(--I)}
+.gate .gb{padding:11px 14px;background:#fff;font-size:13px}
+.gate .gb .ex{font-family:var(--mono);font-size:11px;color:var(--verd);margin-top:7px}
+
+.tag{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:2px 6px;border:1px solid;white-space:nowrap;display:inline-block}
+.t-red{color:var(--rust);border-color:var(--rust)}.t-grn{color:var(--verd);border-color:var(--verd)}.t-amb{color:var(--ochre);border-color:var(--ochre)}.t-gry{color:var(--grey);border-color:var(--line)}
+
+.note{background:var(--paper2);border-left:3px solid var(--ochre);padding:11px 15px;margin:12px 0;font-size:13.5px}
+.note b{color:#8a6318}
+.done{background:#EAF1EE;border-left:3px solid var(--verd);padding:11px 15px;margin:12px 0;font-size:13.5px}
+.done b{color:var(--verd)}
+
+.foot{background:var(--ink);color:#B9BCB5;padding:20px 34px;font-family:var(--mono);font-size:11px;line-height:1.8}
+.foot b{color:var(--ochre)}
+
+@media(max-width:860px){
+  .grid2,.grid3,.bone{grid-template-columns:1fr}
+  .sipoc{grid-template-columns:1fr}
+  .band{flex-wrap:wrap}.band a{flex:1 0 33%}
+  .sec{padding:20px 18px}.hd{padding:20px 18px}
+  body{padding:0}
+}
+@media print{
+  body{background:#fff;padding:0}.page{max-width:none}
+  .band{position:static}.sec{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="hd">
+  <div class="l">
+    <div class="k">Lean Six Sigma · A3 project · One page, one project</div>
+    <h1>Getting Automology<br>from <span>specs to a live demo</span></h1>
+  </div>
+  <div class="r">
+    Project ID <b>AUTO-LSS-001</b><br>
+    Method <b>DMAIC</b><br>
+    Owner <b>Founder</b><br>
+    Belt <b>Green (self-led)</b><br>
+    Date <b>____________</b>
+  </div>
+</header>
+
+<nav class="band">
+  <a class="d" href="#define"><b>D</b>Define</a>
+  <a class="m" href="#measure"><b>M</b>Measure</a>
+  <a class="a" href="#analyse"><b>A</b>Analyse</a>
+  <a class="i" href="#improve"><b>I</b>Improve</a>
+  <a class="c" href="#control"><b>C</b>Control</a>
+</nav>
+
+<!-- DEFINE -->
+<section class="sec" id="define">
+  <h2><span class="ph D">DEFINE</span> The problem, in numbers</h2>
+  <div class="cap">Charter · SIPOC · voice of customer · scope</div>
+
+  <div class="grid2">
+    <div>
+      <h3>Charter</h3>
+      <table class="kv">
+        <tr><td>Problem</td><td>In three weeks the team produced 242 specification files and zero running software. Nothing has reached a customer. Roughly 8% of the effort created value; the rest is inventory nobody consumes.</td></tr>
+        <tr><td>Business case</td><td>The scarce resource is evening hours — ~20/week between two people. It is being spent writing documents instead of building the demo needed to open conversations with prospects already in hand.</td></tr>
+        <tr><td>Goal</td><td>A working demo — one agent, one vertical, webchat — that can be screen-shared to a prospect. Raise value-add ratio from ~8% to &gt;40%. Cut lead-time-to-runnable from infinite to &lt;5 weeks.</td></tr>
+        <tr><td>In scope</td><td>The build process: schema → compiler → chat API → widget → dashboard → test.</td></tr>
+        <tr><td>Out of scope</td><td>Runtime redesign (sound already), billing, onboarding, the other 11 agents / 11 verticals / 9 channels.</td></tr>
+        <tr><td>Team</td><td>Main dev (build), second (vibe-code + customer), founder (approves deploys).</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Voice of the customer → CTQ</h3>
+      <table class="t">
+        <tr><th>The business wants</th><th>Measure</th><th>Target</th></tr>
+        <tr><td>"Answer my customers when I can't"</td><td>Response latency</td><td class="num">&lt;3s</td></tr>
+        <tr><td>"Don't embarrass me"</td><td>Correct-answer rate</td><td class="num">&gt;80%</td></tr>
+        <tr><td>"Know when to fetch a human"</td><td>Escalates correctly</td><td class="num">100% of safety cases</td></tr>
+        <tr><td>"Don't cost me a fortune"</td><td>Cost / conversation</td><td class="num">&lt;$0.025</td></tr>
+        <tr><td>"Set it up fast"</td><td>Time to configure</td><td class="num">&lt;10 min</td></tr>
+      </table>
+      <div class="note"><b>The gap:</b> every CTQ has a target and no baseline. You have tolerances but no capability data. Producing the first baseline is the entire point of the Measure and Analyse phases.</div>
+    </div>
+  </div>
+
+  <h3>SIPOC — the build process</h3>
+  <div class="sipoc">
+    <div class="h">Suppliers</div><div class="h">Inputs</div><div class="h">Process</div><div class="h">Outputs</div><div class="h">Customers</div>
+    <div class="c"><ul><li>Founder</li><li>Main dev</li><li>Second (AI-assisted)</li><li>Vendor docs</li><li>Prospects (in hand)</li></ul></div>
+    <div class="c"><ul><li>Role spec + patches</li><li>115-table design</li><li>Compiler</li><li>Supabase / Vercel</li><li>A price <span class="t-amb tag">set now</span></li><li>A vertical <span class="t-amb tag">choose</span></li></ul></div>
+    <div class="c"><ol><li>Schema → SQL</li><li>Compile agent</li><li>Chat API</li><li>Widget</li><li>Dashboard</li><li>Test 30 Qs</li><li>Demo</li></ol></div>
+    <div class="c"><ul><li>Running agent</li><li>Live demo URL</li><li>Cost per convo</li><li>Test scores</li><li>Booking + escalation paths</li></ul></div>
+    <div class="c"><ul><li>The prospects you pitch</li><li>Their end customers</li><li>You (margin data)</li></ul></div>
+  </div>
+  <div class="done"><b>Already done in Define:</b> compiler runs (~630 tokens, 42% of budget), sector diff proves verticals differ (43% similar), schema written as 11 SQL tables. Three of the biggest unknowns closed before Measure even starts.</div>
+</section>
+
+<!-- MEASURE -->
+<section class="sec" id="measure">
+  <h2><span class="ph M">MEASURE</span> Where the effort actually goes</h2>
+  <div class="cap">Value-add analysis · the eight wastes · baseline</div>
+
+  <div class="grid2">
+    <div>
+      <h3>Value-add analysis of 242 outputs</h3>
+      <table class="t">
+        <tr><th>Output</th><th>Files</th><th>Class</th></tr>
+        <tr><td>Runtime / schema / compiler specs</td><td class="num">~8</td><td><span class="tag t-grn">Value</span></td></tr>
+        <tr><td>Governance (ADRs, rules, gates)</td><td class="num">~30</td><td><span class="tag t-amb">Necessary</span></td></tr>
+        <tr><td>144 sector YAMLs</td><td class="num">144</td><td><span class="tag t-red">Overproduced</span></td></tr>
+        <tr><td>SOPs, roadmaps, stubs</td><td class="num">~60</td><td><span class="tag t-red">Premature</span></td></tr>
+        <tr><td><strong>Cycle efficiency</strong></td><td class="num"><strong>~8%</strong></td><td>value ÷ total</td></tr>
+      </table>
+      <p style="font-size:13px">Under 25% means a process making mostly stock nobody consumes. Target &gt;40%.</p>
+    </div>
+    <div>
+      <h3>Baseline — the starting line</h3>
+      <div class="metric">
+        <div class="mh">Metric</div><div class="mh now">Now</div><div class="mh tgt">Target</div>
+        <div>Software a customer can use</div><div class="now">none</div><div class="tgt">demo</div>
+        <div>Cycle efficiency</div><div class="now">8%</div><div class="tgt">40%</div>
+        <div>Lead time to runnable</div><div class="now">∞</div><div class="tgt">&lt;5wk</div>
+        <div>Cost / conversation</div><div class="now">?</div><div class="tgt">&lt;$0.025</div>
+        <div>Correct-answer rate</div><div class="now">?</div><div class="tgt">&gt;80%</div>
+        <div>Compiled prompt size</div><div class="now">630</div><div class="tgt">&lt;1500</div>
+      </div>
+      <div class="note"><b>Two "?" rows</b> are what Gate 1 and Gate 2 exist to fill. You cannot improve what you have never measured — the first real conversation produces the first real cost and quality numbers.</div>
+    </div>
+  </div>
+
+  <h3>The eight wastes, with evidence</h3>
+  <table class="t">
+    <tr><th style="width:120px">Waste</th><th>Seen here</th><th style="width:70px">Level</th></tr>
+    <tr><td>Overproduction</td><td>144 sector files before a compiler existed to consume them; a locked 274-file list</td><td><span class="tag t-red">High</span></td></tr>
+    <tr><td>Inventory</td><td>230 of 242 files consumed by nothing; 262 specs unwritten but planned</td><td><span class="tag t-red">High</span></td></tr>
+    <tr><td>Extra-processing</td><td>3 DB regions for 0 tenants; 9 model providers abstracted; 115 tables before 1 ran</td><td><span class="tag t-red">High</span></td></tr>
+    <tr><td>Defects</td><td>README describes files that don't exist; duplicate ADR numbers; gate tests wrong agent count</td><td><span class="tag t-amb">Med</span></td></tr>
+    <tr><td>Non-utilised talent</td><td>The AI builder never invoked; second person's build capacity unassigned</td><td><span class="tag t-amb">Med</span></td></tr>
+    <tr><td>Waiting</td><td>Implementation waiting on a spec phase with no end date</td><td><span class="tag t-amb">Med</span></td></tr>
+    <tr><td>Motion</td><td>Reading 8 docs in order before any code may be written</td><td><span class="tag t-gry">Low</span></td></tr>
+    <tr><td>Transportation</td><td>Schema handed off as .docx, never converted to SQL</td><td><span class="tag t-gry">Low</span></td></tr>
+  </table>
+</section>
+
+<!-- ANALYSE -->
+<section class="sec" id="analyse">
+  <h2><span class="ph A">ANALYSE</span> Why the software never got built</h2>
+  <div class="cap">Five whys · cause &amp; effect · the root</div>
+
+  <div class="grid2">
+    <div>
+      <h3>Five whys</h3>
+      <div class="why">
+        <div><b>Problem</b>Three weeks in, zero running software.</div>
+        <div><b>Why 1</b>Building couldn't start until the specs were "complete".</div>
+        <div><b>Why 2</b>Because the rule is docs-before-code, and the list wasn't finished.</div>
+        <div><b>Why 3</b>Because the list kept growing — every gap found while writing spawned a new document.</div>
+        <div><b>Why 4</b>Because gap-discovery routed to authoring, never to an experiment.</div>
+        <div><b>Why 5</b>Because "done" was defined per task but never for the phase.</div>
+      </div>
+      <div class="root"><b>Root cause.</b> The process had a definition of done for tasks and no exit condition for the specification phase. A phase that can't end doesn't — so effort pooled in the only step allowed to run.</div>
+    </div>
+    <div>
+      <h3>Contributing causes</h3>
+      <div class="bone">
+        <div class="b"><h4>Method</h4><ul><li>No phase exit criteria</li><li>No spec-expiry rule</li><li>Gaps → docs, not spikes</li></ul></div>
+        <div class="b"><h4>Measurement</h4><ul><li>Progress = files written</li><li>Validation checks form, not depth</li><li>No customer metric</li></ul></div>
+        <div class="b"><h4>People</h4><ul><li>Two, part-time, no lanes</li><li>Builder never invoked</li><li>All decisions to one approver</li></ul></div>
+        <div class="b"><h4>Materials</h4><ul><li>No price</li><li>No customer input</li><li>Schema as prose</li></ul></div>
+        <div class="b"><h4>Machine</h4><ul><li>No compiler (until now)</li><li>No eval harness</li><li>Migrations never run</li></ul></div>
+        <div class="b"><h4>Environment</h4><ul><li>Nobody downstream waiting</li><li>No deadline on anything</li><li>Scope written as if hours were unlimited</li></ul></div>
+      </div>
+      <div class="note"><b>Strongest cause:</b> "nobody downstream waiting." A process with no one expecting its output drifts to the cheapest, least-exposing step. Every countermeasure below works by installing someone who waits.</div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPROVE -->
+<section class="sec" id="improve">
+  <h2><span class="ph I">IMPROVE</span> The countermeasures, as a build</h2>
+  <div class="cap">Four gates · each ends in something that runs</div>
+
+  <div class="grid2">
+    <div>
+      <div class="gate D"><div class="gh"><span>Gate 0 · Define</span><span>Wk 1 · ~8h</span></div><div class="gb">New repo, 6 files carried. Run both migrations. Prove tenant isolation. Set price + vertical.<div class="ex">EXIT · DB runs, A can't read B</div></div></div>
+      <div class="gate M"><div class="gh"><span>Gate 1 · Measure</span><span>Wk 2–3 · ~18h</span></div><div class="gb">Port compiler to TS + cache it. One chat API route. Cost logged from message one.<div class="ex">EXIT · one message → one real answer</div></div></div>
+    </div>
+    <div>
+      <div class="gate A"><div class="gh"><span>Gate 2 · Analyse</span><span>Wk 4–5 · ~20h</span></div><div class="gb">Widget, dashboard, live price edit, booking + escalation paths, 30 golden questions scored.<div class="ex">EXIT · a stranger uses it on a phone</div></div></div>
+      <div class="gate I"><div class="gh"><span>Gate 3 · Improve</span><span>Wk 6 · ~9h</span></div><div class="gb">Configure a real prospect as the demo. Rehearse. Book the pitch.<div class="ex">EXIT · demo rehearsed, call booked</div></div></div>
+    </div>
+  </div>
+
+  <h3>The structural fixes (what actually changes)</h3>
+  <table class="t">
+    <tr><th>Change</th><th>Waste it kills</th><th>How</th></tr>
+    <tr><td>Cut scope to 1 agent / 1 vertical / 1 channel</td><td>Overproduction, extra-processing</td><td>Turns a plan needing ~2,000h into one needing ~55h</td></tr>
+    <tr><td>Build the compiler first</td><td>Extra-processing</td><td>Proves the thesis in an afternoon instead of assuming it across 144 files <span class="tag t-grn">done</span></td></tr>
+    <tr><td>Spike before spec, for discovery</td><td>Defects, extra-processing</td><td>Implementation exposes the need; the spec records what was learned</td></tr>
+    <tr><td>Golden test set as the quality gate</td><td>Defects</td><td>30 scored questions; re-run on every prompt change</td></tr>
+    <tr><td>Phase exit criteria + spec expiry</td><td>Waiting, overproduction</td><td>Ends the loop; unimplemented specs archive at 60 days</td></tr>
+    <tr><td>Two lanes, no overlap</td><td>Non-utilised talent, motion</td><td>Dev owns data/compiler/API; second owns widget/prompts/tests/customer</td></tr>
+    <tr><td>A price, and a real prospect</td><td>The root cause itself</td><td>Installs the someone-waiting that was missing</td></tr>
+  </table>
+</section>
+
+<!-- CONTROL -->
+<section class="sec" id="control">
+  <h2><span class="ph C">CONTROL</span> Keeping it from sliding back</h2>
+  <div class="cap">Control plan · the signals that fire</div>
+
+  <table class="t">
+    <tr><th>Control</th><th>Signal</th><th>Freq</th><th>Reaction rule</th></tr>
+    <tr><td>Newest-file rule</td><td>Type of the latest commit</td><td>Weekly</td><td>Two weeks of <span class="m">.md</span> in a row → stop, re-cut. Don't push harder.</td></tr>
+    <tr><td>Capacity check</td><td>Hours worked vs gate estimate</td><td>Weekly</td><td>Two weeks under 60% → shrink the gate, don't extend it silently</td></tr>
+    <tr><td>Phase exit</td><td>Named condition met</td><td>Per gate</td><td>Not met → decide, don't drift into the next gate</td></tr>
+    <tr><td>Golden pass rate</td><td>Score on 30 questions</td><td>Per prompt change</td><td>Below 80% or any safety fail → revert the change</td></tr>
+    <tr><td>Cost / conversation</td><td>Three-number model</td><td>Weekly</td><td>Above $0.025 → check model tier before anything else</td></tr>
+    <tr><td>Cost cap</td><td>Conversations over $0.40</td><td>Continuous</td><td>Hard stop mid-conversation; log incident</td></tr>
+    <tr><td>Tenant isolation</td><td>Cross-tenant read succeeds</td><td>Per deploy</td><td>Any occurrence → block deploy, P0</td></tr>
+    <tr><td>Spec expiry</td><td>Days unimplemented</td><td>Monthly</td><td>Over 60 → move to <span class="m">/archive</span></td></tr>
+  </table>
+
+  <div class="note"><b>Design intent:</b> almost every control is automatic once built — an eval score, a cost cap, a queue-age alert. Only the phase exit needs human judgement, deliberately, because the failure being corrected was a judgement made repeatedly under no pressure. A rule agreed while fresh beats a call made at 11pm.</div>
+
+  <h3>Weekly checkpoint — 30 minutes, same day</h3>
+  <p>1 · What actually ran this week? &nbsp;·&nbsp; 2 · What did the hours really come to? &nbsp;·&nbsp; 3 · What's blocked, and who owns unblocking it?</p>
+  <p style="font-size:13px;color:var(--grey)">If someone missed a week, say so — no apology expected. The plan is sized for 20 hours and survives a bad fortnight. It does not survive someone quietly stopping and neither of you saying it.</p>
+</section>
+
+<div class="foot">
+  <b>AUTO-LSS-001</b> · Automology build process · DMAIC A3<br>
+  Define ✅ mostly complete · Measure ◧ baseline pending first conversation · Analyse ✅ root cause found · Improve ▶ in progress · Control ▷ armed<br>
+  Companion files: automology-repo.zip · RUNBOOK · MVP build plan
+</div>
+
+</div>
+</body>
+</html>

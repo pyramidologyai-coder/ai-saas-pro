@@ -1,0 +1,591 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://automology.io/schemas/role-spec/v1.3",
+  "title": "Automology Role Specification Schema",
+  "description": "Validates the structured YAML front-matter of every AI Agent base specification file (AGENT-XXX-rolename.md). Version 1.3 — STABLE (evolves through minor bumps; no ADR required for additive optional fields; breaking changes require ADR + Ash approval). v1.3 adds: decision_philosophy (meta-level tie-breaking rules), priority_order (concurrent trigger resolution), memory_write_policy (post-conversation persistence contract). These fields exist for Hermes orchestration and Codex implementation — they are as important as KPIs and failure_handling.",
+  "type": "object",
+
+  "required": [
+    "agent_id",
+    "role_name",
+    "spec_version",
+    "schema_version",
+    "mission",
+    "llm_tier_default",
+    "upsell_allowed_default",
+    "escalation_chain_default",
+    "supported_sectors",
+    "required_tools",
+    "default_language",
+    "channels_supported",
+    "hold_modes_supported",
+    "human_escalation_enabled"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+
+    "agent_id": {
+      "type": "string",
+      "pattern": "^AGENT-0[0-9]{2}$",
+      "description": "Canonical agent identifier. Must match the filename. e.g. AGENT-001",
+      "examples": ["AGENT-001", "AGENT-012"]
+    },
+
+    "role_name": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 60,
+      "description": "Human-readable role name. e.g. AI Receptionist",
+      "examples": ["AI Receptionist", "AI Sales Manager", "AI HR Assistant"]
+    },
+
+    "spec_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of this specific role spec. Bump on any behavioral change.",
+      "examples": ["1.0.0", "1.2.3"]
+    },
+
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "Version of ROLE_SPEC.schema.json this spec was authored against. Must be <= current schema version.",
+      "examples": ["1.0"]
+    },
+
+    "mission": {
+      "type": "string",
+      "minLength": 30,
+      "maxLength": 600,
+      "description": "One to three sentence mission statement for this AI Employee. Plain English. No technical jargon."
+    },
+
+    "llm_tier_default": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "Default LLM tier for this role. 1=Gemini Flash-Lite (T1), 2=Gemini Flash (T2), 3=Claude Sonnet (T3). Can be overridden upward by sector or tenant."
+    },
+
+    "llm_tier_minimum": {
+      "type": "integer",
+      "enum": [1, 2, 3],
+      "description": "Minimum LLM tier this role may ever use, regardless of sector or tenant config. Omit if no minimum beyond T1. Set in base spec when the role always requires a certain quality floor.",
+      "default": 1
+    },
+
+    "upsell_allowed_default": {
+      "type": "boolean",
+      "description": "Platform default for upsell. true = upsell is enabled unless sector/tenant overrides to false. false = upsell disabled unless sector explicitly enables it."
+    },
+
+    "human_escalation_enabled": {
+      "type": "boolean",
+      "description": "Whether this role can trigger human escalation at all. Must be true for all customer-facing roles. Only set to false for fully automated back-office roles.",
+      "default": true
+    },
+
+    "escalation_chain_default": {
+      "type": "array",
+      "description": "Default escalation priority order. Tenant config provides actual contact details. At least one entry required. Cannot be empty.",
+      "minItems": 1,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["online_staff", "designated_escalation_contact", "business_owner"]
+      }
+    },
+
+    "hold_modes_supported": {
+      "type": "array",
+      "description": "Human escalation hold modes this role supports at the base level. silent = AI stops. warm = AI continues basics. callback = AI collects phone number and sets SLA.",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["silent", "warm", "callback"]
+      }
+    },
+
+    "supported_sectors": {
+      "type": "array",
+      "description": "Sectors this agent role is designed to serve. Must include all 12 MVP sectors unless there is a documented reason to exclude one.",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "clinic",
+          "dentist",
+          "restaurant",
+          "cafe",
+          "gym",
+          "salon",
+          "retail",
+          "ecommerce",
+          "automotive",
+          "real_estate",
+          "legal",
+          "hotel"
+        ]
+      }
+    },
+
+    "required_tools": {
+      "type": "array",
+      "description": "Tools this agent requires to function. These must be available in the tenant's plan for the agent to activate.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "crm",
+          "calendar",
+          "knowledge_base",
+          "whatsapp",
+          "email",
+          "sms",
+          "voice",
+          "payments",
+          "ecommerce_integration",
+          "pos_integration",
+          "analytics",
+          "loyalty_engine",
+          "review_engine",
+          "hr_module",
+          "finance_module"
+        ]
+      }
+    },
+
+    "default_language": {
+      "type": "string",
+      "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+      "description": "Default language as BCP 47 tag. Tenant config always overrides this.",
+      "examples": ["en", "ar", "fr", "ar-SA"]
+    },
+
+    "channels_supported": {
+      "type": "array",
+      "description": "Communication channels this agent can operate on.",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "whatsapp",
+          "instagram",
+          "facebook",
+          "webchat",
+          "email",
+          "sms",
+          "telegram",
+          "tiktok",
+          "twitter",
+          "voice"
+        ]
+      }
+    },
+
+    "kpi_definitions": {
+      "type": "array",
+      "description": "KPIs tracked for this agent role in the analytics dashboard.",
+      "items": {
+        "type": "object",
+        "required": ["kpi_id", "name", "unit"],
+        "additionalProperties": false,
+        "properties": {
+          "kpi_id": { "type": "string" },
+          "name": { "type": "string" },
+          "unit": {
+            "type": "string",
+            "enum": ["count", "percentage", "seconds", "minutes", "currency", "score"]
+          },
+          "target": { "type": "number" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+
+    "permissions_default": {
+      "type": "array",
+      "description": "Default permission set granted to this agent at the base level.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "read_customers",
+          "write_customers",
+          "create_appointment",
+          "modify_appointment",
+          "cancel_appointment",
+          "send_message",
+          "read_knowledge_base",
+          "write_knowledge_base",
+          "initiate_escalation",
+          "read_orders",
+          "create_order",
+          "process_refund",
+          "access_analytics",
+          "manage_loyalty",
+          "send_review_request",
+          "read_staff",
+          "read_finance",
+          "write_finance",
+          "read_hr",
+          "write_hr"
+        ]
+      }
+    },
+
+    "no_clinical_commentary": {
+      "type": "boolean",
+      "description": "When true, agent must never comment on symptoms, diagnoses, lab results, or treatment decisions. Platform-level safety rule. Cannot be overridden by sector or tenant.",
+      "default": false
+    },
+
+    "sector_notes": {
+      "type": "string",
+      "maxLength": 1000,
+      "description": "Human-readable notes for spec authors about sector-specific considerations for this role."
+    },
+
+    "communication_rules": {
+      "type": "object",
+      "description": "How this AI employee communicates. Defines tone, formality, emoji policy, and greeting style. Sector patches may override for industry-appropriate communication.",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {
+          "type": "string",
+          "enum": ["professional", "friendly", "casual", "formal"],
+          "description": "Overall tone of responses. professional = warm but business-focused. formal = high register, no contractions. friendly = approachable. casual = relaxed."
+        },
+        "formality_level": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "How formal the language should be. high = full formal Arabic/English, no contractions. low = relaxed, conversational."
+        },
+        "emoji_policy": {
+          "type": "string",
+          "enum": ["none", "minimal", "moderate"],
+          "description": "none = never use emoji. minimal = acknowledgement only (✓, ✅). moderate = expressive use in appropriate contexts."
+        },
+        "greeting_style": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Template or guideline for how this agent opens conversations. e.g. 'Always greet by name if known. Use السلام عليكم for Arabic, Hello for English.'"
+        },
+        "closing_style": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Template or guideline for how this agent closes conversations. e.g. 'Confirm next steps, offer further help, sign off warmly.'"
+        },
+        "dialect_notes": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "Language dialect or register guidance. e.g. 'Gulf Arabic preferred. Avoid Egyptian colloquialisms. British English for formal written output.'"
+        }
+      }
+    },
+
+    "context_requirements": {
+      "type": "array",
+      "description": "Context items Hermes must load before the first AI response in each conversation. Each item maps to a data fetch. Omitting an item means the agent works without that context.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "customer_profile",
+          "conversation_history",
+          "current_appointments",
+          "outstanding_invoices",
+          "loyalty_status",
+          "active_orders",
+          "staff_availability",
+          "business_hours",
+          "active_campaigns",
+          "recent_complaints",
+          "knowledge_base_faq",
+          "tenant_settings"
+        ]
+      }
+    },
+
+    "success_criteria": {
+      "type": "array",
+      "description": "Performance thresholds for KPIs defined in kpi_definitions. Controls dashboard RAG status (green/amber/red). Sector patches may override with sector-specific benchmarks.",
+      "items": {
+        "type": "object",
+        "required": ["kpi_id", "green_above", "amber_above"],
+        "additionalProperties": false,
+        "properties": {
+          "kpi_id": {
+            "type": "string",
+            "description": "Must reference a kpi_id defined in kpi_definitions for this agent."
+          },
+          "green_above": {
+            "type": "number",
+            "description": "Threshold above which the KPI status is green (target met)."
+          },
+          "amber_above": {
+            "type": "number",
+            "description": "Threshold above which the KPI status is amber (approaching limit). Below this threshold = red."
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Context for why these thresholds were set. e.g. 'Industry benchmark is 60%; we target 65%.'"
+          }
+        }
+      }
+    },
+
+    "decision_matrix": {
+      "type": "array",
+      "description": "Business rules that govern autonomous AI decisions. Each entry defines a scenario, the conditions that activate it, and the action to take. Enables structured, auditable decision-making without embedding logic in prompts.",
+      "items": {
+        "type": "object",
+        "required": ["scenario", "action"],
+        "additionalProperties": false,
+        "properties": {
+          "scenario": {
+            "type": "string",
+            "minLength": 3,
+            "description": "Name of the decision scenario. e.g. refund_request, booking_conflict, complaint_received, payment_failure"
+          },
+          "conditions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Conditions that activate this rule. Plain English. e.g. ['amount_lte_100', 'customer_verified', 'first_complaint']"
+          },
+          "action": {
+            "type": "string",
+            "description": "What the agent does when conditions are met. e.g. auto_approve, escalate_to_human, collect_details_and_ticket, defer_to_callback"
+          },
+          "escalate": {
+            "type": "boolean",
+            "description": "Whether this action involves human escalation.",
+            "default": false
+          },
+          "response_template": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional response guideline for this scenario. Not a hard template — a tone and content guide for the AI."
+          }
+        }
+      }
+    },
+
+    "events_published": {
+      "type": "array",
+      "description": "Events this agent emits to the Hermes event bus when key actions occur. Other agents and platform automations can subscribe to these events.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][a-zA-Z]+$",
+        "description": "PascalCase event name. e.g. AppointmentBooked, LeadCreated, EscalationTriggered, ComplaintResolved"
+      }
+    },
+
+    "events_subscribed": {
+      "type": "array",
+      "description": "Events from the Hermes event bus that this agent listens to and reacts on.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][a-zA-Z]+$",
+        "description": "PascalCase event name. e.g. PaymentReceived, CalendarUpdated, CustomerReplied, OrderShipped"
+      }
+    },
+
+    "collaborates_with": {
+      "type": "array",
+      "description": "Other AI employees this agent works with. Defines the collaboration and handoff network of the AI workforce.",
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "required": ["agent_id", "handoff_direction"],
+        "additionalProperties": false,
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "pattern": "^AGENT-0[0-9]{2}$",
+            "description": "The agent this role collaborates with."
+          },
+          "handoff_direction": {
+            "type": "string",
+            "enum": ["sends_to", "receives_from", "bidirectional"],
+            "description": "sends_to = this agent passes work to the other. receives_from = this agent receives from the other. bidirectional = both directions occur."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "What causes this collaboration. e.g. qualified_lead_created, booking_confirmed, complaint_unresolved_after_24h"
+          }
+        }
+      }
+    },
+
+    "failure_handling": {
+      "type": "object",
+      "description": "Fallback behaviour when a required dependency is unavailable. Defines graceful degradation per integration. Omit entries for tools this agent does not use.",
+      "additionalProperties": false,
+      "properties": {
+        "crm_unavailable": {
+          "type": "string",
+          "enum": ["continue_without_context", "pause_and_notify_customer", "escalate_immediately"],
+          "description": "What to do when the CRM cannot be reached. continue_without_context = proceed but log the gap."
+        },
+        "calendar_unavailable": {
+          "type": "string",
+          "enum": ["continue_without_booking", "pause_and_notify_customer", "escalate_immediately"],
+          "description": "What to do when the calendar integration is offline."
+        },
+        "knowledge_base_unavailable": {
+          "type": "string",
+          "enum": ["continue_with_general_knowledge", "pause_and_notify_customer", "escalate_immediately"],
+          "description": "What to do when the knowledge base cannot be queried."
+        },
+        "llm_timeout": {
+          "type": "string",
+          "enum": ["retry_once_same_tier", "retry_with_lower_tier", "escalate_immediately"],
+          "description": "What to do when the LLM does not respond within the response SLA."
+        },
+        "payment_gateway_unavailable": {
+          "type": "string",
+          "enum": ["defer_to_manual_payment", "pause_and_notify_customer", "escalate_immediately"],
+          "description": "What to do when the payment integration is down."
+        },
+        "channel_api_down": {
+          "type": "string",
+          "enum": ["queue_message_for_retry", "notify_ops_team", "escalate_immediately"],
+          "description": "What to do when the messaging channel API is unavailable."
+        }
+      }
+    },
+
+    "observability_config": {
+      "type": "object",
+      "description": "Monitoring and alerting configuration for this agent. Controls what is tracked beyond standard business KPIs — infrastructure-level signals.",
+      "additionalProperties": false,
+      "properties": {
+        "track_response_latency": {
+          "type": "boolean",
+          "description": "Track milliseconds from customer message to first AI response.",
+          "default": true
+        },
+        "track_tool_call_success_rate": {
+          "type": "boolean",
+          "description": "Track success/failure rate of every tool call (CRM, calendar, payments, knowledge base).",
+          "default": true
+        },
+        "track_cost_per_conversation": {
+          "type": "boolean",
+          "description": "Track LLM token cost per conversation for billing analysis and tier optimization.",
+          "default": true
+        },
+        "alert_on_error_rate_above": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage. Send ops alert when error rate (failed tool calls + LLM errors) exceeds this threshold."
+        },
+        "alert_on_escalation_rate_above": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Percentage. Send ops alert when escalation rate exceeds this. High escalation rate indicates the agent is struggling to resolve independently."
+        },
+        "alert_on_latency_above_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Send ops alert when average response latency exceeds this number of seconds."
+        }
+      }
+    },
+
+    "decision_philosophy": {
+      "type": "array",
+      "description": "Meta-level tie-breaking principles this agent applies when two legitimate paths conflict. These are NOT scenario rules (those belong in decision_matrix) — they are value priorities that govern all decisions not explicitly covered. Hermes uses these to resolve ambiguous situations at runtime. Every agent must have at least 3. Written in plain English as imperative statements.",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "minLength": 20,
+        "description": "A single tie-breaking principle. e.g. 'Accuracy over speed — verify before confirming any figure, never estimate when exact data is available.'"
+      }
+    },
+
+    "priority_order": {
+      "type": "array",
+      "description": "Ordered list of work categories from highest to lowest priority. When multiple triggers fire simultaneously, Hermes uses this order to determine what the agent handles first. The first item has the highest priority. Each item is a trigger category name matching the agent's decision_matrix scenarios or event types.",
+      "minItems": 3,
+      "items": {
+        "type": "string",
+        "description": "A priority category name in snake_case. e.g. emergency_keyword_detected, legal_threat, human_escalation_request, booking_intent, general_inquiry"
+      }
+    },
+
+    "memory_write_policy": {
+      "type": "object",
+      "description": "Defines what this agent writes back to persistent memory after interactions. Separate from context_requirements (what is READ at conversation start) — this defines what is WRITTEN after each interaction. Codex implements these as post-conversation and post-transaction database writes scoped to tenant_id.",
+      "additionalProperties": false,
+      "properties": {
+        "persist_after_conversation": {
+          "type": "array",
+          "description": "Field names written to customer profile or agent memory after every conversation ends, regardless of outcome.",
+          "items": { "type": "string" }
+        },
+        "persist_after_transaction": {
+          "type": "array",
+          "description": "Field names written after a transaction completes (booking confirmed, payment received, task created, etc.).",
+          "items": { "type": "string" }
+        },
+        "clear_on": {
+          "type": "array",
+          "description": "Events or conditions that trigger deletion of this agent's written data for a customer. Must include gdpr_deletion_request at minimum.",
+          "items": { "type": "string" }
+        },
+        "retention_period_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "How long this agent's written data is retained before automatic deletion. Must comply with tenant_settings.data_retention_days if set. Finance agents: minimum 2555 (7 years). Medical: local regulation applies."
+        }
+      }
+    },
+
+    "outputs_produced": {
+      "type": "array",
+      "description": "Data artifacts this agent creates as a result of its work. Distinct from events (which are signals) — outputs are persisted records written to a destination system. e.g. Appointment written to calendar, Lead written to CRM, SupportTicket written to database.",
+      "items": {
+        "type": "object",
+        "required": ["output_name", "output_type"],
+        "additionalProperties": false,
+        "properties": {
+          "output_name": {
+            "type": "string",
+            "description": "Name of the artifact in PascalCase. e.g. Appointment, Lead, SupportTicket, Quote, Invoice, LoyaltyRedemption, CallbackRequest"
+          },
+          "output_type": {
+            "type": "string",
+            "enum": ["record", "document", "message", "report", "notification"],
+            "description": "record = database row (appointment, lead, order). document = generated file (quote, invoice, summary). message = outbound communication (reminder, confirmation). report = analytics output. notification = alert or internal trigger."
+          },
+          "destination": {
+            "type": "string",
+            "enum": ["crm", "calendar", "database", "email", "whatsapp", "sms", "finance_module", "hr_module", "analytics", "loyalty_engine"],
+            "description": "The system where this output is written."
+          },
+          "trigger": {
+            "type": "string",
+            "description": "The condition that causes this output to be created. e.g. booking_confirmed, lead_qualified, payment_received."
+          },
+          "triggers_event": {
+            "type": "string",
+            "pattern": "^[A-Z][a-zA-Z]+$",
+            "description": "Event published to Hermes event bus after output is persisted. Must match an entry in events_published. e.g. AppointmentBooked, LeadCreated, InvoiceGenerated."
+          }
+        }
+      }
+    }
+  }
+}
