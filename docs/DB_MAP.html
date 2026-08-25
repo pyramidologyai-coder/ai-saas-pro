@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Automology — Database Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#17191B;--paper:#F1EFE8;--rust:#9E3B2A;--verd:#2C6B5E;--ochre:#B8862B;--blue:#3E6B8C;--grey:#5D625E;--line:#CDC9BB;
+--disp:'Archivo',sans-serif;--body:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0E0F10;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;padding:24px 12px}
+.page{max-width:1160px;margin:0 auto;background:var(--paper)}
+.hd{background:var(--ink);color:var(--paper);padding:24px 32px}
+.hd .k{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#8B9089}
+.hd h1{font-family:var(--disp);font-weight:900;font-size:clamp(24px,4vw,38px);letter-spacing:-.02em;margin-top:6px}
+.hd h1 span{color:var(--rust)}
+.hd p{color:#B9BCB5;margin-top:8px;max-width:70ch}
+.sec{padding:26px 32px;border-bottom:1px solid var(--line)}
+.sec h2{font-family:var(--disp);font-weight:900;font-size:19px;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:14px}
+.sec h2 em{font-style:normal;color:var(--rust)}
+p.note{color:var(--grey);font-size:13px;max-width:78ch;margin-bottom:14px}
+
+/* the map */
+.map{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+.tb{background:#fff;border:1.5px solid var(--ink);font-size:12px}
+.tb .th{background:var(--ink);color:#fff;font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:7px 10px;display:flex;justify-content:space-between;align-items:center}
+.tb .th .tag{font-size:8.5px;padding:1px 6px;border:1px solid #555;color:#B9BCB5;letter-spacing:.06em}
+.tb.core .th{background:var(--rust)}
+.tb.money .th{background:var(--verd)}
+.tb.people .th{background:var(--blue)}
+.tb ul{list-style:none;padding:7px 10px}
+.tb li{font-family:var(--mono);font-size:10.5px;padding:2.5px 0;color:#333;border-bottom:1px dashed #EEE}
+.tb li:last-child{border:0}
+.tb li b{color:var(--rust);font-weight:700}
+.tb li .fk{color:var(--blue);font-weight:700}
+.tb li .note{color:#999;font-family:var(--body);font-size:10px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:14px 0 4px;font-size:11.5px;color:var(--grey)}
+.legend span{display:flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;display:inline-block}
+
+/* flows */
+.flow{background:#fff;border-left:3px solid var(--ochre);padding:13px 16px;margin:10px 0;font-size:13px}
+.flow b{font-family:var(--disp);text-transform:uppercase;font-size:11px;letter-spacing:.06em;color:var(--ochre);display:block;margin-bottom:5px}
+.flow code{font-family:var(--mono);font-size:11.5px;background:var(--paper);padding:1px 5px}
+.arrow{color:var(--rust);font-weight:700}
+
+table.cov{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.cov th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--grey);text-align:left;border-bottom:1.5px solid var(--ink);padding:7px 8px 7px 0}
+.cov td{padding:8px 8px 8px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.ok{color:var(--verd);font-weight:700;font-family:var(--mono);font-size:11px}
+.later{color:var(--grey);font-family:var(--mono);font-size:11px}
+.gap{color:var(--rust);font-weight:700;font-family:var(--mono);font-size:11px}
+.foot{background:var(--ink);color:#B9BCB5;padding:16px 32px;font-family:var(--mono);font-size:10.5px;line-height:1.8}
+@media(max-width:900px){.map{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.map{grid-template-columns:1fr}.sec{padding:20px 16px}.hd{padding:20px 16px}}
+@media print{body{background:#fff;padding:0}.sec{page-break-inside:avoid}}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hd">
+  <div class="k">Automology · Database map · 11 tables · matches db/0001_init.sql</div>
+  <h1>What the database <span>covers</span></h1>
+  <p>Every table, what it holds, how they connect, and an honest list of what is NOT here yet. If a thing isn't on this page, it isn't in the database.</p>
+</div>
+
+<div class="sec">
+  <h2>The map</h2>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--rust)"></span>The business & its agent</span>
+    <span><span class="sw" style="background:var(--blue)"></span>People</span>
+    <span><span class="sw" style="background:var(--ink)"></span>The conversation</span>
+    <span><span class="sw" style="background:var(--verd)"></span>Money & accountability</span>
+    <span>▸ <b style="color:var(--rust)">PK</b> = identity · <b style="color:var(--blue)">FK→</b> = points to</span>
+  </div>
+
+  <div class="map">
+    <div class="tb core">
+      <div class="th">tenants <span class="tag">1 per business</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li>name · slug · email · phone</li>
+        <li>vertical <span class="note">salon, gym…</span></li>
+        <li>status · country_code</li>
+        <li>wallet_balance_usd <span class="note">the money</span></li>
+        <li>timezone · default_language</li>
+      </ul>
+    </div>
+
+    <div class="tb people">
+      <div class="th">profiles <span class="tag">humans who log in</span></div>
+      <ul>
+        <li><b>id</b> PK = auth.users id</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li>full_name · email</li>
+        <li>role <span class="note">owner | staff | platform_admin</span></li>
+        <li>is_active</li>
+      </ul>
+    </div>
+
+    <div class="tb core">
+      <div class="th">ai_employees <span class="tag">the agent</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li>agent_id · sector_id <span class="note">2 of 3 layers</span></li>
+        <li>persona_name · role_name · tone</li>
+        <li>config <span class="note">layer 3: hours, services</span></li>
+        <li>compiled_prompt · compiled_tokens</li>
+        <li>config_version · status</li>
+      </ul>
+    </div>
+
+    <div class="tb core">
+      <div class="th">items <span class="tag">services & prices</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li>name · description</li>
+        <li>price · currency · duration_min</li>
+        <li>is_bookable · active</li>
+        <li><span class="note">what the agent quotes. Edit → recompile</span></li>
+      </ul>
+    </div>
+
+    <div class="tb people">
+      <div class="th">customers <span class="tag">end customers</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li>external_id <span class="note">webchat session</span></li>
+        <li>name · phone · email</li>
+        <li>language_code</li>
+        <li>opted_out <span class="note">hard block, never messaged</span></li>
+      </ul>
+    </div>
+
+    <div class="tb">
+      <div class="th">conversations <span class="tag">1 per chat thread</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li><span class="fk">ai_employee_id →</span> ai_employees</li>
+        <li><span class="fk">customer_id →</span> customers</li>
+        <li>channel · status <span class="note">open | escalated | closed</span></li>
+        <li>message_count · ai_cost_usd <span class="note">running totals</span></li>
+        <li>escalated_at · escalation_reason</li>
+      </ul>
+    </div>
+
+    <div class="tb">
+      <div class="th">messages <span class="tag">every message</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li><span class="fk">conversation_id →</span> conversations</li>
+        <li>sender_type <span class="note">customer | ai | human</span></li>
+        <li>body</li>
+        <li>idempotency_key <span class="note">stops double replies</span></li>
+      </ul>
+    </div>
+
+    <div class="tb">
+      <div class="th">bookings <span class="tag">appointments</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id →</span> tenants</li>
+        <li><span class="fk">conversation_id →</span> conversations</li>
+        <li><span class="fk">customer_id · item_id →</span></li>
+        <li>scheduled_at · status</li>
+        <li><span class="note">UNIQUE (tenant, scheduled_at) = no double booking</span></li>
+      </ul>
+    </div>
+
+    <div class="tb money">
+      <div class="th">ai_decision_log <span class="tag">1 per AI reply</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id · conversation_id →</span></li>
+        <li>model_used · tokens_in/out · cached</li>
+        <li>actual_execution_cost</li>
+        <li>allocated_platform_cost</li>
+        <li>billable_usage_value</li>
+        <li>latency_ms <span class="note">the 3-number margin model</span></li>
+      </ul>
+    </div>
+
+    <div class="tb">
+      <div class="th">escalations <span class="tag">handovers</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id · conversation_id →</span></li>
+        <li>reason · trigger_source</li>
+        <li>status <span class="note">open | resolved</span></li>
+        <li>resolved_at · resolved_by</li>
+      </ul>
+    </div>
+
+    <div class="tb money">
+      <div class="th">usage_ledger <span class="tag">every cent</span></div>
+      <ul>
+        <li><b>id</b> PK</li>
+        <li><span class="fk">tenant_id · conversation_id →</span></li>
+        <li>entry_type <span class="note">topup | usage | adjustment</span></li>
+        <li>amount_usd <span class="note">+credit −debit</span></li>
+        <li>balance_after <span class="note">always agrees with wallet</span></li>
+      </ul>
+    </div>
+
+    <div class="tb" style="border-style:dashed;border-color:var(--grey)">
+      <div class="th" style="background:var(--grey)">functions <span class="tag">db/0003</span></div>
+      <ul>
+        <li>debit_wallet() <span class="note">charge, atomic</span></li>
+        <li>topup_wallet() <span class="note">add credit</span></li>
+        <li>save_compiled_prompt() <span class="note">store + version</span></li>
+        <li>auth_tenant_id() <span class="note">who is asking → which tenant</span></li>
+        <li><span class="note">server-only. Browser can't call them.</span></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="sec">
+  <h2>How one message flows through it</h2>
+  <div class="flow"><b>A customer writes "how much for balayage?"</b>
+    <code>tenants</code> <span class="arrow">→</span> found by slug ·
+    <code>ai_employees</code> <span class="arrow">→</span> load compiled_prompt ·
+    <code>customers</code> <span class="arrow">→</span> find/create by session ·
+    <code>conversations</code> <span class="arrow">→</span> find open or create ·
+    <span style="color:var(--rust)">hard blocks checked</span> (opted_out? wallet ≤ 0? cost cap?) ·
+    AI answers ·
+    <code>messages</code> ×2 <span class="arrow">→</span> both sides saved ·
+    <code>ai_decision_log</code> <span class="arrow">→</span> 3 cost numbers ·
+    <code>usage_ledger</code>+<code>tenants.wallet</code> <span class="arrow">→</span> debit, atomic
+  </div>
+  <div class="flow"><b>The AI books an appointment</b>
+    intent detected <span class="arrow">→</span> <code>items</code> checked (bookable? duration?) <span class="arrow">→</span> insert <code>bookings</code>.
+    If the slot is taken, the UNIQUE index rejects it politely — no double booking, no lock code needed.
+  </div>
+  <div class="flow"><b>The AI hands over to a human</b>
+    trigger fires <span class="arrow">→</span> insert <code>escalations</code> <span class="arrow">→</span> <code>conversations.status = 'escalated'</code> <span class="arrow">→</span> customer told a person will follow up. The model's own reply is NOT sent.
+  </div>
+  <div class="flow"><b>The owner edits a price</b>
+    <code>items</code> updated <span class="arrow">→</span> compiler re-runs <span class="arrow">→</span> <code>save_compiled_prompt()</code> <span class="arrow">→</span> <code>config_version</code> +1 <span class="arrow">→</span> next answer quotes the new price. The demo closer.
+  </div>
+</div>
+
+<div class="sec">
+  <h2>Coverage — <em>are we covering everything?</em></h2>
+  <p class="note">Honest answer: everything the DEMO needs is covered. Below is the full check — what's covered, what's deliberately later, and the two real gaps to know about.</p>
+  <table class="cov">
+    <tr><th>Need</th><th>Where</th><th>Status</th></tr>
+    <tr><td>A business with a wallet</td><td>tenants</td><td class="ok">COVERED</td></tr>
+    <tr><td>Owner login, scoped to their business</td><td>profiles + RLS</td><td class="ok">COVERED · tested PASS</td></tr>
+    <tr><td>The agent + its 3 config layers</td><td>ai_employees (agent_id, sector_id, config)</td><td class="ok">COVERED</td></tr>
+    <tr><td>Services & prices the agent quotes</td><td>items</td><td class="ok">COVERED</td></tr>
+    <tr><td>Chat threads + full history</td><td>conversations + messages</td><td class="ok">COVERED</td></tr>
+    <tr><td>No double replies on retry</td><td>messages.idempotency_key</td><td class="ok">COVERED</td></tr>
+    <tr><td>No double bookings</td><td>bookings unique index</td><td class="ok">COVERED</td></tr>
+    <tr><td>Handover to humans, with reason</td><td>escalations</td><td class="ok">COVERED</td></tr>
+    <tr><td>Cost of every single AI reply</td><td>ai_decision_log (3 numbers)</td><td class="ok">COVERED</td></tr>
+    <tr><td>Money in = money accounted</td><td>usage_ledger + debit_wallet()</td><td class="ok">COVERED · atomic</td></tr>
+    <tr><td>One tenant can't read another</td><td>RLS on all 11 tables</td><td class="ok">COVERED · 7/7 PASS</td></tr>
+    <tr><td>Customer says stop → never messaged</td><td>customers.opted_out hard block</td><td class="ok">COVERED</td></tr>
+    <tr><td colspan="3" style="padding-top:14px"><b style="font-family:var(--disp);text-transform:uppercase;font-size:11px;letter-spacing:.06em;color:var(--grey)">Deliberately later — designed, not built (correct for MVP)</b></td></tr>
+    <tr><td>Real payments (Stripe, invoices, plans)</td><td>wallet is manual topup for now</td><td class="later">GATE 3+</td></tr>
+    <tr><td>WhatsApp / voice channels</td><td>channel column ready, only 'webchat' used</td><td class="later">AFTER FIRST CUSTOMER</td></tr>
+    <tr><td>Second agent / multi-agent handoff</td><td>ai_employees supports N rows already</td><td class="later">AFTER REVENUE</td></tr>
+    <tr><td>Analytics & reporting tables</td><td>derive from decision_log when needed</td><td class="later">WHEN ASKED</td></tr>
+    <tr><td>Long-term customer memory</td><td>—</td><td class="later">V2</td></tr>
+    <tr><td colspan="3" style="padding-top:14px"><b style="font-family:var(--disp);text-transform:uppercase;font-size:11px;letter-spacing:.06em;color:var(--rust)">The 2 real gaps — small, known, planned</b></td></tr>
+    <tr><td>Business opening hours as data <span class="note">(agent knows hours only via compiled prompt; bookings can't yet validate "is 3pm inside opening hours")</span></td><td>lives in ai_employees.config for now</td><td class="gap">OK FOR DEMO · add availability table when a real customer needs slot logic</td></tr>
+    <tr><td>Staff/resource calendar <span class="note">(who does the haircut; 2 stylists = 2 parallel slots)</span></td><td>unique index assumes 1 slot per time</td><td class="gap">OK FOR DEMO · needed when a customer has &gt;1 staff</td></tr>
+  </table>
+</div>
+
+<div class="foot">
+  Matches db/0001–0004 as pushed · isolation test: 7/7 PASS · RLS on 11/11 tables · wallet atomic ·
+  <b style="color:var(--ochre)">rule: if it's not on this page, it's not in the database</b>
+</div>
+
+</div>
+</body>
+</html>

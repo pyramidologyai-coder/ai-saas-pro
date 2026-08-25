@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
       p_conversation_id: conversation.id,
       p_amount_usd: result.costUsd,
     });
-    // TODO write this function, or do the ledger insert + balance update here
+    // debit_wallet is defined in db/0003_functions.sql
 
     // ── 9 · Reply ───────────────────────────────────────────────────────────
     return NextResponse.json({ reply, conversation_id: conversation.id });

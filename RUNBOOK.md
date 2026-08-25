@@ -14,7 +14,7 @@ Legend: **[D]** main dev · **[S]** second · **[B]** both · ⏱ estimate
 - [ ] **[B]** ⏱30m — Open `docs/DECISIONS.md`. Fill the blanks in ADR-002 (vertical) and ADR-003 (price). This is the meeting. Two answers.
 - [ ] **[D]** ⏱20m — New Supabase project (call it `automology-dev`). SQL Editor → paste `db/0001_init.sql` → Run.
 - [ ] **[D]** ⏱10m — Same editor → paste `db/0002_seed.sql` → Run. Table Editor: confirm 11 tables + "Sunrise Hair Studio".
-- [ ] **[D]** ⏱30m — **Isolation test.** Insert a second tenant, then run the cross-tenant query in `docs/SETUP.md` §3. Must return 0 rows. *Do not proceed until it does.*
+- [ ] **[D]** ⏱30m — **Isolation test.** Run `db/0004_isolation_test.sql`. Every row must say PASS. *Do not proceed until it does.*
 - [ ] **[D]** ⏱30m — `npm install`. `cp .env.example .env.local`, fill Supabase keys. `npm run dev` — blank page is fine.
 - [ ] **[D]** ⏱1h — New Vercel project, connect the repo, add the env vars, deploy. Prove the pipe works.
 - [ ] **[S]** ⏱1h — Open `tests/golden.md`. Replace the `[bracketed]` placeholders with the chosen vertical's real services and prices. You now have the definition of "working" before any prompt exists.
