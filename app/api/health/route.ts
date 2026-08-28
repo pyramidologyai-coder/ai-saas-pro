@@ -34,6 +34,7 @@ export async function GET() {
     ? "set (anthropic)"
     : "MISSING";
   checks.env_llm_key = llm;
+  checks.dashboard_lock = process.env.DASHBOARD_PASSWORD ? "locked" : "NOT SET — dashboard unreachable";
 
   return NextResponse.json({ ok, ...checks }, { status: ok ? 200 : 500 });
 }

@@ -22,7 +22,9 @@ export interface ModelResult {
 // if you outgrow free and switch.
 const PRICING: Record<string, { in: number; out: number; cached: number }> = {
   "claude-haiku-4-5":   { in: 1.00,  out: 5.00,  cached: 0.10 },
-  "gemini-2.0-flash":   { in: 0.10,  out: 0.40,  cached: 0.025 },
+  // Gemini retires model names periodically. If a call 404s, the error names
+  // the replacement — set LLM_MODEL to it, no code change needed.
+  "gemini-3.6-flash":   { in: 0.30,  out: 2.50,  cached: 0.075 },
   "gemini-2.5-flash":   { in: 0.30,  out: 2.50,  cached: 0.075 },
 };
 
@@ -53,7 +55,7 @@ async function askGemini(opts: {
   system: string;
   messages: { role: "user" | "assistant"; content: string }[];
 }): Promise<ModelResult> {
-  const model = process.env.LLM_MODEL ?? "gemini-2.0-flash";
+  const model = process.env.LLM_MODEL ?? "gemini-3.6-flash";
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY is not set");
 
