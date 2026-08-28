@@ -171,8 +171,15 @@ export async function POST(req: NextRequest) {
 
     // ── 6 · Ask the model ───────────────────────────────────────────────────
     const started = Date.now();
+    // The model has no clock. Without today's date it cannot resolve
+    // "tomorrow" or "next Tuesday" into a real booking time.
+    const today = new Date().toLocaleDateString("en-GB", {
+      weekday: "long", year: "numeric", month: "long", day: "numeric",
+      timeZone: tenant.timezone ?? "Asia/Kuala_Lumpur",
+    });
+
     const result = await askModel({
-      system: employee.compiled_prompt,
+      system: `${employee.compiled_prompt}\n\nToday is ${today}.`,
       messages: [...turns, { role: "user", content: message }],
     });
     const latencyMs = Date.now() - started;
@@ -187,9 +194,27 @@ export async function POST(req: NextRequest) {
       reply = "Let me get a colleague to help with this — someone will follow up with you shortly.";
     }
 
-    // TODO booking intent → parse service/day/time → insert into bookings.
-    //      The unique index on (tenant_id, scheduled_at) is the optimistic
-    //      lock: on collision, tell the customer the slot just went.
+    // Booking: the agent emits a [[BOOK ...]] tag when it has all four details.
+    // We strip the tag from what the customer sees, then try to save it.
+    const booking = parseBookingTag(reply);
+    if (booking) {
+      reply = reply.replace(BOOK_TAG, "").trim();
+
+      const { data: result } = await db.rpc("create_booking", {
+        p_tenant_slug: slug,
+        p_conversation_id: conversation.id,
+        p_service_name: booking.service,
+        p_scheduled_at: booking.when,
+        p_customer_name: booking.name,
+      });
+
+      const r = result as any;
+      if (r?.ok) {
+        reply = `${reply}\n\nBooked: ${r.service}, ${formatWhen(r.scheduled_at, tenant.timezone)}. See you then, ${booking.name}.`;
+      } else {
+        reply = bookingFailureMessage(r?.reason);
+      }
+    }
 
     // ── 8 · Persist ─────────────────────────────────────────────────────────
     // Before returning. If the browser drops the response, this must survive.
@@ -241,6 +266,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       reply: "Give me a moment — I'll have someone get back to you.",
     }, { status: 200 });
+  }
+}
+
+
+// ─── Booking helpers ─────────────────────────────────────────────────────────
+
+/**
+ * The agent signals a confirmed booking with a machine-readable tag:
+ *   [[BOOK service="General consultation" when="2026-09-02T15:00" name="Aisyah"]]
+ * Parsing a tag is far more reliable than parsing prose, and the tag never
+ * reaches the customer.
+ */
+const BOOK_TAG = /\[\[BOOK\s+service="([^"]+)"\s+when="([^"]+)"\s+name="([^"]*)"\s*\]\]/i;
+
+function parseBookingTag(text: string): { service: string; when: string; name: string } | null {
+  const m = text.match(BOOK_TAG);
+  if (!m) return null;
+
+  const when = new Date(m[2]);
+  if (isNaN(when.getTime())) return null;   // unparseable date: treat as no booking
+
+  return { service: m[1].trim(), when: m[2].trim(), name: (m[3] ?? "").trim() };
+}
+
+function bookingFailureMessage(reason?: string): string {
+  switch (reason) {
+    case "slot_taken":
+      return "That slot has just been taken, sorry. Would another time work?";
+    case "outside_hours":
+    case "closed_that_day":
+      return "We're closed at that time. Could you pick a time within our opening hours?";
+    case "in_the_past":
+      return "That time has already passed — which day did you have in mind?";
+    case "unknown_service":
+      return "I couldn't match that to one of our services. Which one did you want?";
+    default:
+      return "I couldn't complete that booking. Let me get a colleague to help — someone will follow up shortly.";
+  }
+}
+
+function formatWhen(iso: string, timeZone?: string | null): string {
+  try {
+    return new Date(iso).toLocaleString("en-GB", {
+      weekday: "long", day: "numeric", month: "long",
+      hour: "2-digit", minute: "2-digit",
+      timeZone: timeZone ?? "Asia/Kuala_Lumpur",
+    });
+  } catch {
+    return iso;
   }
 }
 
