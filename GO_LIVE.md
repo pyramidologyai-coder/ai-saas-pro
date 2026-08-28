@@ -50,15 +50,24 @@ If `compiled_prompt` is null, 0006 didn't run — do it again and read the error
 
 ---
 
-## 3 · Get an Anthropic API key (5 min)
+## 3 · Get an LLM key (5 min)
 
-This is the only thing that costs money, and it's cents.
+Pick ONE. The app auto-detects whichever is set.
 
-1. Go to **console.anthropic.com** → sign up / log in
-2. **Billing** → add a card → buy **$5** of credit (that is thousands of test messages)
-3. **API Keys** → Create Key → copy it (starts `sk-ant-`)
+**Gemini — free, no card**
+1. **aistudio.google.com/apikey** → sign in with Google
+2. **Create API key** → copy it
+3. In Vercel the variable name is `GEMINI_API_KEY`
 
-Keep the tab open, you need it in the next step.
+Free tier is generous (thousands of messages a day). Good enough for the demo.
+
+**Anthropic — $5, better at following rules**
+1. **console.anthropic.com** → **Billing** → add card → buy **$5**
+2. **API Keys** → Create Key → copy it (starts `sk-ant-`)
+3. Variable name is `ANTHROPIC_API_KEY`
+
+Stricter about "never invent a price", which matters once you're demoing to a
+real prospect. Switching later is one variable — no code change.
 
 ---
 
@@ -74,7 +83,7 @@ each one — your deploys are Previews, so if Preview isn't ticked, nothing work
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | same page → anon public |
 | `SUPABASE_SERVICE_ROLE_KEY` | same page → service_role secret |
-| `ANTHROPIC_API_KEY` | the `sk-ant-...` key from step 3 |
+| `GEMINI_API_KEY` **or** `ANTHROPIC_API_KEY` | the key from step 3 |
 
 Then **Deployments** → the newest one (green, top of list) → ⋯ → **Redeploy**.
 
@@ -127,7 +136,8 @@ refund escalation, and the wallet slightly lower than 10.00.
 | Symptom | Cause | Fix |
 |---|---|---|
 | "This chat isn't enabled for this site yet" | Origin blocked | Tenant must be `trial`: `update tenants set status='trial' where slug='sunrise-hair';` |
-| "Give me a moment..." every time | API key missing or wrong | Check `/api/health`, re-check `ANTHROPIC_API_KEY` in Vercel, redeploy |
+| "Give me a moment..." every time | API key missing or wrong | Check `/api/health` shows `set (gemini)` or `set (anthropic)`, then redeploy |
+| Want to switch provider | — | Add the other key, set `LLM_PROVIDER=gemini` or `anthropic`, redeploy |
 | `not_configured` | No prompt in DB | Re-run `db/0006_prompt.sql` |
 | Paused message | Wallet empty | `select topup_wallet(id,10,'credit') from tenants where slug='sunrise-hair';` |
 | Nothing at all, blank page | Deploy is old | Vercel → newest deployment → Redeploy |

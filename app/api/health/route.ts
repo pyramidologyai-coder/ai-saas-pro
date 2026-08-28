@@ -28,7 +28,12 @@ export async function GET() {
 
   checks.env_supabase_url = process.env.NEXT_PUBLIC_SUPABASE_URL ? "set" : "MISSING";
   checks.env_service_key = process.env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "MISSING";
-  checks.env_llm_key = process.env.ANTHROPIC_API_KEY ? "set" : "missing (needed at Gate 1)";
+  const llm = process.env.GEMINI_API_KEY
+    ? "set (gemini)"
+    : process.env.ANTHROPIC_API_KEY
+    ? "set (anthropic)"
+    : "MISSING";
+  checks.env_llm_key = llm;
 
   return NextResponse.json({ ok, ...checks }, { status: ok ? 200 : 500 });
 }
