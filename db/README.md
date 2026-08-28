@@ -9,6 +9,7 @@ Copy the whole file, paste, click Run. Each takes seconds.
 | `0002_seed.sql` | Adds the demo business (Sunrise Hair Studio) | "Success" — check Table Editor |
 | `0003_functions.sql` | Adds the wallet functions the app calls | "Success. No rows returned" |
 | `0004_isolation_test.sql` | Proves one business can't read another's data | Rows of **PASS** |
+| `0005_domains.sql` | Domain whitelist — only approved sites can use an agent | "Success. No rows returned" |
 
 ## The 11 tables, in plain words
 
@@ -25,6 +26,7 @@ Copy the whole file, paste, click Run. Each takes seconds.
 | `ai_decision_log` | One row per AI reply: tokens, latency, the 3 cost numbers |
 | `escalations` | Chats handed to a human, and why |
 | `usage_ledger` | Every wallet debit and top-up, with balance after |
+| `tenant_domains` | Which websites may embed each business's widget |
 
 ## Rules built into the schema
 
@@ -37,7 +39,25 @@ Copy the whole file, paste, click Run. Each takes seconds.
 - **The wallet and the ledger always agree.** `debit_wallet()` updates both
   in one transaction.
 
-## After running all four
+## Onboarding a customer (the whole flow)
+
+```sql
+-- 1. add their domain to the whitelist
+select add_tenant_domain('their-slug', 'theirsite.com');
+
+-- 2. check it works
+select is_domain_allowed('their-slug', 'https://theirsite.com');  -- true
+select is_domain_allowed('their-slug', 'https://attacker.com');   -- false
+```
+
+Then give them the embed snippet with their slug in it. Subdomains work
+automatically: whitelisting `theirsite.com` also allows `booking.theirsite.com`.
+
+While a tenant's status is `trial`, localhost and `*.vercel.app` are allowed
+so you can test. Set status to `active` when they go live and only their real
+domain works.
+
+## After running all five
 
 Give the demo tenant some credit so the hard-block doesn't fire:
 

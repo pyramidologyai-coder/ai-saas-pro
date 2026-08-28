@@ -68,6 +68,18 @@ export async function POST(req: NextRequest) {
 
     if (!tenant) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
+    // Domain whitelist — before spending anything.
+    // The browser sets Origin; it cannot be forged by page JavaScript.
+    const origin = req.headers.get("origin");
+    const { data: allowed } = await db.rpc("is_domain_allowed", {
+      p_slug: slug,
+      p_origin: origin,
+    });
+    if (allowed !== true) {
+      console.warn(`blocked origin "${origin}" for tenant "${slug}"`);
+      return NextResponse.json({ error: "origin_not_allowed" }, { status: 403 });
+    }
+
     const { data: employee } = await db
       .from("ai_employees")
       .select("id, persona_name, compiled_prompt, compiled_tokens, status")
@@ -166,13 +178,18 @@ export async function POST(req: NextRequest) {
     const latencyMs = Date.now() - started;
 
     // ── 7 · Act ─────────────────────────────────────────────────────────────
-    // TODO booking intent → check slot free → insert into bookings.
+    let reply = result.text;
+
+    // Escalation: the prompt tells the agent to say a colleague will follow up.
+    // We detect that and record it, so the owner sees it in the dashboard.
+    if (needsHuman(message, reply)) {
+      await openEscalation(db, tenant.id, conversation.id, "agent_requested", "agent");
+      reply = "Let me get a colleague to help with this — someone will follow up with you shortly.";
+    }
+
+    // TODO booking intent → parse service/day/time → insert into bookings.
     //      The unique index on (tenant_id, scheduled_at) is the optimistic
-    //      lock: on collision, tell the customer the slot just went. Do not
-    //      overwrite.
-    // TODO escalation intent → openEscalation() and send that message instead
-    //      of the model's own reply.
-    const reply = result.text;
+    //      lock: on collision, tell the customer the slot just went.
 
     // ── 8 · Persist ─────────────────────────────────────────────────────────
     // Before returning. If the browser drops the response, this must survive.
@@ -225,6 +242,33 @@ export async function POST(req: NextRequest) {
       reply: "Give me a moment — I'll have someone get back to you.",
     }, { status: 200 });
   }
+}
+
+/**
+ * Cheap escalation detector for v1. The prompt does the real work — this just
+ * notices when the agent handed over, so the owner sees it in the dashboard.
+ * Replace with structured tool-calling when the golden tests demand it.
+ */
+function needsHuman(customerMsg: string, agentReply: string): boolean {
+  const reply = agentReply.toLowerCase();
+  const handedOver =
+    reply.includes("colleague will") ||
+    reply.includes("colleague to") ||
+    reply.includes("someone will get back") ||
+    reply.includes("pass it to the owner") ||
+    reply.includes("pass this to the owner");
+
+  const msg = customerMsg.toLowerCase();
+  const urgent =
+    msg.includes("refund") ||
+    msg.includes("complain") ||
+    msg.includes("allergic") ||
+    msg.includes("reaction") ||
+    msg.includes("burn") ||
+    msg.includes("lawyer") ||
+    msg.includes("manager");
+
+  return handedOver || urgent;
 }
 
 async function openEscalation(
