@@ -216,23 +216,23 @@ export default function DemoPage({ params }: { params: { slug: string } }) {
 const S: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background: "#F5F3EE",
+    background: "#EFEFEC",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     padding: 16,
-    fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    fontFamily: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
   },
   card: {
     width: "100%",
     maxWidth: 420,
     height: "min(640px, 92vh)",
     background: "#fff",
-    borderRadius: 14,
+    borderRadius: 6,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
-    boxShadow: "0 8px 40px rgba(0,0,0,.12)",
+    boxShadow: "0 0 0 1px #E4E4DF, 0 10px 40px rgba(20,23,26,.10)",
   },
   head: {
     color: "#fff",
@@ -250,17 +250,17 @@ const S: Record<string, React.CSSProperties> = {
   logo: { width: 38, height: 38, borderRadius: "50%", objectFit: "cover", background: "#fff" },
   name: { fontWeight: 600, fontSize: 15 },
   sub: { fontSize: 11.5, opacity: 0.8 },
-  log: { flex: 1, overflowY: "auto", padding: 16, background: "#FAFAF8" },
+  log: { flex: 1, overflowY: "auto", padding: 16, background: "#FCFCFA" },
   rowUser: { display: "flex", justifyContent: "flex-end", marginBottom: 10 },
   rowAgent: { display: "flex", justifyContent: "flex-start", marginBottom: 10 },
   bubbleUser: {
     color: "#fff",
-    padding: "9px 13px", borderRadius: "14px 14px 3px 14px",
+    padding: "9px 13px", borderRadius: "10px 10px 2px 10px",
     maxWidth: "78%", fontSize: 14.5, lineHeight: 1.45,
   },
   bubbleAgent: {
-    background: "#fff", color: "#1a1a1a", border: "1px solid #E6E4DE",
-    padding: "9px 13px", borderRadius: "14px 14px 14px 3px",
+    background: "#fff", color: "#1a1a1a", border: "1px solid #E4E4DF",
+    padding: "9px 13px", borderRadius: "10px 10px 10px 2px",
     maxWidth: "78%", fontSize: 14.5, lineHeight: 1.45,
   },
   dots: { display: "flex", gap: 4, alignItems: "center", padding: "12px 14px" },
@@ -276,10 +276,10 @@ const S: Record<string, React.CSSProperties> = {
   },
   inputRow: {
     display: "flex", gap: 8, padding: 12,
-    borderTop: "1px solid #EEEBE4", background: "#fff",
+    borderTop: "1px solid #E4E4DF", background: "#fff",
   },
   input: {
-    flex: 1, border: "1px solid #DDD9D0", borderRadius: 20,
+    flex: 1, border: "1px solid #DAD9D3", borderRadius: 3,
     padding: "10px 15px", fontSize: 14.5, fontFamily: "inherit",
   },
   send: {

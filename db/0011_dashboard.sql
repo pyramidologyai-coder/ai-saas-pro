@@ -194,7 +194,7 @@ begin
       ) e
     ),
     'items', (
-      select coalesce(json_agg(i order by i.price_local nulls last), '[]'::json) from (
+      select coalesce(json_agg(i order by i.price nulls last), '[]'::json) from (
         select id, name, description, price_local as price, currency_code as currency,
                duration_minutes, is_bookable, is_active
         from items
