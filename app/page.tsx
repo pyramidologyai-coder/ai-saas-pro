@@ -10,8 +10,10 @@ export default function Home() {
       <ul style={{ color: "#333" }}>
         <li>Database — 11 tables, isolation tested ✅</li>
         <li>Compiler — working ✅</li>
-        <li>Chat API — skeleton (Gate 1)</li>
-        <li>Widget & dashboard — Gate 2</li>
+        <li>Chat API — live, with bookings ✅</li>
+        <li>Widget — live ✅</li>
+        <li>Dashboard — live ✅</li>
+        <li>Golden tests — next</li>
       </ul>
       <p style={{ color: "#666" }}>
         Health check: <a href="/api/health">/api/health</a>

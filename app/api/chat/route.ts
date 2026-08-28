@@ -210,7 +210,11 @@ export async function POST(req: NextRequest) {
 
       const r = result as any;
       if (r?.ok) {
-        reply = `${reply}\n\nBooked: ${r.service}, ${formatWhen(r.scheduled_at, tenant.timezone)}. See you then, ${booking.name}.`;
+        // The agent already confirmed in its own voice. Repeating it here reads
+        // clumsy, so we only append if the agent somehow said nothing.
+        if (!reply) {
+          reply = `Booked: ${r.service}, ${formatWhen(r.scheduled_at, tenant.timezone)}. See you then, ${booking.name}.`;
+        }
       } else {
         reply = bookingFailureMessage(r?.reason);
       }
