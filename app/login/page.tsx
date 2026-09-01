@@ -25,12 +25,13 @@ function LoginForm() {
       });
       const r = await res.json();
       if (r.ok) {
-        router.push(next && next.startsWith("/") ? next : "/");
+        const dest = next && next.startsWith("/dashboard") ? next : (r.next ?? "/dashboard");
+        router.push(dest);
         router.refresh();
       } else if (r.reason === "not_configured") {
         setError("No password is set on this deployment yet.");
       } else {
-        setError("That password doesn't match.");
+        setError("That key doesn't match any business.");
         setPassword("");
       }
     } catch {
@@ -60,7 +61,7 @@ function LoginForm() {
   return (
     <>
       <h1 style={S.h1}>Dashboard</h1>
-      <p style={S.body}>Enter the password to see conversations, bookings and prices.</p>
+      <p style={S.body}>Enter your dashboard key to see conversations, bookings and prices.</p>
 
       <input
         type="password"
@@ -68,8 +69,8 @@ function LoginForm() {
         value={password}
         onChange={e => { setPassword(e.target.value); setError(""); }}
         onKeyDown={e => { if (e.key === "Enter") submit(); }}
-        placeholder="Password"
-        aria-label="Dashboard password"
+        placeholder="Your dashboard key"
+        aria-label="Dashboard key"
         style={{ ...S.input, borderBottomColor: error ? "#B3452F" : "#DAD9D3" }}
       />
 
@@ -82,8 +83,8 @@ function LoginForm() {
       {error && <p style={S.error}>{error}</p>}
 
       <p style={S.foot}>
-        One password for everyone who manages this account. Per-person logins
-        come later.
+        Don&apos;t have one? <a href="/start" style={{ color: "#1D6A8C" }}>Set up your
+        receptionist</a> — it takes about two minutes.
       </p>
     </>
   );

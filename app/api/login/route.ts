@@ -1,32 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE, tokenFor, safeEqual } from "@/lib/auth";
+import { AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
-  const expected = process.env.DASHBOARD_PASSWORD;
-  if (!expected) {
-    return NextResponse.json({ ok: false, reason: "not_configured" }, { status: 503 });
-  }
-
   const { password } = await req.json().catch(() => ({ password: "" }));
-  if (typeof password !== "string" || !safeEqual(password, expected)) {
-    // Slow down guessing a little without holding a serverless function open.
-    await new Promise(r => setTimeout(r, 400));
+  const entered = typeof password === "string" ? password.trim() : "";
+  if (!entered) {
     return NextResponse.json({ ok: false, reason: "wrong_password" }, { status: 401 });
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(AUTH_COOKIE, await tokenFor(expected), {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 12,          // 12 hours: long enough for a working day
-  });
-  return res;
+  // 1 · the master password sees every business
+  const master = process.env.DASHBOARD_PASSWORD;
+  if (master && safeEqual(entered, master)) {
+    const res = NextResponse.json({ ok: true, scope: "all", next: "/dashboard" });
+    res.cookies.set(AUTH_COOKIE, await tokenFor(master), COOKIE);
+    return res;
+  }
+
+  // 2 · a business's own access code sees only that business
+  try {
+    const db = supabaseAdmin();
+    const { data } = await db.rpc("tenant_by_code", { p_code: entered.toUpperCase() });
+    const r = data as any;
+    if (r?.ok && r.slug) {
+      const res = NextResponse.json({
+        ok: true, scope: "tenant", slug: r.slug, next: `/dashboard/${r.slug}`,
+      });
+      res.cookies.set(TENANT_COOKIE, `${r.slug}:${await tokenFor(entered)}`, COOKIE);
+      return res;
+    }
+  } catch (e: any) {
+    console.error("login lookup failed:", e?.message ?? e);
+  }
+
+  await new Promise(r => setTimeout(r, 400));   // slow down guessing
+  return NextResponse.json({ ok: false, reason: "wrong_password" }, { status: 401 });
 }
 
 export async function DELETE() {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(AUTH_COOKIE, "", { path: "/", maxAge: 0 });
+  res.cookies.set(TENANT_COOKIE, "", { path: "/", maxAge: 0 });
   return res;
 }
+
+const COOKIE = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/",
+  maxAge: 60 * 60 * 24 * 14,
+};
