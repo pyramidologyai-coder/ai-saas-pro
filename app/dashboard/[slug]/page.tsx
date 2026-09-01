@@ -41,6 +41,10 @@ type Data = {
   escalations?: Escalation[]; items?: Item[];
 };
 type Tab = "services" | "conversations" | "bookings" | "escalations";
+type Thread = {
+  ok: boolean; customer?: string; status?: string; cost?: number;
+  messages?: { sender_type: string; body: string; at: string }[];
+};
 
 export default function Dashboard({ params }: { params: { slug: string } }) {
   const slug = params.slug;
@@ -49,6 +53,9 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
   const [edits, setEdits] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [toast, setToast] = useState<{ text: string; bad?: boolean } | null>(null);
+  const [thread, setThread] = useState<Thread | null>(null);
+  const [threadBusy, setThreadBusy] = useState(false);
+  const [acting, setActing] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -90,6 +97,34 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
     } finally { setSaving(null); }
   }
 
+  async function openThread(id: string) {
+    setThreadBusy(true);
+    setThread({ ok: false });
+    try {
+      const res = await fetch(`/api/dashboard?thread=${id}`);
+      setThread(await res.json());
+    } catch {
+      setThread({ ok: false });
+    } finally { setThreadBusy(false); }
+  }
+
+  async function act(action: string, payload: Record<string, unknown>, done: string) {
+    const key = String(payload.id);
+    setActing(key);
+    try {
+      const res = await fetch("/api/dashboard", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action, ...payload }),
+      });
+      const r = await res.json();
+      if (r.ok) { setToast({ text: done }); load(); }
+      else setToast({ text: String(r.reason ?? "failed").replace(/_/g, " "), bad: true });
+    } catch {
+      setToast({ text: "Didn't save. Try again.", bad: true });
+    } finally { setActing(null); }
+  }
+
   if (!data) return <Shell><div style={S.quiet}>Loading</div></Shell>;
   if (!data.ok || !data.business) {
     return <Shell><div style={S.quiet}>No business found for &ldquo;{slug}&rdquo;.</div></Shell>;
@@ -117,10 +152,13 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
             <span style={S.mono}>${Number(data.business.wallet).toFixed(2)}</span>
           </p>
         </div>
-        <a href={`/demo/${slug}`} target="_blank" rel="noreferrer"
-           style={{ ...S.link, color: C, borderColor: C }}>
-          Open the chat
-        </a>
+        <div style={{ display: "flex", gap: 8 }}>
+          <a href="/dashboard" style={S.linkQuiet}>All businesses</a>
+          <a href={`/demo/${slug}`} target="_blank" rel="noreferrer"
+             style={{ ...S.link, color: C, borderColor: C }}>
+            Open the chat
+          </a>
+        </div>
       </header>
 
       <section style={S.figures}>
@@ -199,21 +237,22 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
           (data.conversations ?? []).length === 0
             ? <Empty text="No conversations yet. Open the chat and send a message." />
             : (data.conversations ?? []).map(c => (
-                <div key={c.id} data-row style={S.row}>
-                  <div style={S.rowMain}>
-                    <div style={S.name}>
+                <button key={c.id} data-row onClick={() => openThread(c.id)}
+                        style={{ ...S.row, ...S.rowBtn }}>
+                  <span style={S.rowMain}>
+                    <span style={S.name}>
                       {c.customer}
                       {c.status === "escalated" && <span style={S.flag}>escalated</span>}
-                    </div>
-                    <div style={S.desc}>{c.last_message ?? "—"}</div>
-                  </div>
-                  <div style={S.rightCol}>
-                    <div style={S.mono}>{c.message_count}</div>
-                    <div style={{ ...S.mono, ...S.faint }}>
+                    </span>
+                    <span style={S.desc}>{c.last_message ?? "—"}</span>
+                  </span>
+                  <span style={S.rightCol}>
+                    <span style={{ ...S.mono, display: "block" }}>{c.message_count}</span>
+                    <span style={{ ...S.mono, ...S.faint, display: "block" }}>
                       ${Number(c.cost ?? 0).toFixed(4)}
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </span>
+                </button>
               ))
         )}
 
@@ -231,7 +270,19 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
                     {b.price != null && (
                       <div style={S.mono}>{b.currency} {Number(b.price).toFixed(2)}</div>
                     )}
-                    <div style={{ ...S.faint, ...S.mono }}>{b.status}</div>
+                    <div style={S.actions}>
+                      {b.status === "pending" && (
+                        <button disabled={acting === b.id}
+                          onClick={() => act("booking_status", { id: b.id, status: "confirmed" }, "Booking confirmed.")}
+                          style={{ ...S.act, color: C, borderColor: C }}>Confirm</button>
+                      )}
+                      {b.status === "confirmed" && (
+                        <span style={{ ...S.faint, ...S.mono }}>confirmed</span>
+                      )}
+                      <button disabled={acting === b.id}
+                        onClick={() => act("booking_status", { id: b.id, status: "cancelled" }, "Booking cancelled. The slot is free again.")}
+                        style={S.actQuiet}>Cancel</button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -252,12 +303,51 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
                         day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
                       })}
                     </div>
-                    <div style={{ ...S.faint, ...S.mono }}>via {e.trigger_source}</div>
+                    {e.status === "open" ? (
+                      <button disabled={acting === e.id}
+                        onClick={() => act("resolve_escalation", { id: e.id }, "Marked handled. The agent can answer again.")}
+                        style={{ ...S.act, color: C, borderColor: C, marginTop: 5 }}>
+                        Mark handled
+                      </button>
+                    ) : (
+                      <div style={{ ...S.faint, ...S.mono }}>resolved</div>
+                    )}
                   </div>
                 </div>
               ))
         )}
       </main>
+
+      {thread && (
+        <div style={S.overlay} onClick={() => setThread(null)}>
+          <div style={S.panel} onClick={ev => ev.stopPropagation()}>
+            <div style={S.panelHead}>
+              <div>
+                <div style={S.name}>{thread.customer ?? "Conversation"}</div>
+                <div style={S.desc}>
+                  {thread.status ?? ""}
+                  {thread.cost != null && ` · $${Number(thread.cost).toFixed(4)}`}
+                </div>
+              </div>
+              <button onClick={() => setThread(null)} style={S.close} aria-label="Close">×</button>
+            </div>
+            <div style={S.panelBody}>
+              {threadBusy && <div style={S.quiet}>Loading</div>}
+              {!threadBusy && (thread.messages ?? []).length === 0 && (
+                <div style={S.quiet}>No messages.</div>
+              )}
+              {(thread.messages ?? []).map((m, i) => (
+                <div key={i} style={m.sender_type === "customer" ? S.msgIn : S.msgOut}>
+                  <div style={{ ...S.mono, ...S.faint, marginBottom: 3 }}>
+                    {m.sender_type === "customer" ? thread.customer : data.business!.agent} · {m.at}
+                  </div>
+                  <div style={S.msgBody}>{m.body}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div role="status" style={{ ...S.toast, borderLeftColor: toast.bad ? "#B3452F" : C }}>
@@ -344,5 +434,18 @@ const S: Record<string, React.CSSProperties> = {
   save: { border: "1px solid", borderRadius: 3, padding: "6px 14px", fontSize: 12.5, fontWeight: 500, fontFamily: "inherit", transition: "background .15s" },
 
   empty: { padding: "44px 0", textAlign: "center", color: "#A3A6A2", fontSize: 13.5 },
+  rowBtn: { background: "none", border: 0, borderBottom: "1px solid #EDEDE8", width: "100%", textAlign: "left", cursor: "pointer", font: "inherit", color: "inherit" },
+  linkQuiet: { fontSize: 13, textDecoration: "none", border: "1px solid #E4E4DF", color: "#6E7573", borderRadius: 3, padding: "7px 13px" },
+  actions: { display: "flex", gap: 6, justifyContent: "flex-end", marginTop: 5 },
+  act: { background: "none", border: "1px solid", borderRadius: 3, padding: "4px 10px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" },
+  actQuiet: { background: "none", border: "1px solid #E4E4DF", color: "#A3A6A2", borderRadius: 3, padding: "4px 10px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" },
+  overlay: { position: "fixed", inset: 0, background: "rgba(20,23,26,.28)", display: "flex", justifyContent: "flex-end", zIndex: 40 },
+  panel: { width: "min(460px, 100vw)", background: "#FCFCFA", height: "100vh", display: "flex", flexDirection: "column", boxShadow: "-8px 0 40px rgba(20,23,26,.16)" },
+  panelHead: { padding: "20px 22px", borderBottom: "1px solid #E4E4DF", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 },
+  close: { background: "none", border: 0, fontSize: 22, lineHeight: 1, color: "#8B8F8C", cursor: "pointer", padding: 0 },
+  panelBody: { flex: 1, overflowY: "auto", padding: "18px 22px" },
+  msgIn: { marginBottom: 16 },
+  msgOut: { marginBottom: 16, paddingLeft: 20 },
+  msgBody: { fontSize: 13.5, lineHeight: 1.55, whiteSpace: "pre-wrap" },
   toast: { position: "fixed", left: "50%", bottom: 26, transform: "translateX(-50%)", background: "#FCFCFA", color: "#14171A", borderLeft: "3px solid", padding: "13px 18px", fontSize: 13, boxShadow: "0 6px 28px rgba(20,23,26,.14)", maxWidth: "min(92vw, 460px)", lineHeight: 1.5 },
 };
