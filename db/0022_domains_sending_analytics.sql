@@ -421,9 +421,9 @@ returns json language sql stable security definer set search_path = public as $$
       from domains d join tenants t on t.id = d.tenant_id
       where t.slug = p_slug and d.status <> 'removed'),
     'outbox', (select json_build_object(
-        'pending', count(*) filter (where status in ('pending','claimed')),
-        'sent', count(*) filter (where status = 'sent'),
-        'failed', count(*) filter (where status = 'failed'))
+        'pending', count(*) filter (where o.status in ('pending','claimed')),
+        'sent', count(*) filter (where o.status = 'sent'),
+        'failed', count(*) filter (where o.status = 'failed'))
       from outbox o join tenants t on t.id = o.tenant_id where t.slug = p_slug)
   );
 $$;

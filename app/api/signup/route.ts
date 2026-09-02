@@ -26,15 +26,31 @@ export async function POST(req: NextRequest) {
       await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`signup:${ip}`))))
       .map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 
-    const { data: limit } = await db.rpc("check_signup_limit", {
-      p_ip_hash: ipHash, p_max: 3,
-    });
-    if (limit && (limit as any).ok === false) {
-      return NextResponse.json({ ok: false, reason: "too_many" }, { status: 429 });
+    // The rate limiter arrives in migration 0022. If that hasn't been run yet,
+    // signup must still work — a missing optional guard is not a reason to
+    // refuse a customer.
+    try {
+      const { data: limit, error: limitErr } = await db.rpc("check_signup_limit", {
+        p_ip_hash: ipHash, p_max: 3,
+      });
+      if (!limitErr && limit && (limit as any).ok === false) {
+        return NextResponse.json({ ok: false, reason: "too_many" }, { status: 429 });
+      }
+    } catch {
+      console.warn("signup rate limit unavailable — allowing");
     }
 
     const { data, error } = await db.rpc("create_tenant", { p_payload: payload });
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Say which migration is missing rather than "something went wrong".
+      console.error("create_tenant failed:", error.message);
+      const missing = /function .*create_tenant|does not exist/i.test(error.message);
+      return NextResponse.json({
+        ok: false,
+        reason: missing ? "not_migrated" : "create_failed",
+        detail: error.message.slice(0, 200),
+      }, { status: 500 });
+    }
 
     // Send them their key. Losing it is the worst first experience there is,
     // so this matters more than it looks. A failure never blocks the signup.

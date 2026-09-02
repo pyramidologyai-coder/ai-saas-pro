@@ -73,9 +73,10 @@ export default function Start() {
       });
       const r = await res.json();
       if (r.ok) setDone(r);
-      else setErr(r.reason === "name_required"
-        ? "Please give your business a name."
-        : "Something went wrong. Try again in a moment.");
+      else if (r.reason === "name_required") setErr("Please give your business a name.");
+      else if (r.reason === "too_many") setErr("That's a few businesses from one place today. Try again tomorrow.");
+      else if (r.reason === "not_migrated") setErr("The database isn't set up yet. Run migrations 0016 to 0023.");
+      else setErr(r.detail ? `Couldn't create it: ${r.detail}` : "Something went wrong. Try again in a moment.");
     } catch {
       setErr("Couldn't reach the server. Check your connection.");
     } finally { setBusy(false); }

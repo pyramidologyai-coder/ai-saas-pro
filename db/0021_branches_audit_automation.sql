@@ -234,7 +234,7 @@ end; $$;
 create or replace function audit_trail(p_slug text, p_limit int default 60)
 returns json language sql stable security definer set search_path = public as $$
   select coalesce(json_agg(a order by a.created_at desc),'[]'::json) from (
-    select actor, actor_role, action, target, created_at
+    select al.actor, al.actor_role, al.action, al.target, al.created_at
     from audit_log al join tenants t on t.id = al.tenant_id
     where t.slug = p_slug order by al.created_at desc limit p_limit) a;
 $$;
