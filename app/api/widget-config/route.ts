@@ -11,10 +11,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = supabaseAdmin();
-    const { data, error } = await db.rpc("get_widget_config", { p_slug: slug });
+    const [{ data, error }, { data: agents }] = await Promise.all([
+      db.rpc("get_widget_config", { p_slug: slug }),
+      db.rpc("public_agents", { p_tenant_slug: slug }),
+    ]);
     if (error) throw new Error(error.message);
     if (!data) return NextResponse.json({ error: "not_found" }, { status: 404 });
-    return NextResponse.json(data);
+    return NextResponse.json({ ...(data as object), agents: agents ?? [] });
   } catch (e: any) {
     console.error("widget-config failed:", e?.message ?? e);
     return NextResponse.json({ error: "unavailable" }, { status: 500 });

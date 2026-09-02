@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sendEmail, bookingEmail, alertEmail } from "@/lib/email";
 import { askModel } from "@/lib/llm";
 
 const MAX_CHARS = 2000;
@@ -19,7 +20,9 @@ const HISTORY_TURNS = 10;
 export async function POST(req: NextRequest) {
   try {
     // ── 1 · Receive ─────────────────────────────────────────────────────────
-    const { slug, session, message } = await req.json();
+    const body = await req.json();
+    const { slug, session, message } = body;
+    const agentSlug = typeof body?.agent === "string" && body.agent ? body.agent : null;
 
     if (!slug || !session || typeof message !== "string") {
       return NextResponse.json({ error: "bad_request" }, { status: 400 });
@@ -80,15 +83,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "origin_not_allowed" }, { status: 403 });
     }
 
-    const { data: employee } = await db
+    // Which agent. A business can run several: a public receptionist, an
+    // internal HR agent, and so on. No agent named means the primary one.
+    let q = db
       .from("ai_employees")
-      .select("id, persona_name, compiled_prompt, compiled_tokens, status")
+      .select("id, persona_name, compiled_prompt, compiled_tokens, status, audience, slug")
       .eq("tenant_id", tenant.id)
-      .eq("status", "active")
-      .limit(1)
-      .maybeSingle();
+      .eq("status", "active");
+
+    q = agentSlug
+      ? q.eq("slug", agentSlug)
+      : q.order("is_primary", { ascending: false });
+
+    const { data: employee } = await q.limit(1).maybeSingle();
 
     if (!employee) return NextResponse.json({ error: "no_agent" }, { status: 503 });
+
+    // THE GATE. An internal agent knows staff-only material — HR policy,
+    // payroll process, finance rules. It must never answer an anonymous
+    // visitor, whatever the origin check said.
+    if (employee.audience === "internal") {
+      const cookie = req.cookies.get("automology_tenant")?.value ?? "";
+      const master = req.cookies.get("automology_auth")?.value ?? "";
+      const ownsThis = cookie.startsWith(`${slug}:`);
+      if (!ownsThis && !master) {
+        console.warn(`blocked anonymous access to internal agent "${employee.slug}" (${slug})`);
+        return NextResponse.json({ error: "staff_only" }, { status: 403 });
+      }
+    }
 
     // customer + conversation: find or create
     let { data: customer } = await db
@@ -143,7 +165,7 @@ export async function POST(req: NextRequest) {
       });
     }
     if (Number(conversation.ai_cost_usd) >= COST_CAP_USD) {
-      await openEscalation(db, tenant.id, conversation.id, "cost_cap_exceeded", "cost_governor");
+      await openEscalation(db, tenant.id, conversation.id, "cost_cap_exceeded", "cost_governor", { slug, business: tenant.name, color: (tenant as any).brand_color ?? "#1D6A8C", origin: req.nextUrl.origin, message });
       return NextResponse.json({
         reply: "Let me get a colleague to help you with this — they'll be in touch shortly.",
         conversation_id: conversation.id,
@@ -190,7 +212,7 @@ export async function POST(req: NextRequest) {
     // Escalation: the prompt tells the agent to say a colleague will follow up.
     // We detect that and record it, so the owner sees it in the dashboard.
     if (needsHuman(message, reply)) {
-      await openEscalation(db, tenant.id, conversation.id, "agent_requested", "agent");
+      await openEscalation(db, tenant.id, conversation.id, "agent_requested", "agent", { slug, business: tenant.name, color: (tenant as any).brand_color ?? "#1D6A8C", origin: req.nextUrl.origin, message });
       reply = "Let me get a colleague to help with this — someone will follow up with you shortly.";
     }
 
@@ -210,10 +232,27 @@ export async function POST(req: NextRequest) {
 
       const r = result as any;
       if (r?.ok) {
+        // Confirm by email if we know where to send it. Never blocks the reply.
+        const email = extractEmail(message) ?? extractEmail(reply);
+        if (email) {
+          const mail = bookingEmail({
+            business: tenant.name,
+            service: r.service,
+            when: formatWhen(r.scheduled_at, tenant.timezone),
+            name: booking.name || "there",
+            color: (tenant as any).brand_color ?? "#1D6A8C",
+            phone: (tenant as any).phone ?? null,
+          });
+          sendEmail({ to: email, kind: "booking", tenantId: tenant.id, ...mail }).catch(() => {});
+        }
         // The agent already confirmed in its own voice. Repeating it here reads
         // clumsy, so we only append if the agent somehow said nothing.
         if (!reply) {
           reply = `Booked: ${r.service}, ${formatWhen(r.scheduled_at, tenant.timezone)}. See you then, ${booking.name}.`;
+        } else if (r.with) {
+          // The agent doesn't know who's free until the booking is made, so the
+          // practitioner's name is added after the fact rather than guessed.
+          reply = `${reply}\n\nYou're with ${r.with}.`;
         }
       } else {
         reply = bookingFailureMessage(r?.reason);
@@ -303,6 +342,8 @@ function bookingFailureMessage(reason?: string): string {
       return "We're closed at that time. Could you pick a time within our opening hours?";
     case "in_the_past":
       return "That time has already passed — which day did you have in mind?";
+    case "fully_booked":
+      return "We're fully booked at that time. Would another slot work?";
     case "unknown_service":
       return "I couldn't match that to one of our services. Which one did you want?";
     default:
@@ -355,6 +396,7 @@ async function openEscalation(
   conversationId: string,
   reason: string,
   source: string,
+  notify?: { slug: string; business: string; color: string; origin: string; message: string },
 ) {
   await db.from("escalations").insert({
     tenant_id: tenantId,
@@ -362,7 +404,33 @@ async function openEscalation(
     reason,
     trigger_source: source,
   });
+
+      // Tell the owner. An escalation nobody sees is the same as no escalation.
+      try {
+        if (notify) {
+          const { data: targets } = await db.rpc("notify_targets", { p_tenant_slug: notify.slug });
+          for (const to of ((targets as any)?.emails ?? []).slice(0, 3)) {
+            const mail = alertEmail({
+              business: notify.business,
+              customer: "A visitor",
+              reason,
+              message: notify.message,
+              color: notify.color,
+              origin: notify.origin,
+              slug: notify.slug,
+            });
+            sendEmail({ to, kind: "escalation", tenantId, ...mail }).catch(() => {});
+          }
+        }
+      } catch { /* alerting must never break the reply */ }
   await db.from("conversations")
     .update({ status: "escalated", escalated_at: new Date().toISOString(), escalation_reason: reason })
     .eq("id", conversationId);
+}
+
+
+/** Pull an email address out of a message, if the customer gave one. */
+function extractEmail(text: string): string | null {
+  const m = text?.match(/[\w.+-]+@[\w-]+\.[\w.-]+/);
+  return m ? m[0] : null;
 }

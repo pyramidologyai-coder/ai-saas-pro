@@ -14,20 +14,36 @@ export async function POST(req: NextRequest) {
   if (master && safeEqual(entered, master)) {
     const res = NextResponse.json({ ok: true, scope: "all", next: "/dashboard" });
     res.cookies.set(AUTH_COOKIE, await tokenFor(master), COOKIE);
+    res.cookies.set(TENANT_COOKIE, "", { path: "/", maxAge: 0 });
     return res;
   }
 
   // 2 · a business's own access code sees only that business
   try {
     const db = supabaseAdmin();
-    const { data } = await db.rpc("tenant_by_code", { p_code: entered.toUpperCase() });
+    const { data } = await db.rpc("resolve_key", { p_code: entered.toUpperCase() });
     const r = data as any;
+    if (r?.ok && r.scope === "organisation" && r.org_slug) {
+      const res = NextResponse.json({
+        ok: true, scope: "organisation", slug: r.org_slug, role: r.role,
+        name: r.name, next: `/group/${r.org_slug}`,
+      });
+      res.cookies.set(TENANT_COOKIE,
+        `${r.org_slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
+      return res;
+    }
     if (r?.ok && r.slug) {
       const res = NextResponse.json({
-        ok: true, scope: "tenant", slug: r.slug, next: `/dashboard/${r.slug}`,
+        ok: true, scope: "tenant", slug: r.slug, role: r.role,
+        name: r.name, next: `/dashboard/${r.slug}`,
       });
-      res.cookies.set(TENANT_COOKIE, `${r.slug}:${await tokenFor(entered)}`, COOKIE);
+      // slug : role : proof — middleware reads the slug, the API reads the role
+      res.cookies.set(TENANT_COOKIE,
+        `${r.slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
       return res;
+    }
+    if (r?.reason === "suspended") {
+      return NextResponse.json({ ok: false, reason: "suspended" }, { status: 403 });
     }
   } catch (e: any) {
     console.error("login lookup failed:", e?.message ?? e);

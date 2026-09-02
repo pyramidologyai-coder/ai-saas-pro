@@ -34,6 +34,10 @@ export async function GET() {
     ? "set (anthropic)"
     : "MISSING";
   checks.env_llm_key = llm;
+  checks.email = process.env.RESEND_API_KEY ? "set" : "missing (keys and confirmations won't send)";
+  checks.payments = process.env.STRIPE_SECRET_KEY ? "set" : "missing (billing page will say so)";
+  checks.cron = process.env.CRON_SECRET ? "set" : "missing (reminders won't send)";
+  checks.stripe_webhook = process.env.STRIPE_WEBHOOK_SECRET ? "set" : "missing (webhook rejects all)";
   checks.dashboard_lock = process.env.DASHBOARD_PASSWORD ? "locked" : "NOT SET — dashboard unreachable";
 
   return NextResponse.json({ ok, ...checks }, { status: ok ? 200 : 500 });

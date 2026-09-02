@@ -1,36 +1,72 @@
 /**
- * Guards the dashboard. Everything a customer touches stays public: the
- * landing page, signup, the tenant pages, and the chat API.
+ * Two jobs:
+ *   1. Serve a business's page on their own domain
+ *   2. Guard the dashboard
+ *
+ * Domain routing runs first. A request arriving on chat.someclinic.my is
+ * rewritten to that tenant's page, so the customer never sees a slug or our
+ * hostname. Our own hosts fall through to normal routing.
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
   AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual, slugFromTenantCookie,
 } from "@/lib/auth";
 
+/** Hosts that are ours, not a customer's. */
+function isOwnHost(host: string): boolean {
+  const h = host.toLowerCase().split(":")[0];
+  return h === "localhost" || h.endsWith(".vercel.app") ||
+         h === "automology.ai" || h.endsWith(".automology.ai");
+}
+
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  const host = req.headers.get("host") ?? "";
+
+  // ── 1 · custom domains ───────────────────────────────────────────────────
+  if (!isOwnHost(host) && !path.startsWith("/api/") && !path.startsWith("/_next")) {
+    try {
+      const res = await fetch(
+        `${req.nextUrl.origin}/api/host?h=${encodeURIComponent(host)}`,
+        { headers: { "x-internal": "1" } },
+      );
+      const j = await res.json();
+      if (j?.ok && j.slug) {
+        // their domain serves their page at the root
+        const url = req.nextUrl.clone();
+        url.pathname = path === "/" ? `/demo/${j.slug}` : path;
+        return NextResponse.rewrite(url);
+      }
+    } catch { /* fall through to normal routing */ }
+  }
+
+  // ── 2 · dashboard gate ───────────────────────────────────────────────────
+  const guarded = path.startsWith("/dashboard") || path.startsWith("/group") ||
+                  path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
+                  path.startsWith("/api/group");
+  if (!guarded) return NextResponse.next();
+
   const master = process.env.DASHBOARD_PASSWORD;
 
-  // Master session: full access.
   const auth = req.cookies.get(AUTH_COOKIE)?.value ?? "";
   if (master && auth && safeEqual(auth, await tokenFor(master))) {
     return NextResponse.next();
   }
 
-  // Tenant session: only that business's own dashboard.
   const tenantCookie = req.cookies.get(TENANT_COOKIE)?.value;
   const ownSlug = slugFromTenantCookie(tenantCookie);
   if (ownSlug) {
     const wanted =
       path.startsWith("/dashboard/") ? path.split("/")[2] :
-      req.nextUrl.searchParams.get("slug");
+      path.startsWith("/group/") ? path.split("/")[2] :
+      req.nextUrl.searchParams.get("slug") ?? req.nextUrl.searchParams.get("org");
 
-    // The index lists every business, so a tenant session goes to its own page.
     if (path === "/dashboard") {
       return NextResponse.redirect(new URL(`/dashboard/${ownSlug}`, req.url));
     }
     if (wanted === ownSlug) return NextResponse.next();
-    if (path.startsWith("/api/dashboard") && !wanted) {
+    if ((path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
+         path.startsWith("/api/group")) && !wanted) {
       return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 401 });
     }
     if (wanted && wanted !== ownSlug) {
@@ -48,5 +84,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard", "/dashboard/:path*", "/api/dashboard/:path*", "/api/dashboard"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

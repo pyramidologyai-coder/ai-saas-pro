@@ -7,6 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sendEmail, welcomeEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,8 +18,38 @@ export async function POST(req: NextRequest) {
     }
 
     const db = supabaseAdmin();
+
+    // One IP shouldn't be able to create businesses forever. The address is
+    // hashed, not stored — we only need to count, not to know who.
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+    const ipHash = Array.from(new Uint8Array(
+      await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`signup:${ip}`))))
+      .map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+    const { data: limit } = await db.rpc("check_signup_limit", {
+      p_ip_hash: ipHash, p_max: 3,
+    });
+    if (limit && (limit as any).ok === false) {
+      return NextResponse.json({ ok: false, reason: "too_many" }, { status: 429 });
+    }
+
     const { data, error } = await db.rpc("create_tenant", { p_payload: payload });
     if (error) throw new Error(error.message);
+
+    // Send them their key. Losing it is the worst first experience there is,
+    // so this matters more than it looks. A failure never blocks the signup.
+    const r = data as any;
+    if (r?.ok && payload.email) {
+      const mail = welcomeEmail({
+        business: String(payload.name).trim(),
+        agent: r.agent,
+        slug: r.slug,
+        code: r.access_code,
+        color: payload.color ?? "#1D6A8C",
+        origin: req.nextUrl.origin,
+      });
+      sendEmail({ to: payload.email, kind: "welcome", ...mail }).catch(() => {});
+    }
 
     return NextResponse.json(data);
   } catch (e: any) {

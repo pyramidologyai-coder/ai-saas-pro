@@ -35,3 +35,13 @@ export function slugFromTenantCookie(v: string | undefined): string | null {
   const i = v.indexOf(":");
   return i > 0 ? v.slice(0, i) : null;
 }
+
+/**
+ * The role in a tenant cookie. Older cookies were `slug:proof` with no role —
+ * those read as owner, which is what they meant at the time.
+ */
+export function roleFromTenantCookie(v: string | undefined): string | null {
+  if (!v) return null;
+  const parts = v.split(":");
+  return parts.length >= 3 ? parts[1] : "owner";
+}
