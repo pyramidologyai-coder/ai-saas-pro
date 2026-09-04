@@ -38,7 +38,10 @@ export default function Index() {
             <h1 style={S.h1}>Businesses</h1>
             <p style={S.sub}>Every account with an AI employee answering.</p>
           </div>
-          <button onClick={signOut} style={S.signout}>Sign out</button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href="/master" style={S.signout as React.CSSProperties}>Platform view</a>
+            <button onClick={signOut} style={S.signout}>Sign out</button>
+          </div>
         </header>
 
         <main style={S.main}>
@@ -100,7 +103,7 @@ const S: Record<string, React.CSSProperties> = {
   head: { padding: "26px 28px 20px", borderBottom: "1px solid #E4E4DF", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" },
   h1: { fontSize: 25, fontWeight: 600, letterSpacing: "-0.02em", margin: 0 },
   sub: { fontSize: 13, color: "#6E7573", marginTop: 7 },
-  signout: { background: "none", border: "1px solid #E4E4DF", borderRadius: 3, padding: "7px 13px", fontSize: 12.5, color: "#6E7573", cursor: "pointer", fontFamily: "inherit" },
+  signout: { background: "none", textDecoration: "none", display: "inline-block", border: "1px solid #E4E4DF", borderRadius: 3, padding: "7px 13px", fontSize: 12.5, color: "#6E7573", cursor: "pointer", fontFamily: "inherit" },
   main: { padding: "4px 28px 0" },
   quiet: { padding: "50px 0", textAlign: "center", color: "#A3A6A2", fontSize: 13.5 },
   row: { display: "flex", alignItems: "center", gap: 14, padding: "17px 0", borderBottom: "1px solid #EDEDE8", textDecoration: "none", color: "inherit", flexWrap: "wrap" },

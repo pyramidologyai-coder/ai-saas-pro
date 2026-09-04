@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   // 1 · the master password sees every business
   const master = process.env.DASHBOARD_PASSWORD;
   if (master && safeEqual(entered, master)) {
-    const res = NextResponse.json({ ok: true, scope: "all", next: "/dashboard" });
+    const res = NextResponse.json({ ok: true, scope: "all", next: "/master" });
     res.cookies.set(AUTH_COOKIE, await tokenFor(master), COOKIE);
     res.cookies.set(TENANT_COOKIE, "", { path: "/", maxAge: 0 });
     return res;

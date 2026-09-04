@@ -13,16 +13,19 @@ export async function GET(req: NextRequest) {
   if (!slug) return NextResponse.json({ ok: false, reason: "missing_slug" }, { status: 400 });
   try {
     const db = supabaseAdmin();
-    const [{ data, error }, { data: extras }, { data: stats }] = await Promise.all([
+    const [{ data, error }, { data: extras }, { data: stats }, { data: docs }] =
+      await Promise.all([
       db.rpc("platform_data", { p_slug: slug }),
       db.rpc("platform_extras", { p_slug: slug }),
       db.rpc("analytics", { p_slug: slug, p_days: 30 }),
+      db.rpc("platform_documents", { p_slug: slug }),
     ]);
     if (error) throw new Error(error.message);
     return NextResponse.json({
       ...(data as object),
       ...(extras as object ?? {}),
       analytics: stats ?? null,
+      ...(docs as object ?? {}),
     });
   } catch (e: any) {
     console.error("platform GET failed:", e?.message ?? e);

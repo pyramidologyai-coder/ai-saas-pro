@@ -303,7 +303,8 @@ begin
         select id, platform, handle, status, followers from social_accounts
         where tenant_id = v_tenant) a),
     'posts', (select coalesce(json_agg(p order by p.created_at desc),'[]'::json) from (
-        select id, body, platforms, status, scheduled_at, published_at, reach, clicks
+        select id, body, platforms, status, scheduled_at, published_at, reach, clicks,
+               created_at
         from posts where tenant_id = v_tenant order by created_at desc limit 30) p),
     'invoices', (select coalesce(json_agg(i order by i.issued_on desc),'[]'::json) from (
         select inv.id, inv.number, inv.amount, inv.currency, inv.status, inv.issued_on,

@@ -40,8 +40,19 @@ export async function middleware(req: NextRequest) {
     } catch { /* fall through to normal routing */ }
   }
 
+  // The embed is meant to be framed by a customer's website, so it must not
+  // inherit any frame-blocking headers. The chat API's origin whitelist is
+  // what actually controls who may use it.
+  if (path.startsWith("/embed/") || path === "/api/embed") {
+    const res = NextResponse.next();
+    res.headers.delete("x-frame-options");
+    res.headers.set("content-security-policy", "frame-ancestors *");
+    return res;
+  }
+
   // ── 2 · dashboard gate ───────────────────────────────────────────────────
-  const guarded = path.startsWith("/dashboard") || path.startsWith("/group") ||
+  const guarded = path.startsWith("/master") || path.startsWith("/api/master") ||
+                  path.startsWith("/dashboard") || path.startsWith("/group") ||
                   path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
                   path.startsWith("/api/group");
   if (!guarded) return NextResponse.next();
@@ -51,6 +62,15 @@ export async function middleware(req: NextRequest) {
   const auth = req.cookies.get(AUTH_COOKIE)?.value ?? "";
   if (master && auth && safeEqual(auth, await tokenFor(master))) {
     return NextResponse.next();
+  }
+
+  // The platform view is master-only. A tenant session never reaches it.
+  if (path.startsWith("/master") || path.startsWith("/api/master")) {
+    const to = new URL("/login", req.url);
+    to.searchParams.set("next", path);
+    return path.startsWith("/api/")
+      ? NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 })
+      : NextResponse.redirect(to);
   }
 
   const tenantCookie = req.cookies.get(TENANT_COOKIE)?.value;

@@ -10,7 +10,7 @@
  * their workspace, not ours.
  */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 type Agent = { slug: string; name: string; department: string | null;
                audience: string; sector_id: string; is_primary: boolean; conversations: number };
@@ -40,6 +40,7 @@ type Data = {
   automations?: Auto[]; broadcasts?: Cast[]; audit?: Audit[];
   domains?: Domain[]; analytics?: Stats | null;
   resources?: Resource[]; credentials?: Cred[];
+  documents?: Doc[]; budget?: Budget;
   outbox?: { pending: number; sent: number; failed: number };
   stats?: { conversations: number; bookings: number; needs_you: number };
 };
@@ -48,6 +49,11 @@ type Mod = "home" | "agents" | "services" | "knowledge" | "marketing" | "automat
 type Domain = { id: string; hostname: string; status: string; token: string };
 type Resource = { id: string; name: string; title: string | null; bio: string | null;
                   kind: string; capacity: number; items: string[]; upcoming: number };
+type Doc = { id: string; filename: string; status: string; pages: number | null;
+             chunks: number; words: number; bytes: number | null;
+             error: string | null; created_at: string };
+type Budget = { words: number; tokens: number; entries: number; documents: number;
+                cost_per_message_usd: number; state: string; advice: string };
 type Cred = { provider: string; label: string | null; status: string;
               hint: string; last_used_at: string | null };
 type Stats = {
@@ -194,7 +200,8 @@ export default function Platform({ params }: { params: { slug: string } }) {
           {mod === "home" && <Home d={d} C={C} go={setMod} />}
           {mod === "agents" && <Agents d={d} C={C} slug={slug} act={act} busy={busy} />}
           {mod === "services" && <Services d={d} C={C} act={act} busy={busy} role={role} />}
-          {mod === "knowledge" && <Knowledge d={d} C={C} act={act} busy={busy} role={role} />}
+          {mod === "knowledge" && <Knowledge d={d} C={C} act={act} busy={busy}
+                                             role={role} slug={slug} reload={load} />}
           {mod === "marketing" && <Marketing d={d} C={C} act={act} busy={busy} />}
           {mod === "automations" && <Automations d={d} C={C} act={act} busy={busy} role={role} />}
           {mod === "insights" && <Insights d={d} C={C} />}
@@ -710,59 +717,153 @@ function Team({ d, C, act, busy }: { d: Data; C: string; act: Function; busy: bo
 
 
 /* ── Knowledge ─────────────────────────────────────────────────────────── */
-function Knowledge({ d, C, act, busy, role }:
-  { d: Data; C: string; act: Function; busy: boolean; role: string }) {
+function Knowledge({ d, C, act, busy, role, slug, reload }:
+  { d: Data; C: string; act: Function; busy: boolean; role: string;
+    slug: string; reload: () => void }) {
   const can = role === "owner";
-  const size = d.knowledge_size ?? { entries: 0, words: 0, tokens: 0 };
+  const b = d.budget;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const heavy = size.words > 4000;
+  const [up, setUp] = useState<{ name: string; state: string; detail?: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function upload(file: File) {
+    setUp({ name: file.name, state: "reading" });
+    const fd = new FormData();
+    fd.append("slug", slug);
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      const r = await res.json();
+      if (r.ok) {
+        setUp({ name: file.name, state: "done",
+                detail: `${r.chunks} section${r.chunks === 1 ? "" : "s"}, ${r.words} words` });
+        reload();
+        setTimeout(() => setUp(null), 6000);
+      } else {
+        setUp({ name: file.name, state: "failed",
+                detail: r.detail ?? String(r.reason ?? "").replace(/_/g, " ") });
+      }
+    } catch {
+      setUp({ name: file.name, state: "failed", detail: "Upload didn't complete." });
+    }
+  }
 
   return (
     <>
       <h1 className="pf-h1">Knowledge</h1>
       <p className="pf-lede">
-        Everything your AI should know that isn&apos;t a price. Parking, what to
-        bring, how refunds work, your policies. It reads all of it before every reply.
+        Everything your AI should know that isn&apos;t a price. Upload what you
+        already have, or type it in. It reads all of this before every reply.
       </p>
 
       {!can && <p className="pf-note">Only the owner can change this.</p>}
 
       {can && (
-        <div className="pf-panel">
-          <label>Title
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Parking" />
-          </label>
-          <label>What should it know?
-            <textarea rows={5} value={body} onChange={e => setBody(e.target.value)}
-              placeholder={"Free parking behind the building. Enter from Jalan SS15/4.\nSpaces are limited after 10am — street parking is available on the same road."} />
-            <span className="pf-sub">
-              Write it the way you&apos;d explain it to a new receptionist. Plain
-              sentences work better than bullet points.
-            </span>
-          </label>
-          <button className="pf-btn" style={{ background: C }} disabled={busy || !body.trim()}
-            onClick={async () => {
-              const r = await act({ action: "save_knowledge", payload: { title, body } },
-                "Saved. Your AI knows this from the next message.");
-              if (r?.ok) { setTitle(""); setBody(""); }
-            }}>{busy ? "Saving…" : "Add"}</button>
+        <>
+          <h2 className="pf-h2">Upload a document</h2>
+          <div className="pf-drop"
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => {
+              e.preventDefault();
+              const f = e.dataTransfer.files?.[0];
+              if (f) upload(f);
+            }}
+            onClick={() => fileRef.current?.click()}>
+            <input ref={fileRef} type="file" hidden
+              accept=".pdf,.docx,.txt,.md,.csv"
+              onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
+            <div className="pf-drop-in">
+              <div className="pf-drop-icon" style={{ background: C }}>↑</div>
+              <div>
+                <div className="pf-row-title">Drop a file, or click to choose</div>
+                <div className="pf-row-sub">
+                  PDF, Word, or plain text · up to 8 MB · your policy sheet, FAQ, price list
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {up && (
+            <div className={`pf-upstat ${up.state}`}>
+              <b>{up.name}</b>
+              {up.state === "reading" && <span> — reading…</span>}
+              {up.state === "done" && <span> — added, {up.detail}</span>}
+              {up.state === "failed" && <span> — {up.detail}</span>}
+            </div>
+          )}
+        </>
+      )}
+
+      {(d.documents ?? []).length > 0 && (
+        <>
+          <h2 className="pf-h2">Documents</h2>
+          <div className="pf-list">
+            {(d.documents ?? []).map(doc => (
+              <div key={doc.id} className="pf-row">
+                <span className="pf-doc" style={{ borderColor: C, color: C }}>
+                  {(doc.filename.split(".").pop() ?? "?").slice(0, 4).toUpperCase()}
+                </span>
+                <div className="pf-row-main">
+                  <div className="pf-row-title">{doc.filename}</div>
+                  <div className="pf-row-sub">
+                    {doc.chunks} section{doc.chunks === 1 ? "" : "s"} · {doc.words} words
+                    {doc.pages ? ` · ${doc.pages} pages` : ""}
+                  </div>
+                </div>
+                {can && (
+                  <button className="pf-mini"
+                    onClick={() => act({ action: "remove_document", payload: { id: doc.id } },
+                      "Removed, along with everything it taught your AI.")}>
+                    remove
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {can && (
+        <>
+          <h2 className="pf-h2">Or type something in</h2>
+          <div className="pf-panel">
+            <label>Title
+              <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Parking" />
+            </label>
+            <label>What should it know?
+              <textarea rows={4} value={body} onChange={e => setBody(e.target.value)}
+                placeholder={"Free parking behind the building. Enter from Jalan SS15/4.\nSpaces are limited after 10am."} />
+            </label>
+            <button className="pf-btn" style={{ background: C }} disabled={busy || !body.trim()}
+              onClick={async () => {
+                const r = await act({ action: "save_knowledge", payload: { title, body } },
+                  "Saved. Your AI knows this from the next message.");
+                if (r?.ok) { setTitle(""); setBody(""); }
+              }}>{busy ? "Saving…" : "Add"}</button>
+          </div>
+        </>
+      )}
+
+      {b && b.entries > 0 && (
+        <div className={`pf-budget ${b.state}`}>
+          <div className="pf-budget-top">
+            <span>{b.entries} entries · {b.words} words</span>
+            <span className="pf-mono">${b.cost_per_message_usd.toFixed(5)} per message</span>
+          </div>
+          <div className="pf-budget-bar">
+            <div style={{ width: `${Math.min(100, (b.words / 6000) * 100)}%`,
+                          background: b.state === "heavy" ? "#B3452F" : C }} />
+          </div>
+          <p>{b.advice}</p>
         </div>
       )}
 
-      {size.entries > 0 && (
-        <p className={heavy ? "pf-note" : "pf-sub"}>
-          {size.entries} {size.entries === 1 ? "entry" : "entries"} · about {size.words} words
-          {heavy && " — that's a lot. Trim anything the AI doesn't need; a shorter, sharper set answers better than a long one."}
-        </p>
-      )}
-
+      <h2 className="pf-h2">Typed entries</h2>
       <div className="pf-list">
-        {(d.knowledge ?? []).length === 0 && (
-          <div className="pf-empty">
-            Nothing yet. Right now your AI says it will check and pass questions
-            to a colleague.
-          </div>
+        {(d.knowledge ?? []).filter(k => !(d.documents ?? []).some(doc =>
+            k.title.startsWith(doc.filename))).length === 0 && (
+          <div className="pf-empty">Nothing typed in yet.</div>
         )}
         {(d.knowledge ?? []).map(k => (
           <div key={k.id} className="pf-row">
@@ -1270,6 +1371,9 @@ function Settings({ d, C, slug, act, busy, role }:
   });
   const [sugg, setSugg] = useState<string[]>(b.suggestions ?? ["", "", ""]);
   const [dom, setDom] = useState("");
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const embedSnippet =
+    `<script src="${origin}/api/embed?slug=${slug}" async></script>`;
   const [hours, setHours] = useState(b.hours ?? {});
 
   const set = (k: string, v: string) => setF(x => ({ ...x, [k]: v }));
@@ -1372,6 +1476,23 @@ function Settings({ d, C, slug, act, busy, role }:
         )}
         <span className="pf-sub">
           Your AI reads these. It refuses bookings outside them and tells customers when you next open.
+        </span>
+      </div>
+
+      <h2 className="pf-h2">Put it on your website</h2>
+      <div className="pf-panel">
+        <p className="pf-sub" style={{ marginTop: 0 }}>
+          Paste this one line before the closing &lt;/body&gt; tag of your site.
+          A chat button appears in the corner of every page.
+        </p>
+        <pre className="pf-code">{embedSnippet}</pre>
+        <button className="pf-btn" style={{ background: C }}
+          onClick={() => navigator.clipboard?.writeText(embedSnippet)}>
+          Copy the code
+        </button>
+        <span className="pf-sub">
+          Works on WordPress, Wix, Squarespace, Shopify — anywhere you can add
+          HTML. Send it to whoever looks after your website if that isn&apos;t you.
         </span>
       </div>
 
@@ -1703,6 +1824,32 @@ html, body { margin: 0; background: #F4F2ED; }
 .pf-conn-body input { margin-top: 0 !important; border: 1px solid var(--line);
   border-radius: 9px; padding: 10px 12px; font-size: 14px; font-family: inherit;
   background: #FDFCFA; flex: 1; }
+.pf-code { background: #12100E; color: #E8E6E0; border-radius: 10px; padding: 14px 16px;
+  font-family: ui-monospace, Menlo, monospace; font-size: 12px; overflow-x: auto;
+  margin: 0 0 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+.pf-drop { border: 2px dashed var(--line); border-radius: 14px; padding: 26px;
+  cursor: pointer; background: #fff; transition: border-color .18s ease, background .18s ease; }
+.pf-drop:hover { border-color: var(--c); background: color-mix(in oklab, var(--c) 3%, #fff); }
+.pf-drop-in { display: flex; align-items: center; gap: 14px; }
+.pf-drop-icon { width: 40px; height: 40px; border-radius: 11px; color: #fff;
+  display: grid; place-items: center; font-size: 18px; flex: none; }
+.pf-upstat { margin-top: 10px; font-size: 13px; padding: 11px 14px; border-radius: 10px;
+  background: #F4F2ED; color: var(--mut); }
+.pf-upstat.done { background: #E8F3EE; color: #17594A; }
+.pf-upstat.failed { background: #FBEAE7; color: #8A3524; }
+.pf-doc { width: 38px; height: 38px; border-radius: 8px; border: 1.5px solid;
+  display: grid; place-items: center; font-size: 9.5px; font-weight: 700;
+  letter-spacing: .04em; flex: none; }
+.pf-budget { background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 15px 17px; margin: 16px 0; }
+.pf-budget.heavy { border-color: #E8CFC9; background: #FDF6F4; }
+.pf-budget-top { display: flex; justify-content: space-between; gap: 12px;
+  font-size: 12.5px; color: var(--mut); flex-wrap: wrap; }
+.pf-budget-bar { height: 5px; background: #EFEDE8; border-radius: 999px;
+  overflow: hidden; margin: 10px 0 9px; }
+.pf-budget-bar div { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.pf-budget p { font-size: 12.5px; color: var(--mut); margin: 0; line-height: 1.55; }
+.pf-mono { font-family: ui-monospace, Menlo, monospace; }
 .pf-toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
   background: #fff; border: 1px solid var(--line); border-inline-start: 3px solid;
   border-radius: 10px; padding: 13px 18px; font-size: 13px; z-index: 80;

@@ -485,13 +485,15 @@ begin
         select id, platform, handle, status, followers from social_accounts
         where tenant_id = v_tenant) a),
     'posts', (select coalesce(json_agg(p order by p.created_at desc),'[]'::json) from (
-        select id, body, platforms, status, scheduled_at, published_at, reach, clicks
+        select id, body, platforms, status, scheduled_at, published_at, reach, clicks,
+               created_at
         from posts where tenant_id = v_tenant order by created_at desc limit 30) p),
     'automations', (select coalesce(json_agg(a order by a.kind),'[]'::json) from (
         select id, kind, is_on, offset_hours, body, channel, sent_count
         from automations where tenant_id = v_tenant) a),
     'broadcasts', (select coalesce(json_agg(b order by b.created_at desc),'[]'::json) from (
-        select id, body, audience, channel, status, scheduled_at, recipients, sent_count
+        select id, body, audience, channel, status, scheduled_at, recipients, sent_count,
+               created_at
         from broadcasts where tenant_id = v_tenant order by created_at desc limit 20) b),
     'audit', audit_trail(p_slug, 40),
     'invoices', (select coalesce(json_agg(i order by i.issued_on desc),'[]'::json) from (

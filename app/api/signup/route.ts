@@ -42,14 +42,23 @@ export async function POST(req: NextRequest) {
 
     const { data, error } = await db.rpc("create_tenant", { p_payload: payload });
     if (error) {
-      // Say which migration is missing rather than "something went wrong".
-      console.error("create_tenant failed:", error.message);
-      const missing = /function .*create_tenant|does not exist/i.test(error.message);
+      // Return the database's own words. Guessing at the cause and showing a
+      // friendlier message hid the real error last time.
+      console.error("create_tenant failed:", error.message, error);
       return NextResponse.json({
         ok: false,
-        reason: missing ? "not_migrated" : "create_failed",
-        detail: error.message.slice(0, 200),
+        reason: "create_failed",
+        detail: error.message?.slice(0, 300) ?? "unknown database error",
       }, { status: 500 });
+    }
+
+    // A function can return ok:false without raising — pass that through too.
+    if (data && (data as any).ok === false) {
+      return NextResponse.json({
+        ok: false,
+        reason: (data as any).reason ?? "create_failed",
+        detail: JSON.stringify(data).slice(0, 300),
+      }, { status: 400 });
     }
 
     // Send them their key. Losing it is the worst first experience there is,
