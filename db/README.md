@@ -1,87 +1,75 @@
-# Database — how to set it up
+# Migrations
 
-Four files. Run them in Supabase's SQL Editor, in number order.
-Copy the whole file, paste, click Run. Each takes seconds.
+Run these in Supabase → SQL Editor, **in numerical order**, one at a time.
+Confirm each succeeds before starting the next.
 
-| File | What it does | Expected result |
-|---|---|---|
-| `0001_init.sql` | Creates the 11 tables, security rules, indexes | "Success. No rows returned" |
-| `0002_seed.sql` | Adds the demo business (Sunrise Hair Studio) | "Success" — check Table Editor |
-| `0003_functions.sql` | Adds the wallet functions the app calls | "Success. No rows returned" |
-| `0004_isolation_test.sql` | Proves one business can't read another's data | Rows of **PASS** |
-| `0005_domains.sql` | Domain whitelist — only approved sites can use an agent | "Success. No rows returned" |
+A file that errors halfway applies everything before the error and nothing
+after it. Postgres won't warn you, and the next five files will appear to work
+while the app doesn't. That has cost more time on this project than any other
+single thing.
 
-## The 11 tables, in plain words
+## After any migration
 
-| Table | Holds |
+```sql
+select verify_schema();   -- is everything present?
+select smoke_test();      -- does everything actually run?
+```
+
+`verify_schema()` checks 34 tables, 18 columns and 70 functions, and names the
+exact file to re-run if something is missing. `smoke_test()` calls the live
+paths — a function can exist and still throw the moment it's used.
+
+`/api/health` reports the same thing, so you can check from a browser.
+
+## The order
+
+| File | What it adds |
 |---|---|
-| `tenants` | The businesses (your customers) + their wallet balance |
-| `profiles` | The humans who log in, linked to their business |
-| `ai_employees` | Each business's AI worker + its compiled prompt |
-| `items` | Services and prices (what the AI quotes) |
-| `customers` | The end customers who chat |
-| `conversations` | One row per chat thread |
-| `messages` | Every message, both sides |
-| `bookings` | Appointments the AI made |
-| `ai_decision_log` | One row per AI reply: tokens, latency, the 3 cost numbers |
-| `escalations` | Chats handed to a human, and why |
-| `usage_ledger` | Every wallet debit and top-up, with balance after |
-| `tenant_domains` | Which websites may embed each business's widget |
+| 0001 | tables, RLS scaffolding |
+| 0002 | salon demo tenant |
+| 0003 | wallet functions |
+| 0004 | isolation test |
+| 0005 | domain whitelist |
+| 0006 | salon prompt |
+| 0007 | branding columns |
+| 0008 | clinic tenant, medical safety prompt |
+| 0009 | bookings, `[[BOOK]]` tag |
+| 0010 | booking timezone fix |
+| 0011 | dashboard data, price editor |
+| 0012 | prompt rebuild fix |
+| 0013 | template-based prompts |
+| 0014 | thread view, escalations, booking actions |
+| 0015 | public page data |
+| 0016 | self-serve signup, sector templates |
+| 0017 | multi-agent, HR/payroll/finance |
+| 0018 | team, marketing, finance, settings |
+| 0019 | editable settings, enforced roles |
+| 0020 | knowledge, email, billing |
+| 0021 | branches, audit log, automations |
+| 0022 | custom domains, send queue, analytics |
+| 0023 | practitioners, notifications, credentials |
+| 0024 | removes the pgcrypto dependency |
+| 0025 | platform_data fix |
+| 0026 | row-level security |
+| 0027 | document upload |
+| 0028 | master portal |
+| 0029 | owner insights agent |
+| 0030 | customer self-service |
+| 0031 | schema verification — run last |
 
-## Rules built into the schema
+## If something breaks
 
-- **Every table has `tenant_id`.** Every query is scoped to one business.
-- **Row Level Security is ON for all 11 tables.** A logged-in user can only
-  see rows belonging to their own business. This is what `0004` proves.
-- **The server derives `tenant_id` from the login — never from the browser.**
-- **Bookings have a unique index on `(tenant_id, scheduled_at)`.** Two
-  customers can't book the same slot; the second insert fails politely.
-- **The wallet and the ledger always agree.** `debit_wallet()` updates both
-  in one transaction.
+1. Read the error. It names the column or function.
+2. `select verify_schema();` — it tells you which file to re-run.
+3. Every file is `create or replace` and safe to run again.
 
-## Onboarding a customer (the whole flow)
+## Known traps hit on this project
 
-```sql
--- 1. add their domain to the whitelist
-select add_tenant_domain('their-slug', 'theirsite.com');
-
--- 2. check it works
-select is_domain_allowed('their-slug', 'https://theirsite.com');  -- true
-select is_domain_allowed('their-slug', 'https://attacker.com');   -- false
-```
-
-Then give them the embed snippet with their slug in it. Subdomains work
-automatically: whitelisting `theirsite.com` also allows `booking.theirsite.com`.
-
-While a tenant's status is `trial`, localhost and `*.vercel.app` are allowed
-so you can test. Set status to `active` when they go live and only their real
-domain works.
-
-## After running all five
-
-Give the demo tenant some credit so the hard-block doesn't fire:
-
-```sql
-select topup_wallet(id, 10.00, 'demo credit')
-from tenants where slug = 'sunrise-hair';
-```
-
-Then check:
-
-```sql
-select name, wallet_balance_usd from tenants;
-```
-
-## If something fails
-
-- **Error in 0001** → paste the exact red error message to Claude. Don't retry blindly.
-- **FAIL row in 0004** → stop building. This is the company-ending bug caught
-  early, which is the whole point of the test. Copy the FAIL line and debug
-  the policy for that table before anything else.
-- **Ran a file twice by accident** → harmless. All four are safe to re-run.
-
-## What is NOT here on purpose
-
-No billing tables, no plans/subscriptions, no teams, no API keys, no audit
-trails beyond the ledger, no analytics tables. All designed in the old repo,
-all deferred. The 11 tables above are exactly what one demo needs.
+- **pgcrypto isn't enabled** on every Supabase project. `0024` removes the
+  dependency. Symptom: `gen_random_bytes does not exist`.
+- **`json_agg(x order by x.col)`** only works if the subquery selects `col`.
+  Broke three times. Symptom: `column x.col does not exist`.
+- **Two joined tables sharing a column name** need qualifying. Symptom:
+  `column reference "status" is ambiguous`.
+- **A function used before it's defined** in the same file. Postgres allows the
+  definition but fails at call time.

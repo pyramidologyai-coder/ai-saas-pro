@@ -41,10 +41,24 @@ export async function GET(req: NextRequest) {
     }[];
 
     for (const item of items) {
+      // A review request without a link is just a nice thought. Attach the
+      // booking's own token so one tap lands on the stars.
+      let body = item.body;
+      if (item.source === "review_request" && (item as any).booking_id) {
+        try {
+          const { data: url } = await db.rpc("booking_manage_url", {
+            p_booking_id: (item as any).booking_id,
+            p_origin: req.nextUrl.origin,
+          });
+          const t = String(url ?? "").split("/b/")[1];
+          if (t) body += `\n\n${req.nextUrl.origin}/review/${t}`;
+        } catch { /* send it without the link rather than not at all */ }
+      }
+
       const ok = await sendEmail({
         to: item.to,
         subject: item.subject ?? "A message for you",
-        html: wrap(item.body),
+        html: wrap(body),
         kind: item.source.split(":")[0],
         tenantId: item.tenant_id,
       });

@@ -6,12 +6,15 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 
+// Reads live database state, so it must not be prerendered at build time.
+export const dynamic = "force-dynamic";
+
 export async function GET() {
-  const checks: Record<string, string | number> = {};
+  const checks: Record<string, unknown> = {};
   let ok = true;
+  const db = supabaseAdmin();
 
   try {
-    const db = supabaseAdmin();
     for (const table of ["tenants", "ai_employees", "conversations", "messages"]) {
       const { count, error } = await db
         .from(table)
@@ -36,6 +39,17 @@ export async function GET() {
   checks.env_llm_key = llm;
   checks.email = process.env.RESEND_API_KEY ? "set" : "missing (keys and confirmations won't send)";
   checks.payments = process.env.STRIPE_SECRET_KEY ? "set" : "missing (billing page will say so)";
+  // Ask the database whether every migration actually landed. Cheap, and it
+  // turns "the dashboard is blank" into "0022 didn't finish".
+  try {
+    const { data: schema } = await db.rpc("verify_schema");
+    const v = schema as any;
+    checks.schema = v?.ok ? "complete" : `INCOMPLETE — ${v?.next_step ?? "see verify_schema()"}`;
+    if (v?.warnings?.length) checks.schema_warnings = v.warnings;
+  } catch {
+    checks.schema = "unknown (run 0031_verify.sql)";
+  }
+
   checks.cron = process.env.CRON_SECRET ? "set" : "missing (reminders won't send)";
   checks.stripe_webhook = process.env.STRIPE_WEBHOOK_SECRET ? "set" : "missing (webhook rejects all)";
   checks.dashboard_lock = process.env.DASHBOARD_PASSWORD ? "locked" : "NOT SET — dashboard unreachable";

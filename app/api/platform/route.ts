@@ -8,6 +8,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie } from "@/lib/auth";
 
+/** Who is this request, and therefore what may they do. */
+function roleOf(req: NextRequest): string {
+  return req.cookies.get(AUTH_COOKIE)?.value
+    ? "owner"
+    : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
+}
+
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
   if (!slug) return NextResponse.json({ ok: false, reason: "missing_slug" }, { status: 400 });
@@ -26,6 +33,10 @@ export async function GET(req: NextRequest) {
       ...(extras as object ?? {}),
       analytics: stats ?? null,
       ...(docs as object ?? {}),
+      // Sent with the data on purpose. Asking for it separately meant one
+      // failed request left the whole dashboard read-only, which is exactly
+      // what happened.
+      role: roleOf(req),
     });
   } catch (e: any) {
     console.error("platform GET failed:", e?.message ?? e);
@@ -40,9 +51,7 @@ export async function POST(req: NextRequest) {
 
     // The master session is the owner of whatever it's looking at. A tenant
     // session carries the role its key was issued with.
-    const role = req.cookies.get(AUTH_COOKIE)?.value
-      ? "owner"
-      : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
+    const role = roleOf(req);
 
     // Who is doing this. Platform access is labelled as such, so it shows up
     // in the business's Activity list rather than looking like their own staff.
@@ -61,12 +70,4 @@ export async function POST(req: NextRequest) {
     console.error("platform POST failed:", e?.message ?? e);
     return NextResponse.json({ ok: false, reason: "unavailable" }, { status: 500 });
   }
-}
-
-/** So the UI can hide what this person can't do. */
-export async function OPTIONS(req: NextRequest) {
-  const role = req.cookies.get(AUTH_COOKIE)?.value
-    ? "owner"
-    : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
-  return NextResponse.json({ ok: true, role });
 }

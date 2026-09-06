@@ -41,6 +41,9 @@ type Data = {
   domains?: Domain[]; analytics?: Stats | null;
   resources?: Resource[]; credentials?: Cred[];
   documents?: Doc[]; budget?: Budget;
+  near_misses?: { id: string; service: string | null; wanted: string | null;
+                  name: string | null; contact: string | null; missing: string[];
+                  conversation_id: string; created_at: string }[];
   outbox?: { pending: number; sent: number; failed: number };
   stats?: { conversations: number; bookings: number; needs_you: number };
 };
@@ -101,15 +104,12 @@ export default function Platform({ params }: { params: { slug: string } }) {
   const [busy, setBusy] = useState(false);
   const [role, setRole] = useState("owner");
 
-  useEffect(() => {
-    fetch("/api/platform", { method: "OPTIONS" })
-      .then(r => r.json()).then(j => setRole(j.role ?? "viewer")).catch(() => {});
-  }, []);
-
   const load = useCallback(async () => {
     try {
       const r = await fetch(`/api/platform?slug=${encodeURIComponent(slug)}`);
-      setD(await r.json());
+      const j = await r.json();
+      setD(j);
+      if (j.role) setRole(j.role);
     } catch { setD({ ok: false }); }
   }, [slug]);
 
@@ -167,7 +167,9 @@ export default function Platform({ params }: { params: { slug: string } }) {
             <span className="pf-mark" style={{ background: C }}>{b.name.charAt(0)}</span>
             <div>
               <div className="pf-bizname">{b.branch_label ?? b.name}</div>
-              <div className="pf-plan">{b.plan} plan</div>
+              <div className="pf-plan">
+              {b.plan} plan · signed in as {role}
+            </div>
             </div>
           </div>
 
@@ -243,6 +245,36 @@ function Home({ d, C, go }: { d: Data; C: string; go: (m: Mod) => void }) {
         <Card label="Team" value={String(d.team?.length ?? 0)}
               sub="with access" onClick={() => go("team")} C={C} />
       </div>
+
+      {(d.near_misses ?? []).length > 0 && (
+        <>
+          <h2 className="pf-h2">Nearly booked</h2>
+          <p className="pf-sub" style={{ marginTop: -6, marginBottom: 12 }}>
+            People who started booking and stopped. Worth a call — they were
+            already interested.
+          </p>
+          <div className="pf-list">
+            {(d.near_misses ?? []).slice(0, 5).map(n => (
+              <div key={n.id} className="pf-row">
+                <div className="pf-row-main">
+                  <div className="pf-row-title">
+                    {n.name ?? "Someone"}
+                    {n.service && <span className="pf-tag">{n.service}</span>}
+                  </div>
+                  <div className="pf-row-sub">
+                    {n.contact ?? "no contact given"}
+                    {n.missing?.length ? ` · never gave: ${n.missing.join(", ")}` : ""}
+                  </div>
+                </div>
+                <div className="pf-row-sub">
+                  {new Date(n.created_at).toLocaleDateString("en-GB",
+                    { day: "2-digit", month: "short" })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <h2 className="pf-h2">Your AI employees</h2>
       <div className="pf-list">
@@ -392,7 +424,11 @@ function Services({ d, C, act, busy, role }:
         isn&apos;t here.
       </p>
 
-      {!can && <p className="pf-note">Your role can view these but not change them.</p>}
+      {!can && (
+        <p className="pf-note">
+          You&apos;re signed in as <b>{role}</b>. Changing these needs owner or manager.
+        </p>
+      )}
 
       {can && (
         <div className="pf-panel">
@@ -757,7 +793,11 @@ function Knowledge({ d, C, act, busy, role, slug, reload }:
         already have, or type it in. It reads all of this before every reply.
       </p>
 
-      {!can && <p className="pf-note">Only the owner can change this.</p>}
+      {!can && (
+        <p className="pf-note">
+          You&apos;re signed in as <b>{role}</b>. Only an owner can change this.
+        </p>
+      )}
 
       {can && (
         <>
@@ -1289,7 +1329,12 @@ function Connections({ d, C, act, busy, role }:
         show them again once saved, and nothing is shared with other businesses.
       </p>
 
-      {!can && <p className="pf-note">Only the owner can change these.</p>}
+      {!can && (
+        <p className="pf-note">
+          You&apos;re signed in as <b>{role}</b>, which can view these but not change
+          them. An owner key can.
+        </p>
+      )}
 
       <div className="pf-list">
         {PROVIDERS.map(p => {
@@ -1383,7 +1428,12 @@ function Settings({ d, C, slug, act, busy, role }:
       <h1 className="pf-h1">Settings</h1>
       <p className="pf-lede">This is your page. Change anything here and it updates live.</p>
 
-      {!can && <p className="pf-note">Only the owner can change these.</p>}
+      {!can && (
+        <p className="pf-note">
+          You&apos;re signed in as <b>{role}</b>, which can view these but not change
+          them. An owner key can.
+        </p>
+      )}
 
       <h2 className="pf-h2">Your link</h2>
       <div className="pf-panel">

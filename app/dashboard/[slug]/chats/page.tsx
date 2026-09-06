@@ -27,6 +27,7 @@ type Conversation = {
 type Booking = {
   id: string; status: string; local_time: string;
   service: string | null; price: number | null; currency: string | null; customer: string;
+  phone?: string | null; reason?: string | null; first_visit?: boolean;
 };
 type Escalation = {
   id: string; reason: string; trigger_source: string;
@@ -267,8 +268,15 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
                 <div key={b.id} data-row style={S.row}>
                   <div style={{ ...S.mono, ...S.time, color: C }}>{b.local_time}</div>
                   <div style={S.rowMain}>
-                    <div style={S.name}>{b.service ?? "—"}</div>
-                    <div style={S.desc}>{b.customer}</div>
+                    <div style={S.name}>
+                      {b.service ?? "—"}
+                      {b.first_visit && <span style={S.flag}>first visit</span>}
+                    </div>
+                    <div style={S.desc}>
+                      {b.customer}
+                      {b.phone ? ` · ${b.phone}` : " · no number"}
+                      {b.reason ? ` · ${b.reason}` : ""}
+                    </div>
                   </div>
                   <div style={S.rightCol}>
                     {b.price != null && (

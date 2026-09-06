@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     // internal HR agent, and so on. No agent named means the primary one.
     let q = db
       .from("ai_employees")
-      .select("id, persona_name, compiled_prompt, compiled_tokens, status, audience, slug")
+      .select("id, persona_name, compiled_prompt, compiled_tokens, status, audience, slug, sector_id")
       .eq("tenant_id", tenant.id)
       .eq("status", "active");
 
@@ -193,6 +193,28 @@ export async function POST(req: NextRequest) {
 
     // ── 6 · Ask the model ───────────────────────────────────────────────────
     const started = Date.now();
+    // An insights agent is useless without the numbers. Rather than let the
+    // model compose queries — one injection away from reading another tenant —
+    // we hand it a fixed briefing and it explains what it's given.
+    let briefing = "";
+    if ((employee as any).sector_id === "owner") {
+      try {
+        const days = /month|30 day/i.test(message) ? 30
+                   : /year|12 month/i.test(message) ? 365
+                   : /today/i.test(message) ? 1 : 7;
+        const { data: brief } = await db.rpc("business_briefing", {
+          p_slug: slug, p_days: days,
+        });
+        if (brief) {
+          briefing = `\n\nLIVE FIGURES (last ${days} days). These are the only ` +
+            `numbers you have. Do not invent any others.\n` +
+            JSON.stringify(brief, null, 1);
+        }
+      } catch (e: any) {
+        console.error("briefing failed:", e?.message ?? e);
+      }
+    }
+
     // The model has no clock. Without today's date it cannot resolve
     // "tomorrow" or "next Tuesday" into a real booking time.
     const today = new Date().toLocaleDateString("en-GB", {
@@ -201,7 +223,7 @@ export async function POST(req: NextRequest) {
     });
 
     const result = await askModel({
-      system: `${employee.compiled_prompt}\n\nToday is ${today}.`,
+      system: `${employee.compiled_prompt}\n\nToday is ${today}.${briefing}`,
       messages: [...turns, { role: "user", content: message }],
     });
     const latencyMs = Date.now() - started;
@@ -216,6 +238,16 @@ export async function POST(req: NextRequest) {
       reply = "Let me get a colleague to help with this — someone will follow up with you shortly.";
     }
 
+    // Someone who talks about booking and then drifts off is a near miss the
+    // business never hears about. Record what we had, so it can be followed up.
+    if (!BOOK_TAG.test(reply) && /book|appointment|slot|reserve|temujanji/i.test(message)) {
+      db.rpc("note_booking_attempt", {
+        p_tenant_slug: slug,
+        p_conversation_id: conversation.id,
+        p_payload: { service: null, when: null, name: null, contact: null },
+      }).then(() => {}, () => {});
+    }
+
     // Booking: the agent emits a [[BOOK ...]] tag when it has all four details.
     // We strip the tag from what the customer sees, then try to save it.
     const booking = parseBookingTag(reply);
@@ -228,15 +260,29 @@ export async function POST(req: NextRequest) {
         p_service_name: booking.service,
         p_scheduled_at: booking.when,
         p_customer_name: booking.name,
+        p_phone: booking.phone || null,
+        p_email: booking.email || null,
+        p_reason: booking.reason || null,
       });
 
       const r = result as any;
       if (r?.ok) {
         // Confirm by email if we know where to send it. Never blocks the reply.
-        const email = extractEmail(message) ?? extractEmail(reply);
+        // The agent asked for this directly, so it beats scraping the text.
+        const email = booking.email || extractEmail(message) || extractEmail(reply);
         if (email) {
+          // the link that lets them cancel without phoning
+          let manageUrl: string | null = null;
+          try {
+            const { data: u } = await db.rpc("booking_manage_url", {
+              p_booking_id: r.booking_id, p_origin: req.nextUrl.origin,
+            });
+            manageUrl = (u as string) ?? null;
+          } catch { /* the email is still worth sending without it */ }
+
           const mail = bookingEmail({
             business: tenant.name,
+            manageUrl,
             service: r.service,
             when: formatWhen(r.scheduled_at, tenant.timezone),
             name: booking.name || "there",
@@ -321,16 +367,31 @@ export async function POST(req: NextRequest) {
  * Parsing a tag is far more reliable than parsing prose, and the tag never
  * reaches the customer.
  */
-const BOOK_TAG = /\[\[BOOK\s+service="([^"]+)"\s+when="([^"]+)"\s+name="([^"]*)"\s*\]\]/i;
+// The agent now sends contact details too. Older agents may still emit the
+// three-field form, so both are accepted — a prompt that hasn't been rebuilt
+// yet should degrade, not break.
+const BOOK_TAG = /\[\[BOOK\s+service="([^"]*)"\s+when="([^"]*)"\s+name="([^"]*)"(?:\s+phone="([^"]*)")?(?:\s+email="([^"]*)")?(?:\s+reason="([^"]*)")?\s*\]\]/i;
 
-function parseBookingTag(text: string): { service: string; when: string; name: string } | null {
+type BookingTag = {
+  service: string; when: string; name: string;
+  phone: string; email: string; reason: string;
+};
+
+function parseBookingTag(text: string): BookingTag | null {
   const m = text.match(BOOK_TAG);
   if (!m) return null;
 
   const when = new Date(m[2]);
   if (isNaN(when.getTime())) return null;   // unparseable date: treat as no booking
 
-  return { service: m[1].trim(), when: m[2].trim(), name: (m[3] ?? "").trim() };
+  return {
+    service: m[1].trim(),
+    when: m[2].trim(),
+    name: (m[3] ?? "").trim(),
+    phone: (m[4] ?? "").trim(),
+    email: (m[5] ?? "").trim(),
+    reason: (m[6] ?? "").trim(),
+  };
 }
 
 function bookingFailureMessage(reason?: string): string {
@@ -344,6 +405,10 @@ function bookingFailureMessage(reason?: string): string {
       return "That time has already passed — which day did you have in mind?";
     case "fully_booked":
       return "We're fully booked at that time. Would another slot work?";
+    case "no_contact":
+      return "Before I confirm — could I take a phone number, in case anything changes?";
+    case "bad_phone":
+      return "That number looks a little short. Could you give it to me again?";
     case "unknown_service":
       return "I couldn't match that to one of our services. Which one did you want?";
     default:

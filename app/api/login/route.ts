@@ -23,6 +23,15 @@ export async function POST(req: NextRequest) {
     const db = supabaseAdmin();
     const { data } = await db.rpc("resolve_key", { p_code: entered.toUpperCase() });
     const r = data as any;
+    if (r?.ok && r.scope === "agency" && r.agency_slug) {
+      const res = NextResponse.json({
+        ok: true, scope: "agency", slug: r.agency_slug, role: r.role,
+        name: r.name, next: `/agency/${r.agency_slug}`,
+      });
+      res.cookies.set(TENANT_COOKIE,
+        `${r.agency_slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
+      return res;
+    }
     if (r?.ok && r.scope === "organisation" && r.org_slug) {
       const res = NextResponse.json({
         ok: true, scope: "organisation", slug: r.org_slug, role: r.role,

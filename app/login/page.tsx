@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, Suspense } from "react";
+import { Logo } from "@/components/Logo";
 import { useSearchParams, useRouter } from "next/navigation";
 
 function LoginForm() {
@@ -96,6 +97,7 @@ export default function LoginPage() {
       <div style={S.card}>
         <div style={S.accent} />
         <div style={S.inner}>
+          <div style={{ marginBottom: 20 }}><Logo size={19} /></div>
           <Suspense fallback={<div style={S.body}>Loading</div>}>
             <LoginForm />
           </Suspense>

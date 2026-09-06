@@ -107,8 +107,10 @@ begin
   select id into v_tenant from tenants where slug = p_slug;
   if v_tenant is null then return json_build_object('ok',false,'reason','unknown_tenant'); end if;
 
-  if json_typeof(p_payload->'chunks') <> 'array'
-     or json_array_length(p_payload->'chunks') = 0 then
+  -- A missing key makes json_typeof return NULL, and NULL <> 'array' is NULL,
+  -- not true — so the guard would pass and we'd import nothing silently.
+  if coalesce(json_typeof(p_payload->'chunks'), 'null') <> 'array'
+     or json_array_length(coalesce(p_payload->'chunks', '[]'::json)) = 0 then
     return json_build_object('ok', false, 'reason', 'no_text',
       'hint', 'The file had no readable text. A scanned PDF needs OCR first.');
   end if;

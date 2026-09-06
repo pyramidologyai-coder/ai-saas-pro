@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Logo } from "@/components/Logo";
 
 const SCRIPT: { role: "c" | "a"; text: string }[] = [
   { role: "c", text: "hi, how much for a full health screening?" },
@@ -46,7 +47,7 @@ export default function Landing() {
       <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,560;9..144,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 
       <header className="al-head">
-        <div className="al-logo">Automology</div>
+        <a href="/" className="al-logo" aria-label="Automology"><Logo size={22} /></a>
         <nav>
           <a href="/demo/damai-clinic">See it live</a>
           <a href="/login" className="quiet">Sign in</a>
@@ -168,7 +169,7 @@ export default function Landing() {
       </section>
 
       <footer className="al-foot">
-        <div>Automology</div>
+        <Logo dark size={20} />
         <div className="al-foot-links">
           <a href="/demo/damai-clinic">Live demo</a>
           <a href="/start">Get started</a>

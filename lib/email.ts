@@ -108,7 +108,7 @@ export function welcomeEmail(o: {
 
 export function bookingEmail(o: {
   business: string; service: string; when: string; name: string;
-  color: string; phone?: string | null;
+  color: string; phone?: string | null; manageUrl?: string | null;
 }) {
   return {
     subject: `Your appointment at ${o.business}`,
@@ -123,9 +123,16 @@ export function bookingEmail(o: {
         <tr><td style="padding:9px 0;color:#A5A099;font-size:13px;border-top:1px solid #E7E3DC">Where</td>
             <td style="padding:9px 0;text-align:right;font-weight:600;border-top:1px solid #E7E3DC">${o.business}</td></tr>
       </table>
+      ${o.manageUrl ? `
+      <p style="margin:0 0 18px">
+        ${btn(o.color, o.manageUrl, "Change or cancel")}
+      </p>
+      <p style="margin:0;color:#A5A099;font-size:12px">
+        That link is personal to this appointment — please don't forward it.
+      </p>` : `
       <p style="margin:0;color:#66625B;font-size:13px">
         Need to change it?${o.phone ? ` Call us on ${o.phone}.` : " Reply to this email."}
-      </p>
+      </p>`}
     `),
   };
 }

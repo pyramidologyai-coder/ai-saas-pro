@@ -30,11 +30,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json(data);
     }
 
-    const [{ data: overview, error }, { data: businesses }, { data: health }] =
-      await Promise.all([
+    const [{ data: overview, error }, { data: businesses }, { data: health },
+           { data: agencies }] = await Promise.all([
         db.rpc("master_overview"),
         db.rpc("master_businesses"),
         db.rpc("master_health"),
+        db.rpc("master_agencies"),
       ]);
     if (error) throw new Error(error.message);
 
@@ -42,6 +43,7 @@ export async function GET(req: NextRequest) {
       ...(overview as object),
       list: businesses ?? [],
       health: health ?? null,
+      agencies: agencies ?? [],
     });
   } catch (e: any) {
     console.error("master failed:", e?.message ?? e);

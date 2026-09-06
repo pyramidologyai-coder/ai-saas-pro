@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect } from "react";
+import { Logo } from "@/components/Logo";
 
 type Sector = { sector_id: string; label: string; agent_default: string };
 type Service = { name: string; price: string; minutes: string; description: string };
@@ -129,7 +130,7 @@ export default function Start() {
       <Fonts />
 
       <header className="st-head">
-        <a href="/" className="st-logo">Automology</a>
+        <a href="/" className="st-logo" aria-label="Automology"><Logo size={19} /></a>
         <div className="st-prog">
           {steps.map((s, i) => (
             <span key={s} className={i <= step ? "on" : ""}>{s}</span>

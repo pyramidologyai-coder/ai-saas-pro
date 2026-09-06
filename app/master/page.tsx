@@ -15,6 +15,7 @@
  */
 
 import { useEffect, useState } from "react";
+import { Logo } from "@/components/Logo";
 
 type Health = {
   state: string; trend: string; days_since_last: number | null;
@@ -96,7 +97,7 @@ export default function MasterPortal() {
     <Shell>
       <header className="ms-head">
         <div>
-          <div className="ms-logo">Automology</div>
+          <Logo dark size={21} />
           <p>Platform control</p>
         </div>
         <div className="ms-tabs">
@@ -298,7 +299,7 @@ html,body{margin:0}
 
 .ms-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;
   flex-wrap:wrap;margin-bottom:30px}
-.ms-logo{font-family:"Fraunces",serif;font-weight:700;font-size:23px;letter-spacing:-0.02em}
+.ms-logo{display:block;height:26px;width:auto}
 .ms-head p{font-size:12.5px;color:var(--fade);margin:4px 0 0}
 .ms-tabs{display:flex;gap:6px;flex-wrap:wrap}
 .ms-tabs button{background:none;border:1px solid var(--line);color:var(--fade);
