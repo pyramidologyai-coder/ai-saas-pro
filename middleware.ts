@@ -43,6 +43,14 @@ export async function middleware(req: NextRequest) {
   // The embed is meant to be framed by a customer's website, so it must not
   // inherit any frame-blocking headers. The chat API's origin whitelist is
   // what actually controls who may use it.
+  // A customer managing their own booking has no login — the token is the
+  // credential, and it's checked on every call.
+  if (path.startsWith("/b/") || path.startsWith("/api/manage") ||
+      path.startsWith("/my/") || path.startsWith("/api/portal") ||
+      path.startsWith("/review/") || path.startsWith("/api/review")) {
+    return NextResponse.next();
+  }
+
   if (path.startsWith("/embed/") || path === "/api/embed") {
     const res = NextResponse.next();
     res.headers.delete("x-frame-options");
@@ -52,6 +60,7 @@ export async function middleware(req: NextRequest) {
 
   // ── 2 · dashboard gate ───────────────────────────────────────────────────
   const guarded = path.startsWith("/master") || path.startsWith("/api/master") ||
+                  path.startsWith("/agency") || path.startsWith("/api/agency") ||
                   path.startsWith("/dashboard") || path.startsWith("/group") ||
                   path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
                   path.startsWith("/api/group");
@@ -79,7 +88,9 @@ export async function middleware(req: NextRequest) {
     const wanted =
       path.startsWith("/dashboard/") ? path.split("/")[2] :
       path.startsWith("/group/") ? path.split("/")[2] :
-      req.nextUrl.searchParams.get("slug") ?? req.nextUrl.searchParams.get("org");
+      path.startsWith("/agency/") ? path.split("/")[2] :
+      req.nextUrl.searchParams.get("slug") ?? req.nextUrl.searchParams.get("org")
+      ?? req.nextUrl.searchParams.get("agency");
 
     if (path === "/dashboard") {
       return NextResponse.redirect(new URL(`/dashboard/${ownSlug}`, req.url));
