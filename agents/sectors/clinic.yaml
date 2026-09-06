@@ -1,0 +1,85 @@
+# AGENT-001 sector patch — clinic
+# Schema: SECTOR_PATCH.schema.json v1.1
+# Authored: Ash + Hermes — 2026-07-08
+
+agent_id: "AGENT-001"
+sector_id: "clinic"
+schema_version: "1.1"
+patch_version: "1.0.0"
+
+patch_notes: >
+  General practice clinic. Patients require privacy on shared channels — never discuss
+  clinical details in group threads. All clinical questions (diagnosis, prescriptions,
+  lab results) must be immediately transferred to a human. Urgency keywords route to
+  emergency slot or human_immediate. No-show deposit triggers after 2 missed appointments.
+  Referral capture and multi-doctor availability supported.
+
+upsell_allowed: false
+no_clinical_commentary: true
+llm_tier_minimum: 2
+recall_reminder_enabled: false
+
+terminology:
+  customer: "patient"
+  booking: "appointment booking"
+  product: "service"
+  service: "medical service"
+
+booking_config:
+  booking_types:
+    - consultation
+    - follow_up
+    - emergency
+    - specialist_referral
+  requires_confirmation: true
+  max_advance_days: 90
+  allow_walk_in: true
+  cancellation_policy_hours: 24
+
+escalation_triggers:
+  - trigger: "clinical_question"
+    action: "human_immediate"
+    reason: "Symptoms, diagnoses, and clinical queries must be handled by a qualified clinician — never by AI."
+  - trigger: "prescription_request"
+    action: "human_immediate"
+    reason: "Prescription requests require a licensed physician. AI must not engage."
+  - trigger: "lab_result_query"
+    action: "human_immediate"
+    reason: "Lab results are clinical data — interpretation belongs to a clinician only."
+  - trigger: "emergency_symptom_keyword"
+    action: "human_immediate_plus_ops_alert"
+    notify_ops: true
+    reason: "Emergency symptoms (chest pain, difficulty breathing, severe bleeding) require immediate human escalation."
+
+compliance_rules:
+  - rule_id: "CLINIC-001"
+    rule: "Never discuss, interpret, or speculate on symptoms, diagnoses, lab results, or treatment decisions. Immediately transfer any clinical question to a human."
+    enforcement: "block"
+    source: "Platform safety policy — no_clinical_commentary"
+  - rule_id: "CLINIC-002"
+    rule: "Never discuss patient clinical details on shared or group channels. If a patient shares clinical information in a shared channel, immediately move to a private channel or escalate to a human."
+    enforcement: "block"
+    source: "Patient privacy SOP"
+  - rule_id: "CLINIC-003"
+    rule: "Capture date_of_birth and reason_for_visit before confirming any appointment. These fields are required for clinical triage."
+    enforcement: "warn"
+    source: "Clinic intake SOP"
+  - rule_id: "CLINIC-004"
+    rule: "A patient with 2 or more no-shows without notice is subject to the deposit policy at next booking. Inform the patient of tenant_settings.deposit_amount before confirming."
+    enforcement: "warn"
+    source: "Clinic no-show policy"
+
+communication_rules:
+  tone: "professional"
+  formality_level: "high"
+  emoji_policy: "none"
+  greeting_style: "Warm and professional. Address patients by full name. Never use first name only without prior permission."
+  closing_style: "Confirm appointment date, time, doctor name, and any pre-visit instructions. Leave no ambiguity about next steps."
+  dialect_notes: "Follow tenant's configured language. Clinical terminology should be plain and patient-friendly — avoid medical jargon."
+
+context_requirements:
+  - customer_profile
+  - conversation_history
+  - current_appointments
+  - business_hours
+  - tenant_settings

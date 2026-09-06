@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://automology.io/schemas/sector-patch/v1.1",
+  "title": "Automology Sector Patch Schema",
+  "description": "Validates every sector YAML patch file (agents/sectors/agent-XXX/sector_id.yaml). A sector patch contains ONLY the behavioral differences from the base role spec. Version 1.1 — adds communication_rules, context_requirements, success_criteria. Changes require ADR.",
+  "type": "object",
+
+  "required": [
+    "sector_id",
+    "agent_id",
+    "schema_version"
+  ],
+
+  "additionalProperties": false,
+
+  "properties": {
+
+    "sector_id": {
+      "type": "string",
+      "enum": [
+        "clinic",
+        "dentist",
+        "restaurant",
+        "cafe",
+        "gym",
+        "salon",
+        "retail",
+        "ecommerce",
+        "automotive",
+        "real_estate",
+        "legal",
+        "hotel"
+      ],
+      "description": "The industry sector this patch applies to. Must match the filename."
+    },
+
+    "agent_id": {
+      "type": "string",
+      "pattern": "^AGENT-0[0-9]{2}$",
+      "description": "The agent this patch applies to. Must match the parent directory name."
+    },
+
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "description": "Version of SECTOR_PATCH.schema.json this patch was authored against. Must be <= current platform schema version.",
+      "examples": ["1.0"]
+    },
+
+    "patch_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of this specific patch file. Bump on any change.",
+      "examples": ["1.0.0"]
+    },
+
+    "patch_notes": {
+      "type": "string",
+      "maxLength": 500,
+      "description": "Human-readable explanation of why this sector requires these overrides. Mandatory for compliance_rules and escalation_triggers entries."
+    },
+
+    "upsell_allowed": {
+      "type": ["boolean", "null"],
+      "description": "Override the base spec upsell_allowed_default. null = defer to base. false in medical/legal sectors = platform lock (cannot be re-enabled by tenant)."
+    },
+
+    "llm_tier_minimum": {
+      "type": ["integer", "null"],
+      "enum": [1, 2, 3, null],
+      "description": "Minimum LLM tier for this sector. Tenant cannot lower below this. null = no sector-level minimum (base spec or tenant decides)."
+    },
+
+    "hold_modes": {
+      "type": "array",
+      "description": "Override the hold modes available in this sector. Replaces the base spec array. Omit to keep base spec defaults.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["silent", "warm", "callback"]
+      }
+    },
+
+    "allowed_actions": {
+      "type": "array",
+      "description": "Actions enabled in this sector that supplement or replace the base spec allowed_actions. If present, REPLACES the base array.",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 2 }
+    },
+
+    "blocked_actions": {
+      "type": "array",
+      "description": "Actions explicitly disabled in this sector, even if enabled in the base spec. Applied after allowed_actions merge.",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 2 }
+    },
+
+    "escalation_triggers": {
+      "type": "array",
+      "description": "Sector-specific conditions that trigger human escalation. These ADD to base spec triggers (array append).",
+      "items": {
+        "type": "object",
+        "required": ["trigger", "action"],
+        "additionalProperties": false,
+        "properties": {
+          "trigger": {
+            "type": "string",
+            "minLength": 3,
+            "description": "The condition or keyword pattern that activates this trigger. e.g. 'lab_result_query', 'allergic_reaction', 'legal_liability'"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "human_handoff",
+              "human_immediate",
+              "human_immediate_plus_ops_alert",
+              "callback_request",
+              "silent_hold",
+              "warm_hold"
+            ],
+            "description": "human_handoff = standard transfer. human_immediate = urgent. human_immediate_plus_ops_alert = critical + notify ops. callback_request = collect phone and queue."
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "description": "Why this trigger exists. Required for audit trail."
+          },
+          "notify_ops": {
+            "type": "boolean",
+            "description": "Whether to send an ops-level alert in addition to the escalation action. Defaults to false.",
+            "default": false
+          }
+        }
+      }
+    },
+
+    "compliance_rules": {
+      "type": "array",
+      "description": "Sector-specific compliance constraints the agent must enforce.",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "rule", "enforcement"],
+        "additionalProperties": false,
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]+$",
+            "description": "Unique rule identifier. e.g. CLINIC-001, LEGAL-004",
+            "examples": ["CLINIC-001", "LEGAL-003"]
+          },
+          "rule": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Plain English description of the compliance rule."
+          },
+          "enforcement": {
+            "type": "string",
+            "enum": ["block", "warn", "log"],
+            "description": "block = agent refuses action. warn = agent continues but logs. log = silent audit trail only."
+          },
+          "source": {
+            "type": "string",
+            "description": "Regulatory or policy source for this rule. e.g. HIPAA, GDPR, Sector SOP."
+          }
+        }
+      }
+    },
+
+    "terminology": {
+      "type": "object",
+      "description": "Sector-specific vocabulary. Keys are generic terms; values are the sector-appropriate equivalents. Used to localise agent language without changing prompts.",
+      "additionalProperties": { "type": "string" },
+      "examples": [
+        { "appointment": "consultation", "customer": "patient", "product": "treatment" }
+      ]
+    },
+
+    "booking_config": {
+      "type": "object",
+      "description": "Sector-specific booking behaviour overrides.",
+      "additionalProperties": false,
+      "properties": {
+        "booking_types": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" },
+          "description": "Booking type labels for this sector. e.g. [consultation, follow_up, emergency] for clinic."
+        },
+        "requires_confirmation": {
+          "type": "boolean",
+          "description": "Whether bookings require human confirmation before being finalised."
+        },
+        "max_advance_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum days in advance a customer may book."
+        },
+        "allow_walk_in": {
+          "type": "boolean",
+          "description": "Whether walk-in / same-day requests are supported."
+        },
+        "cancellation_policy_hours": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Minimum hours notice required for cancellation without penalty."
+        }
+      }
+    },
+
+    "integrations": {
+      "type": "object",
+      "description": "Integration flags for this sector. Overrides base spec defaults. true = required/enabled, false = explicitly disabled.",
+      "additionalProperties": false,
+      "properties": {
+        "calendar":           { "type": "boolean" },
+        "crm":                { "type": "boolean" },
+        "ecommerce":          { "type": "boolean" },
+        "payments":           { "type": "boolean" },
+        "pos":                { "type": "boolean" },
+        "loyalty_engine":     { "type": "boolean" },
+        "review_engine":      { "type": "boolean" },
+        "hr_module":          { "type": "boolean" },
+        "finance_module":     { "type": "boolean" }
+      }
+    },
+
+    "no_clinical_commentary": {
+      "type": "boolean",
+      "description": "When true, agent must never discuss symptoms, diagnoses, lab results, or treatments. Applicable to clinic and dentist sectors. Cannot be set to false by tenant.",
+      "default": false
+    },
+
+    "photo_request_on_complaint": {
+      "type": "boolean",
+      "description": "When true, agent proactively requests a photo from the customer when a visible complaint (cosmetic issue, damage, injury) is described. Applicable to salon, dental, automotive sectors.",
+      "default": false
+    },
+
+    "recall_reminder_enabled": {
+      "type": "boolean",
+      "description": "When true, agent proactively reminds patients/customers about follow-up appointments or maintenance schedules. Applicable to dentist, automotive, clinic sectors.",
+      "default": false
+    },
+
+    "loyalty_tier_handling": {
+      "type": "object",
+      "description": "How this sector handles customer loyalty tiers.",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "tiers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tier names in ascending order. e.g. [Bronze, Silver, Gold, Platinum]"
+        },
+        "mention_tier_in_greeting": { "type": "boolean" }
+      }
+    },
+
+    "order_handling": {
+      "type": "object",
+      "description": "E-commerce and retail order management behaviour.",
+      "additionalProperties": false,
+      "properties": {
+        "order_status_lookup": { "type": "boolean" },
+        "return_initiation":   { "type": "boolean" },
+        "cancellation":        { "type": "boolean" },
+        "tracking_link":       { "type": "boolean" },
+        "refund_policy_info":  { "type": "boolean" }
+      }
+    },
+
+    "sector_channels": {
+      "type": "array",
+      "description": "Channels specifically prioritised or restricted for this sector. Replaces base spec channel defaults if present.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": ["whatsapp", "instagram", "facebook", "webchat", "email", "sms", "telegram", "tiktok", "twitter", "voice"]
+      }
+    },
+
+    "communication_rules": {
+      "type": "object",
+      "description": "Sector-level override of communication style. Replaces the base spec communication_rules values at the leaf level. e.g. clinic sets formal tone; gym sets friendly tone.",
+      "additionalProperties": false,
+      "properties": {
+        "tone": {
+          "type": "string",
+          "enum": ["professional", "friendly", "casual", "formal"]
+        },
+        "formality_level": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "emoji_policy": {
+          "type": "string",
+          "enum": ["none", "minimal", "moderate"]
+        },
+        "greeting_style": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "closing_style": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "dialect_notes": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+
+    "context_requirements": {
+      "type": "array",
+      "description": "Sector-level override of context items Hermes loads before each conversation. REPLACES the base spec context_requirements array. Only include if this sector needs a different context set.",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "customer_profile",
+          "conversation_history",
+          "current_appointments",
+          "outstanding_invoices",
+          "loyalty_status",
+          "active_orders",
+          "staff_availability",
+          "business_hours",
+          "active_campaigns",
+          "recent_complaints",
+          "knowledge_base_faq",
+          "tenant_settings"
+        ]
+      }
+    },
+
+    "success_criteria": {
+      "type": "array",
+      "description": "Sector-level KPI performance thresholds. REPLACES the base spec success_criteria for the referenced kpi_ids. Use when a sector has meaningfully different benchmarks. e.g. clinic booking rate target differs from restaurant.",
+      "items": {
+        "type": "object",
+        "required": ["kpi_id", "green_above", "amber_above"],
+        "additionalProperties": false,
+        "properties": {
+          "kpi_id": {
+            "type": "string",
+            "description": "Must reference a kpi_id defined in the base spec kpi_definitions."
+          },
+          "green_above": {
+            "type": "number"
+          },
+          "amber_above": {
+            "type": "number"
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 200
+          }
+        }
+      }
+    }
+  }
+}

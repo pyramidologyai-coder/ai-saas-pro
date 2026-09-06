@@ -1,35 +1,26 @@
 {
-  "name": "ai-saas-clinics-restaurants",
+  "name": "automology",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "compile": "tsx scripts/compile-cli.ts"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@supabase/ssr": "^0.10.3",
-    "@supabase/supabase-js": "^2.103.3",
-    "googleapis": "^171.4.0",
-    "lucide-react": "^0.453.0",
-    "next": "16.2.9",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-phone-number-input": "^3.4.16",
-    "recharts": "^3.8.1",
-    "resend": "^6.12.3",
-    "stripe": "^22.1.0",
-    "swr": "^2.4.1"
+    "@supabase/supabase-js": "^2.45.0",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "autoprefixer": "^10.5.0",
-    "eslint-plugin-security": "^4.0.0",
-    "postcss": "^8.5.12",
-    "tailwindcss": "^3.4.19",
-    "typescript": "^5"
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
   }
 }
