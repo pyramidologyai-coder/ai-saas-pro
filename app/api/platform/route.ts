@@ -6,7 +6,8 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie } from "@/lib/auth";
+import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie,
+         sessionScope, mayTouch } from "@/lib/auth";
 
 /** Who is this request, and therefore what may they do. */
 function roleOf(req: NextRequest): string {
@@ -17,6 +18,9 @@ function roleOf(req: NextRequest): string {
 
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
+  if (!mayTouch(sessionScope(req), slug)) {
+    return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+  }
   if (!slug) return NextResponse.json({ ok: false, reason: "missing_slug" }, { status: 400 });
   try {
     const db = supabaseAdmin();
@@ -47,16 +51,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json();
+
+    // Middleware could not see this slug — it was in the body. Check it here,
+    // or a tenant session could name any business it liked.
+    const scope = sessionScope(req);
+    if (!mayTouch(scope, b.slug)) {
+      return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+    }
+
     const db = supabaseAdmin();
 
     // The master session is the owner of whatever it's looking at. A tenant
     // session carries the role its key was issued with.
-    const role = roleOf(req);
+    const role = scope.role;
 
     // Who is doing this. Platform access is labelled as such, so it shows up
     // in the business's Activity list rather than looking like their own staff.
-    const isPlatform = Boolean(req.cookies.get(AUTH_COOKIE)?.value);
-    const payload = { ...(b.payload ?? {}), actor: isPlatform ? "platform" : role };
+    const payload = { ...(b.payload ?? {}), actor: scope.master ? "platform" : scope.role };
 
     const { data, error } = await db.rpc("guarded_action", {
       p_slug: b.slug,

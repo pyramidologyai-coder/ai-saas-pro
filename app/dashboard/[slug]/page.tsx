@@ -11,6 +11,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Assistant } from "@/components/Assistant";
 
 type Agent = { slug: string; name: string; department: string | null;
                audience: string; sector_id: string; is_primary: boolean; conversations: number };
@@ -129,7 +130,16 @@ export default function Platform({ params }: { params: { slug: string } }) {
       });
       const j = await r.json();
       if (j.ok) { setToast({ t: ok }); await load(); return j; }
-      setToast({ t: String(j.reason ?? "failed").replace(/_/g, " "), bad: true });
+
+      // Say what actually went wrong. A generic "failed" hid a session bug for
+      // longer than it should have.
+      const why =
+        j.reason === "unauthorised"
+          ? "Your session can't do that. Try signing in again."
+          : j.reason === "not_allowed"
+            ? `That needs ${String(j.needs ?? "a higher role").replace(/_/g, " ")} — you're ${j.your_role ?? role}.`
+            : String(j.reason ?? "failed").replace(/_/g, " ");
+      setToast({ t: why, bad: true });
     } catch { setToast({ t: "Didn't save. Try again.", bad: true }); }
     finally { setBusy(false); }
     return null;
@@ -215,6 +225,9 @@ export default function Platform({ params }: { params: { slug: string } }) {
           {mod === "settings" && <Settings d={d} C={C} slug={slug} act={act} busy={busy} role={role} />}
         </main>
       </div>
+
+      <Assistant slug={slug} color={C}
+                 agent={(d.agents ?? []).find(a => a.sector_id === "owner")?.name} />
 
       {toast && (
         <div className="pf-toast" style={{ borderInlineStartColor: toast.bad ? "#B3452F" : C }}>

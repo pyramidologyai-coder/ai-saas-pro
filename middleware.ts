@@ -63,6 +63,8 @@ export async function middleware(req: NextRequest) {
                   path.startsWith("/agency") || path.startsWith("/api/agency") ||
                   path.startsWith("/dashboard") || path.startsWith("/group") ||
                   path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
+                  path.startsWith("/api/assistant") ||
+                  path.startsWith("/api/ask") ||
                   path.startsWith("/api/group");
   if (!guarded) return NextResponse.next();
 
@@ -96,9 +98,16 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL(`/dashboard/${ownSlug}`, req.url));
     }
     if (wanted === ownSlug) return NextResponse.next();
-    if ((path.startsWith("/api/dashboard") || path.startsWith("/api/platform") ||
-         path.startsWith("/api/group")) && !wanted) {
-      return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 401 });
+    // A POST carries its slug in the body, which middleware cannot read — the
+    // body is a stream, and consuming it here would break the route handler.
+    // Rejecting for "no slug in the URL" therefore blocked every write from a
+    // tenant session, while silently working for the master password.
+    //
+    // API requests without a slug in the URL now pass through, and the route
+    // handler compares the body against the session. That is the only place
+    // that can see both, so it is where the check belongs.
+    if (path.startsWith("/api/") && !wanted) {
+      return NextResponse.next();
     }
     if (wanted && wanted !== ownSlug) {
       return NextResponse.redirect(new URL(`/dashboard/${ownSlug}`, req.url));

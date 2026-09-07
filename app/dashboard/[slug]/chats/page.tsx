@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect, useCallback } from "react";
+import { Assistant } from "@/components/Assistant";
 
 type Item = {
   id: string; name: string; description: string | null;
@@ -362,6 +363,8 @@ export default function Dashboard({ params }: { params: { slug: string } }) {
           </div>
         </div>
       )}
+
+      <Assistant slug={slug} color={C} agent={data.business?.agent} />
 
       {toast && (
         <div role="status" style={{ ...S.toast, borderLeftColor: toast.bad ? "#B3452F" : C }}>

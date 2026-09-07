@@ -10,7 +10,8 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { extractText } from "@/lib/extract";
 import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie } from "@/lib/auth";
 
-export const maxDuration = 60;
+// No explicit maxDuration — see the note in api/cron. A very large PDF may
+// hit the plan default; the 8 MB cap keeps that unlikely.
 
 const MAX_BYTES = 8 * 1024 * 1024;   // 8 MB — generous for a policy document
 

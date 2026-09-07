@@ -8,9 +8,14 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { sessionScope, mayTouch } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
+  const wanted = q.get("slug");
+  if (wanted && !mayTouch(sessionScope(req), wanted)) {
+    return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+  }
   const db = supabaseAdmin();
 
   try {
@@ -44,6 +49,11 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+
+    // The slug arrives in the body, past middleware's reach. Check it here.
+    if (body.slug && !mayTouch(sessionScope(req), body.slug)) {
+      return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+    }
     const db = supabaseAdmin();
 
     // price change → rebuilds the agent's prompt

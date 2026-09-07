@@ -45,3 +45,30 @@ export function roleFromTenantCookie(v: string | undefined): string | null {
   const parts = v.split(":");
   return parts.length >= 3 ? parts[1] : "owner";
 }
+
+/**
+ * Which business this session may touch, and as what.
+ *
+ * Called by every route that accepts a slug in a request body. Middleware
+ * cannot read a body, so this is the only place the two can be compared — and
+ * without it a tenant session could name any slug it liked.
+ */
+export function sessionScope(req: { cookies: { get(name: string): { value: string } | undefined } }) {
+  const master = Boolean(req.cookies.get(AUTH_COOKIE)?.value);
+  const cookie = req.cookies.get(TENANT_COOKIE)?.value;
+  return {
+    master,
+    slug: slugFromTenantCookie(cookie),
+    role: master ? "owner" : (roleFromTenantCookie(cookie) ?? "viewer"),
+  };
+}
+
+/** True if this session may act on that slug. Master may act on any. */
+export function mayTouch(
+  scope: { master: boolean; slug: string | null }, wanted: string | null | undefined,
+): boolean {
+  if (scope.master) return true;
+  if (!scope.slug) return false;
+  if (!wanted) return false;
+  return scope.slug === wanted;
+}

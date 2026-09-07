@@ -15,15 +15,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail } from "@/lib/email";
 
-export const maxDuration = 60;
+// No explicit maxDuration: an account-level limit lower than the value here
+// fails the whole deployment. Vercel applies the plan default instead, and
+// the worker takes 25 messages at a time so it finishes well inside it.
+
+/**
+ * ⚠ VERCEL'S FREE PLAN ALLOWS ONE CRON RUN PER DAY.
+ *
+ * vercel.json is set to 09:00 daily so the deployment is accepted. That is
+ * enough to prove the pipeline works, but a reminder that only goes out once a
+ * day is a weak reminder — an appointment booked at 10am for 2pm gets nothing.
+ *
+ * To run it properly without paying, point a free external scheduler at this
+ * route every 15 minutes (cron-job.org, EasyCron, GitHub Actions all do it):
+ *
+ *   GET  https://your-app.vercel.app/api/cron
+ *   Header:  Authorization: Bearer <CRON_SECRET>
+ *
+ * The route is idempotent — running it more often is safe. Rows are claimed
+ * before sending, so two overlapping runs cannot send the same message twice.
+ */
 
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ ok: false, reason: "cron_not_configured" }, { status: 503 });
   }
+
+  // Vercel Cron sends the header. An external scheduler may only manage a
+  // query string, so both are accepted — the secret is the same either way.
   const auth = req.headers.get("authorization") ?? "";
-  if (auth !== `Bearer ${secret}`) {
+  const key = req.nextUrl.searchParams.get("key") ?? "";
+  if (auth !== `Bearer ${secret}` && key !== secret) {
     return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 401 });
   }
 
