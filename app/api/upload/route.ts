@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { extractText } from "@/lib/extract";
-import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie } from "@/lib/auth";
+import { verifiedScope, mayTouch } from "@/lib/auth";
 
 // No explicit maxDuration — see the note in api/cron. A very large PDF may
 // hit the plan default; the 8 MB cap keeps that unlikely.
@@ -32,9 +32,14 @@ export async function POST(req: NextRequest) {
       }, { status: 413 });
     }
 
-    const role = req.cookies.get(AUTH_COOKIE)?.value
-      ? "owner"
-      : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
+    // This route is not behind middleware, so it must verify the session and
+    // the slug itself — otherwise a forged cookie, or a real one for another
+    // business, could load documents into any clinic's knowledge base.
+    const scope = await verifiedScope(req);
+    if (!mayTouch(scope, slug)) {
+      return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+    }
+    const role = scope.master ? "owner" : (scope.role ?? "viewer");
 
     const buf = await file.arrayBuffer();
     const result = await extractText(buf, file.name, file.type || "");
