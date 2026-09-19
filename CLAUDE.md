@@ -182,7 +182,7 @@ database, not the prompt — a prompt can be argued with.
 
 ---
 
-## Two bugs worth knowing about, because both recurred
+## Bugs worth knowing about, because they recurred or hid
 
 **Middleware cannot read a request body.** It is a stream, and consuming it
 breaks the route handler. A check that rejected requests with no slug in the
@@ -194,6 +194,18 @@ The dashboard once fetched its role from a separate endpoint that middleware
 blocked; the failed response had no role, the code defaulted to `viewer`, and
 every control went read-only with no error. Role now travels with the data and
 is displayed in the sidebar.
+
+**The tenant cookie was signed but never checked.** Login wrote
+`slug:role:proof`, where proof was a hash of the access code — and nothing ever
+read the proof back. Every gate just split the string and trusted it, so a
+browser could set `damai-clinic:owner:anything` and be the owner of any
+business without its code. The master cookie was always checked; the tenant one
+was not. Fixed in `lib/auth.ts`: the proof is now an HMAC of `slug:role` keyed
+by `DASHBOARD_PASSWORD`, verified on every request by `verifiedScope` /
+`verifiedTenant`. `sessionScope`, `slugFromTenantCookie` and
+`roleFromTenantCookie` still exist but must never gate anything — they read the
+cookie without checking it. Rotating `DASHBOARD_PASSWORD` signs every tenant
+out, by design.
 
 ---
 

@@ -9,7 +9,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import {
-  AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual, slugFromTenantCookie,
+  AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual, verifiedTenant,
 } from "@/lib/auth";
 
 /** Hosts that are ours, not a customer's. */
@@ -85,7 +85,9 @@ export async function middleware(req: NextRequest) {
   }
 
   const tenantCookie = req.cookies.get(TENANT_COOKIE)?.value;
-  const ownSlug = slugFromTenantCookie(tenantCookie);
+  // Verify the signature, not just the shape. An unsigned or tampered cookie
+  // resolves to no slug, so it falls through to the login redirect below.
+  const ownSlug = (await verifiedTenant(tenantCookie))?.slug ?? null;
   if (ownSlug) {
     const wanted =
       path.startsWith("/dashboard/") ? path.split("/")[2] :
