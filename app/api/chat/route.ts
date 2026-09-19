@@ -435,12 +435,23 @@ function formatWhen(iso: string, timeZone?: string | null): string {
  */
 function needsHuman(customerMsg: string, agentReply: string): boolean {
   const reply = agentReply.toLowerCase();
+  // The model does not reliably reach for the same words twice. Asked to waive a
+  // fee it answered "I can pass your request to our clinic manager to follow up
+  // with you", which matched none of the original five phrases, so the promise
+  // was made to the customer and recorded nowhere. These cover the handover
+  // wordings actually seen; the phrase list is the weakness, not the coverage,
+  // and the real fix is an [[ESCALATE]] tag the model emits deliberately.
   const handedOver =
-    reply.includes("colleague will") ||
-    reply.includes("colleague to") ||
+    reply.includes("colleague") ||
     reply.includes("someone will get back") ||
+    reply.includes("will follow up with you") ||
+    reply.includes("follow up with you") ||
+    reply.includes("pass your request") ||
     reply.includes("pass it to the owner") ||
-    reply.includes("pass this to the owner");
+    reply.includes("pass this to the owner") ||
+    reply.includes("clinic manager") ||
+    reply.includes("our manager") ||
+    reply.includes("the manager");
 
   const msg = customerMsg.toLowerCase();
   const urgent =
