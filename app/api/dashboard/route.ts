@@ -8,12 +8,12 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { sessionScope, mayTouch } from "@/lib/auth";
+import { verifiedScope, mayTouch } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
   const wanted = q.get("slug");
-  if (wanted && !mayTouch(sessionScope(req), wanted)) {
+  if (wanted && !mayTouch(await verifiedScope(req), wanted)) {
     return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
   }
   const db = supabaseAdmin();
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
 
     // The slug arrives in the body, past middleware's reach. Check it here.
-    if (body.slug && !mayTouch(sessionScope(req), body.slug)) {
+    if (body.slug && !mayTouch(await verifiedScope(req), body.slug)) {
       return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
     }
     const db = supabaseAdmin();
