@@ -7,7 +7,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie } from "@/lib/auth";
+import { verifiedScope, mayTouch } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,9 +16,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, reason: "bad_request" }, { status: 400 });
     }
 
-    const role = req.cookies.get(AUTH_COOKIE)?.value
-      ? "owner"
-      : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
+    // Verify the session and that it belongs to this business, not just its
+    // role. Without the slug check one tenant could read another's figures.
+    const scope = await verifiedScope(req);
+    if (!mayTouch(scope, slug)) {
+      return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
+    }
+    const role = scope.master ? "owner" : (scope.role ?? "viewer");
 
     // Figures about the business are for the people who run it.
     if (!["owner", "manager"].includes(role)) {
