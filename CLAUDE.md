@@ -84,7 +84,13 @@ the better signal, because it calls things.
 - **`text[] || 'literal'` is ambiguous.** Postgres may read it as array-concat
   and try to parse your sentence as an array literal. Use `array_append()`.
   This broke 31 places across four files.
-- **`json` has no `=` or `<>` operator.** Only `jsonb` does. Compare as text.
+- **`json` carries almost none of jsonb's operators.** Not `=`, not `<>`, and
+  not `-` either. `p_payload - 'secret'` inside `guarded_action` raised
+  "operator does not exist: json - unknown" on every dashboard write for as
+  long as the function existed, and the route reported it as "unavailable",
+  which reads like a permissions fault. Cast to jsonb, or compare as text.
+  See `0040_guarded_action_jsonb.sql`. If an operator works on jsonb, do not
+  assume json has it.
 - **`json_agg(x order by x.col)`** only works if the subquery selects `col`.
   Broke three separate times.
 - **Two joined tables sharing a column name** need qualifying, including inside
