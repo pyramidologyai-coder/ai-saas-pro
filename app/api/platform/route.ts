@@ -6,19 +6,12 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { AUTH_COOKIE, TENANT_COOKIE, roleFromTenantCookie,
-         sessionScope, mayTouch } from "@/lib/auth";
-
-/** Who is this request, and therefore what may they do. */
-function roleOf(req: NextRequest): string {
-  return req.cookies.get(AUTH_COOKIE)?.value
-    ? "owner"
-    : roleFromTenantCookie(req.cookies.get(TENANT_COOKIE)?.value) ?? "viewer";
-}
+import { verifiedScope, mayTouch } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get("slug");
-  if (!mayTouch(sessionScope(req), slug)) {
+  const scope = await verifiedScope(req);
+  if (!mayTouch(scope, slug)) {
     return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
   }
   if (!slug) return NextResponse.json({ ok: false, reason: "missing_slug" }, { status: 400 });
@@ -40,7 +33,7 @@ export async function GET(req: NextRequest) {
       // Sent with the data on purpose. Asking for it separately meant one
       // failed request left the whole dashboard read-only, which is exactly
       // what happened.
-      role: roleOf(req),
+      role: scope.master ? "owner" : (scope.role ?? "viewer"),
     });
   } catch (e: any) {
     console.error("platform GET failed:", e?.message ?? e);
@@ -54,7 +47,7 @@ export async function POST(req: NextRequest) {
 
     // Middleware could not see this slug — it was in the body. Check it here,
     // or a tenant session could name any business it liked.
-    const scope = sessionScope(req);
+    const scope = await verifiedScope(req);
     if (!mayTouch(scope, b.slug)) {
       return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
     }
@@ -62,8 +55,9 @@ export async function POST(req: NextRequest) {
     const db = supabaseAdmin();
 
     // The master session is the owner of whatever it's looking at. A tenant
-    // session carries the role its key was issued with.
-    const role = scope.role;
+    // session carries the role its signed cookie was issued with. Past the
+    // guard above this is never null, but coalesce keeps the type honest.
+    const role = scope.role ?? "viewer";
 
     // Who is doing this. Platform access is labelled as such, so it shows up
     // in the business's Activity list rather than looking like their own staff.
