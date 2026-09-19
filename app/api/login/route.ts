@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual } from "@/lib/auth";
+import { AUTH_COOKIE, TENANT_COOKIE, tokenFor, safeEqual, signSession } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
         name: r.name, next: `/agency/${r.agency_slug}`,
       });
       res.cookies.set(TENANT_COOKIE,
-        `${r.agency_slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
+        `${r.agency_slug}:${r.role}:${await signSession(r.agency_slug, r.role)}`, COOKIE);
       return res;
     }
     if (r?.ok && r.scope === "organisation" && r.org_slug) {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
         name: r.name, next: `/group/${r.org_slug}`,
       });
       res.cookies.set(TENANT_COOKIE,
-        `${r.org_slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
+        `${r.org_slug}:${r.role}:${await signSession(r.org_slug, r.role)}`, COOKIE);
       return res;
     }
     if (r?.ok && r.slug) {
@@ -46,9 +46,10 @@ export async function POST(req: NextRequest) {
         ok: true, scope: "tenant", slug: r.slug, role: r.role,
         name: r.name, next: `/dashboard/${r.slug}`,
       });
-      // slug : role : proof — middleware reads the slug, the API reads the role
+      // slug : role : signature — the signature covers slug and role together,
+      // so neither can be changed by the browser holding the cookie.
       res.cookies.set(TENANT_COOKIE,
-        `${r.slug}:${r.role}:${await tokenFor(entered)}`, COOKIE);
+        `${r.slug}:${r.role}:${await signSession(r.slug, r.role)}`, COOKIE);
       return res;
     }
     if (r?.reason === "suspended") {
