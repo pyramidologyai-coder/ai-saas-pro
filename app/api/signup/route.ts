@@ -73,7 +73,12 @@ export async function POST(req: NextRequest) {
         color: payload.color ?? "#1D6A8C",
         origin: req.nextUrl.origin,
       });
-      sendEmail({ to: payload.email, kind: "welcome", ...mail }).catch(() => {});
+      // Awaited on purpose. Left unawaited, the response returns, Vercel freezes
+      // the function, and the HTTP call to Resend never finishes — its 10s abort
+      // fires on wall-clock time and the send is logged as a timeout. Three
+      // welcome emails died that way before anyone noticed. The catch keeps the
+      // original promise that a mail failure never blocks a signup.
+      await sendEmail({ to: payload.email, kind: "welcome", ...mail }).catch(() => {});
     }
 
     return NextResponse.json(data);
@@ -87,10 +92,9 @@ export async function GET() {
   // The sector list, so the form can offer real options.
   try {
     const db = supabaseAdmin();
-    const { data, error } = await db
-      .from("sector_templates")
-      .select("sector_id,label,agent_default")
-      .order("label");
+    // Public business types only. The internal agent types (HR, payroll,
+    // finance, owner insights) are not businesses a customer signs up as.
+    const { data, error } = await db.rpc("signup_sectors");
     if (error) throw new Error(error.message);
     return NextResponse.json({ ok: true, sectors: data ?? [] });
   } catch {
@@ -101,6 +105,7 @@ export async function GET() {
         { sector_id: "salon", label: "Salon, spa or barber", agent_default: "Aisha" },
         { sector_id: "restaurant", label: "Restaurant or cafe", agent_default: "Sofia" },
         { sector_id: "fitness", label: "Gym or studio", agent_default: "Alex" },
+        { sector_id: "support", label: "Customer support", agent_default: "Kai" },
         { sector_id: "general", label: "Something else", agent_default: "Sam" },
       ],
     });

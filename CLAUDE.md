@@ -59,7 +59,7 @@ GitHub's web UI by hand.
 
 ## Migrations
 
-39 files in `db/`, run manually in the Supabase SQL editor, in numerical order.
+43 files in `db/`, run manually in the Supabase SQL editor, in numerical order.
 `db/README.md` has the full list and what each adds.
 
 **After any migration:**
@@ -145,9 +145,12 @@ receives an id and never writes SQL.
 - `[[BOOK service="…" when="…" name="…" phone="…" email="…" reason="…"]]`
 - `[[DO action="confirm" ref="2"]]` — owner assistant only, refs come from a
   numbered list the server just sent
-- `[[HANDOVER to="agent-slug" reason="…"]]` — **designed, not built.** No
-  prompt emits it and the chat route parses only `[[BOOK]]`, so a handover tag
-  would reach the customer as raw text rather than being stripped.
+- `[[HANDOVER to="agent-slug" reason="…"]]` — the agent passes the conversation
+  to a public colleague. The chat route strips the tag; `handover()` (0041)
+  validates the target and enforces the public→internal rule; the conversation's
+  `ai_employee_id` moves to the new agent and the next message continues there.
+  The agent is only told about public colleagues (`public_colleagues()`), so it
+  cannot name an internal one.
 
 The server strips tags before the customer sees them.
 
@@ -168,7 +171,8 @@ database, not the prompt — a prompt can be argued with.
 |---|---|
 | `/` | Landing page |
 | `/start` | Self-serve signup, 4 steps |
-| `/login` | Key-based sign in |
+| `/login` | Key-based sign in, plus Continue with Google |
+| `/auth/callback` | Where Google returns; exchanges the session for a signed cookie |
 | `/demo/<slug>` | The customer's page, 4 languages, Arabic RTL |
 | `/embed/<slug>` | Iframe for a client's own website |
 | `/my/<slug>` | Customer portal, code sign-in |
@@ -234,12 +238,16 @@ time it was broken.
 had never been executed; that was wrong for months and sent at least one
 evening's work in the wrong direction.
 
-**Never built, despite being written up elsewhere:** the inbox and the
-`[[HANDOVER]]` tag. There is no `/dashboard/<slug>/inbox` route, no handover
-parser in the chat route, and no `colleagues()` function. Section D of
-`docs/AUTOMOLOGY_TEST_LIST.html` tests all three and cannot pass. The rule that
-a public agent may never hand over to an internal one is not enforced anywhere,
-because there is nothing to enforce it against yet.
+**Handover is built (0041), verified in the database.** The `[[HANDOVER]]` tag,
+`public_colleagues()` and `handover()`. Tested there: a public agent's colleague
+list excludes internal agents, and a public→internal handover is refused with
+`public_to_internal_blocked`. The chat-route wiring (tag parsing, colleague
+injection, and following `conversations.ai_employee_id` on the next message)
+ships with the app and wants a live test.
+
+**Still not built: the inbox.** No `/dashboard/<slug>/inbox` route. Section D of
+`docs/AUTOMOLOGY_TEST_LIST.html` tests the inbox and handover together; the
+handover checks can pass now, the inbox ones cannot.
 
 **Blocked on a key, not code:** email that arrives, and payments. `CRON_SECRET`
 is now set and live. For email, DNS for `automology.com` is at Cloudflare and
