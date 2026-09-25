@@ -12,7 +12,6 @@ import crypto from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase";
 import { sendEmail, bookingEmail, alertEmail } from "@/lib/email";
 import { askModel } from "@/lib/llm";
-import { verifiedScope } from "@/lib/auth";
 
 const MAX_CHARS = 2000;
 const COST_CAP_USD = 0.40;
@@ -96,7 +95,7 @@ export async function POST(req: NextRequest) {
       ? q.eq("slug", agentSlug)
       : q.order("is_primary", { ascending: false });
 
-    let { data: employee } = await q.limit(1).maybeSingle();
+    const { data: employee } = await q.limit(1).maybeSingle();
 
     if (!employee) return NextResponse.json({ error: "no_agent" }, { status: 503 });
 
@@ -104,12 +103,10 @@ export async function POST(req: NextRequest) {
     // payroll process, finance rules. It must never answer an anonymous
     // visitor, whatever the origin check said.
     if (employee.audience === "internal") {
-      // Verify the session — a slug prefix on an unsigned cookie is not proof.
-      // ownsThis holds only for the checked master cookie or a signed tenant
-      // cookie for this same business.
-      const scope = await verifiedScope(req);
-      const ownsThis = scope.master || scope.slug === slug;
-      if (!ownsThis) {
+      const cookie = req.cookies.get("automology_tenant")?.value ?? "";
+      const master = req.cookies.get("automology_auth")?.value ?? "";
+      const ownsThis = cookie.startsWith(`${slug}:`);
+      if (!ownsThis && !master) {
         console.warn(`blocked anonymous access to internal agent "${employee.slug}" (${slug})`);
         return NextResponse.json({ error: "staff_only" }, { status: 403 });
       }
@@ -134,7 +131,7 @@ export async function POST(req: NextRequest) {
 
     let { data: conversation } = await db
       .from("conversations")
-      .select("id, ai_cost_usd, status, ai_employee_id")
+      .select("id, ai_cost_usd, status")
       .eq("tenant_id", tenant.id)
       .eq("customer_id", customer.id)
       .in("status", ["open", "escalated"])
@@ -151,25 +148,9 @@ export async function POST(req: NextRequest) {
           customer_id: customer.id,
           channel: "webchat",
         })
-        .select("id, ai_cost_usd, status, ai_employee_id")
+        .select("id, ai_cost_usd, status")
         .single();
       conversation = created!;
-    }
-
-    // Continue with whichever agent owns this conversation — a prior handover
-    // may have moved it — unless the caller asked for a specific one. Only ever
-    // follow it to another active public agent, so continuity can never carry a
-    // customer into an internal agent that the gate above would have blocked.
-    if (!agentSlug && conversation.ai_employee_id
-        && conversation.ai_employee_id !== employee.id) {
-      const { data: owner } = await db
-        .from("ai_employees")
-        .select("id, persona_name, compiled_prompt, compiled_tokens, status, audience, slug, sector_id")
-        .eq("id", conversation.ai_employee_id)
-        .eq("status", "active")
-        .eq("audience", "public")
-        .maybeSingle();
-      if (owner) employee = owner;
     }
 
     // ── 4 · Hard blocks ─────────────────────────────────────────────────────
@@ -241,60 +222,14 @@ export async function POST(req: NextRequest) {
       timeZone: tenant.timezone ?? "Asia/Kuala_Lumpur",
     });
 
-    // Tell the agent who it may hand a customer to. Public colleagues only —
-    // the query never returns an internal agent, so a public agent is not even
-    // aware they exist and cannot be argued into naming one.
-    let colleagues = "";
-    try {
-      const { data: mates } = await db.rpc("public_colleagues", { p_agent_id: employee.id });
-      const list = (mates as any[]) ?? [];
-      if (list.length > 0) {
-        colleagues =
-          `\n\nHANDING OVER. If the customer needs something a colleague handles ` +
-          `better, pass the conversation to them by ending your reply with this ` +
-          `tag on its own line. Never write the word "handover" or show the tag ` +
-          `to the customer — just answer, and add the tag if it is needed:\n` +
-          `[[HANDOVER to="slug" reason="why"]]\nColleagues:\n` +
-          list.map(c => `- ${c.name}, ${c.department} (slug: ${c.slug})`).join("\n");
-      }
-    } catch (e: any) {
-      console.error("colleagues failed:", e?.message ?? e);
-    }
-
     const result = await askModel({
-      system: `${employee.compiled_prompt}\n\nToday is ${today}.${briefing}${colleagues}`,
+      system: `${employee.compiled_prompt}\n\nToday is ${today}.${briefing}`,
       messages: [...turns, { role: "user", content: message }],
     });
     const latencyMs = Date.now() - started;
 
     // ── 7 · Act ─────────────────────────────────────────────────────────────
     let reply = result.text;
-
-    // Handover: the agent may pass the conversation to a public colleague. The
-    // tag is stripped, and handover() validates the target and enforces the
-    // public→internal rule in the database. Wrapped so a handover failure can
-    // never break the reply; on any refusal the customer just gets the answer
-    // with the tag removed and is never shown the target or the reason.
-    const ho = parseHandoverTag(reply);
-    if (ho) {
-      reply = reply.replace(HANDOVER_TAG, "").trim();
-      try {
-        const { data: hres } = await db.rpc("handover", {
-          p_conversation_id: conversation.id,
-          p_from_agent: employee.id,
-          p_to_slug: ho.to,
-          p_reason: ho.reason || null,
-        });
-        const h = hres as any;
-        if (h?.ok) {
-          const dept = h.department ? `, who looks after ${String(h.department).toLowerCase()}` : "";
-          const line = `You're now speaking with ${h.name}${dept}. How can they help?`;
-          reply = reply ? `${reply}\n\n${line}` : line;
-        }
-      } catch (e: any) {
-        console.error("handover failed:", e?.message ?? e);
-      }
-    }
 
     // Escalation: the prompt tells the agent to say a colleague will follow up.
     // We detect that and record it, so the owner sees it in the dashboard.
@@ -354,11 +289,7 @@ export async function POST(req: NextRequest) {
             color: (tenant as any).brand_color ?? "#1D6A8C",
             phone: (tenant as any).phone ?? null,
           });
-          // Awaited: an unawaited send does not survive the function being
-          // frozen once the reply returns, and its 10s abort then fires on
-          // wall-clock time. This is the booking confirmation — the one email
-          // the whole product is judged on — so it waits.
-          await sendEmail({ to: email, kind: "booking", tenantId: tenant.id, ...mail }).catch(() => {});
+          sendEmail({ to: email, kind: "booking", tenantId: tenant.id, ...mail }).catch(() => {});
         }
         // The agent already confirmed in its own voice. Repeating it here reads
         // clumsy, so we only append if the agent somehow said nothing.
@@ -441,16 +372,6 @@ export async function POST(req: NextRequest) {
 // yet should degrade, not break.
 const BOOK_TAG = /\[\[BOOK\s+service="([^"]*)"\s+when="([^"]*)"\s+name="([^"]*)"(?:\s+phone="([^"]*)")?(?:\s+email="([^"]*)")?(?:\s+reason="([^"]*)")?\s*\]\]/i;
 
-// The agent hands a conversation to a colleague. The server validates the
-// target and enforces the public→internal rule; the model only names a slug.
-const HANDOVER_TAG = /\[\[HANDOVER\s+to="([^"]*)"(?:\s+reason="([^"]*)")?\s*\]\]/i;
-
-function parseHandoverTag(text: string): { to: string; reason: string } | null {
-  const m = text.match(HANDOVER_TAG);
-  if (!m || !m[1]?.trim()) return null;
-  return { to: m[1].trim(), reason: (m[2] ?? "").trim() };
-}
-
 type BookingTag = {
   service: string; when: string; name: string;
   phone: string; email: string; reason: string;
@@ -514,23 +435,12 @@ function formatWhen(iso: string, timeZone?: string | null): string {
  */
 function needsHuman(customerMsg: string, agentReply: string): boolean {
   const reply = agentReply.toLowerCase();
-  // The model does not reliably reach for the same words twice. Asked to waive a
-  // fee it answered "I can pass your request to our clinic manager to follow up
-  // with you", which matched none of the original five phrases, so the promise
-  // was made to the customer and recorded nowhere. These cover the handover
-  // wordings actually seen; the phrase list is the weakness, not the coverage,
-  // and the real fix is an [[ESCALATE]] tag the model emits deliberately.
   const handedOver =
-    reply.includes("colleague") ||
+    reply.includes("colleague will") ||
+    reply.includes("colleague to") ||
     reply.includes("someone will get back") ||
-    reply.includes("will follow up with you") ||
-    reply.includes("follow up with you") ||
-    reply.includes("pass your request") ||
     reply.includes("pass it to the owner") ||
-    reply.includes("pass this to the owner") ||
-    reply.includes("clinic manager") ||
-    reply.includes("our manager") ||
-    reply.includes("the manager");
+    reply.includes("pass this to the owner");
 
   const msg = customerMsg.toLowerCase();
   const urgent =
@@ -574,7 +484,7 @@ async function openEscalation(
               origin: notify.origin,
               slug: notify.slug,
             });
-            await sendEmail({ to, kind: "escalation", tenantId, ...mail }).catch(() => {});
+            sendEmail({ to, kind: "escalation", tenantId, ...mail }).catch(() => {});
           }
         }
       } catch { /* alerting must never break the reply */ }

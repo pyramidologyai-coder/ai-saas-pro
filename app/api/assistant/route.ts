@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { askModel } from "@/lib/llm";
-import { verifiedScope, mayTouch } from "@/lib/auth";
+import { sessionScope, mayTouch } from "@/lib/auth";
 
 const DO_TAG =
   /\[\[DO\s+action="([a-z_]+)"\s+ref="(\d+)"(?:\s+when="([^"]*)")?\s*\]\]/i;
@@ -24,11 +24,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, reason: "bad_request" }, { status: 400 });
     }
 
-    const scope = await verifiedScope(req);
+    const scope = sessionScope(req);
     if (!mayTouch(scope, slug)) {
       return NextResponse.json({ ok: false, reason: "unauthorised" }, { status: 403 });
     }
-    const role = scope.role ?? "viewer";
+    const role = scope.role;
 
     const db = supabaseAdmin();
 

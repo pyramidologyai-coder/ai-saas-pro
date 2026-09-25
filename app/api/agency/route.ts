@@ -8,17 +8,22 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
-import { verifiedScope } from "@/lib/auth";
+import { AUTH_COOKIE, TENANT_COOKIE, slugFromTenantCookie, roleFromTenantCookie } from "@/lib/auth";
 
-/** The agency this session belongs to, or null. Master sees any. Verified. */
-async function sessionAgency(req: NextRequest): Promise<{ slug: string | null; role: string; master: boolean }> {
-  const s = await verifiedScope(req);
-  return { slug: s.slug, role: s.role ?? "viewer", master: s.master };
+/** The agency this session belongs to, or null. Master sees any. */
+function sessionAgency(req: NextRequest): { slug: string | null; role: string; master: boolean } {
+  const master = Boolean(req.cookies.get(AUTH_COOKIE)?.value);
+  const cookie = req.cookies.get(TENANT_COOKIE)?.value;
+  return {
+    slug: slugFromTenantCookie(cookie),
+    role: roleFromTenantCookie(cookie) ?? "viewer",
+    master,
+  };
 }
 
 export async function GET(req: NextRequest) {
   const asked = req.nextUrl.searchParams.get("agency");
-  const s = await sessionAgency(req);
+  const s = sessionAgency(req);
 
   // A session may only read its own agency. Master may read any.
   const slug = s.master ? (asked ?? s.slug) : s.slug;
@@ -38,7 +43,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const s = await sessionAgency(req);
+  const s = sessionAgency(req);
   try {
     const b = await req.json();
     const slug = s.master ? (b.agency ?? s.slug) : s.slug;
