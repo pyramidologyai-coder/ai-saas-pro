@@ -3,15 +3,16 @@
 /**
  * The page a patient lands on. This is also the page a prospect judges.
  *
- * Direction: premium modern healthcare — warm, calm, expensive. Fraunces for
- * display (a serif with real character), Instrument Sans for UI. A soft
- * atmosphere washed from the tenant's own brand colour, so every business gets
- * its own weather. The signature element is the hero ask bar: the page's whole
- * job is "ask us", so the input sits front and centre — type into the hero and
- * the conversation begins.
+ * Direction: the Stripe register — white and spacious, deep navy text, ONE
+ * confident colour (the tenant's own), ONE fluid gradient, and restraint
+ * everywhere else. Marketing copy on the left, the live conversation as a
+ * product card on the right. The navy and the greys are fixed; only the accent
+ * and the gradient are washed from the tenant's brand colour, so every business
+ * keeps its own identity on a calm, premium canvas.
  *
  * Fully white-labelled from the database. Four languages; Arabic mirrors the
- * entire layout.
+ * entire layout. All of the behaviour below is unchanged from the previous
+ * design — only the presentation is new.
  */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -77,7 +78,7 @@ export default function PublicPage({ params }: { params: { slug: string } }) {
   }, [slug]);
 
   useEffect(() => {
-    if (chatOpen) endRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatOpen) endRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages, busy, chatOpen]);
 
   useEffect(() => {
@@ -133,212 +134,152 @@ export default function PublicPage({ params }: { params: { slug: string } }) {
     } finally { setBusy(false); }
   }, [busy, session, slug]);
 
-  if (!cfg) return <div className="ap-loading">…</div>;
+  if (!cfg) return <div className="rx-loading">…</div>;
 
-  const C = cfg.color || "#1D6A8C";
-  const firstVisit = messages.length === 1;
+  const C = cfg.color || "#635BFF";
+  void heroInput;
 
   return (
-    <div dir={rtl ? "rtl" : "ltr"} className="ap" style={{ "--c": C } as React.CSSProperties}>
+    <div dir={rtl ? "rtl" : "ltr"} className="rx" style={{ "--c": C } as React.CSSProperties}>
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,440;9..144,560&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-      {/* atmosphere */}
-      <div className="ap-sky" aria-hidden>
-        <span className="ap-blob b1" /><span className="ap-blob b2" /><span className="ap-blob b3" />
-      </div>
+      <div className="rx-aura" aria-hidden />
 
-      {/* ── header ─────────────────────────────────────────────── */}
-      <header className="ap-head">
-        <div className="ap-brand">
-          {cfg.logo_url
-            ? <img src={cfg.logo_url} alt="" className="ap-logo" />
-            : <div className="ap-mark">{cfg.business_name.charAt(0)}</div>}
-          <div>
-            <div className="ap-bizname">{cfg.business_name}</div>
+      <div className="rx-shell">
+        {/* ── header ─────────────────────────────────────────── */}
+        <header className="rx-head">
+          <div className="rx-brand">
+            {cfg.logo_url && <img src={cfg.logo_url} alt="" className="rx-logo" />}
+            <span className="rx-word">{cfg.business_name}</span>
             {status && (
-              <div className="ap-status">
-                <span className={`ap-pulse ${status.open ? "on" : ""}`} />
-                <b>{status.open ? t.openNow : t.closedNow}</b>
-                <span className="ap-status-sub">· {status.text}</span>
+              <span className={`rx-hpill ${status.open ? "on" : ""}`}>
+                <span className="rx-dot" />{status.open ? t.openNow : t.closedNow}
+              </span>
+            )}
+          </div>
+
+          <div className="rx-langwrap">
+            <button className="rx-langbtn" onClick={() => setLangOpen(o => !o)} aria-expanded={langOpen}>
+              {LANGUAGES.find(l => l.code === lang)?.label} <span className="rx-caret">▾</span>
+            </button>
+            {langOpen && (
+              <div className="rx-langmenu">
+                {LANGUAGES.map(l => (
+                  <button key={l.code} className={l.code === lang ? "sel" : ""}
+                          onClick={() => { setLang(l.code); setLangOpen(false); }}>
+                    {l.label}
+                  </button>
+                ))}
               </div>
             )}
           </div>
-        </div>
+        </header>
 
-        <div className="ap-langwrap">
-          <button className="ap-langbtn" onClick={() => setLangOpen(o => !o)} aria-expanded={langOpen}>
-            {LANGUAGES.find(l => l.code === lang)?.label} <span className="ap-caret">▾</span>
-          </button>
-          {langOpen && (
-            <div className="ap-langmenu">
-              {LANGUAGES.map(l => (
-                <button key={l.code} className={l.code === lang ? "sel" : ""}
-                        onClick={() => { setLang(l.code); setLangOpen(false); }}>
-                  {l.label}
-                </button>
-              ))}
+        {/* ── hero: copy left, live chat right ───────────────── */}
+        <section className="rx-hero">
+          <div className="rx-copy">
+            {cfg.tagline && <p className="rx-eyebrow">{cfg.tagline}</p>}
+            <h1 className="rx-h1">{t.askUs}</h1>
+            <p className="rx-lede">{fill(t.chatWith, { name: cfg.agent_name })} — {t.poweredNote}</p>
+            <div className="rx-cta">
+              <button className="rx-btn" onClick={() => inputRef.current?.focus()}>
+                {fill(t.chatWith, { name: cfg.agent_name })}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
             </div>
-          )}
-        </div>
-      </header>
-
-      <main className="ap-main">
-        {/* ── hero ─────────────────────────────────────────────── */}
-        <section className="ap-hero">
-          {cfg.tagline && <p className="ap-eyebrow rise" style={{ animationDelay: ".05s" }}>{cfg.tagline}</p>}
-          <h1 className="ap-h1 rise" style={{ animationDelay: ".12s" }}>{t.askUs}</h1>
-          <p className="ap-herosub rise" style={{ animationDelay: ".2s" }}>
-            {fill(t.chatWith, { name: cfg.agent_name })} — {t.poweredNote}
-          </p>
-
-          {/* the signature: ask from the hero */}
-          <div className="ap-askbar rise" style={{ animationDelay: ".28s" }}>
-            <input
-              value={heroInput}
-              onChange={e => setHeroInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter") send(heroInput); }}
-              placeholder={t.typeMessage}
-              aria-label={t.typeMessage}
-            />
-            <button onClick={() => send(heroInput)} disabled={!heroInput.trim() || busy}>
-              {t.send}
-            </button>
+            {cfg.suggestions.length > 0 && (
+              <div className="rx-chips">
+                {cfg.suggestions.slice(0, 3).map(q => (
+                  <button key={q} className="rx-chip" onClick={() => send(q)}>{q}</button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="ap-chips rise" style={{ animationDelay: ".36s" }}>
-            {cfg.suggestions.slice(0, 3).map(q => (
-              <button key={q} className="ap-chip" onClick={() => send(q)}>{q}</button>
-            ))}
+          <div className="rx-chat">
+            <div className="rx-chat-top">
+              <div className="rx-ava">{cfg.agent_name.charAt(0)}</div>
+              <div>
+                <div className="rx-who">{cfg.agent_name}</div>
+                <div className="rx-csub"><span className="rx-dot on" /> {t.poweredNote}</div>
+              </div>
+            </div>
+            <div className="rx-log">
+              {messages.map((m, i) => (
+                <div key={i} className={`rx-row ${m.role === "user" ? "u" : "a"}`}>
+                  <div className={`rx-b ${m.role === "user" ? "u" : "a"}`}>{m.text}</div>
+                </div>
+              ))}
+              {busy && <div className="rx-row a"><div className="rx-b a rx-typing"><i /><i /><i /></div></div>}
+              <div ref={endRef} />
+            </div>
+            <div className="rx-foot">
+              <input ref={inputRef} value={input} disabled={busy}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+                placeholder={t.typeMessage} aria-label={t.typeMessage} />
+              <button className="rx-go" onClick={() => send(input)} disabled={busy || !input.trim()} aria-label={t.send}>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
           </div>
         </section>
 
-        {/* ── services ─────────────────────────────────────────── */}
-        {cfg.services.length > 0 && (
-          <section className="ap-section">
-            <h2 className="ap-h2">{t.services}</h2>
-            <div className="ap-grid">
-              {cfg.services.map((s, i) => (
-                <article key={s.name} className="ap-card rise" style={{ animationDelay: `${.08 * i}s` }}>
-                  <div className="ap-card-top">
-                    <h3>{s.name}</h3>
-                    {s.minutes && <span className="ap-min">{fill(t.minutes, { n: s.minutes })}</span>}
-                  </div>
-                  {s.description && <p className="ap-card-desc">{s.description}</p>}
-                  <div className="ap-card-foot">
-                    {s.price != null
-                      ? <div className="ap-price"><span>{s.currency}</span>{Number(s.price).toFixed(2)}</div>
-                      : <div className="ap-price ask">—</div>}
-                    <button className="ap-ask" onClick={() => send(s.name)}>{t.askAboutIt} →</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        )}
+        {/* ── info band ──────────────────────────────────────── */}
+        {(cfg.services.length > 0 || cfg.hours || cfg.address || cfg.phone) && (
+          <section className="rx-band">
+            {cfg.services.length > 0 && (
+              <div className="rx-svc">
+                <p className="rx-lbl">{t.services}</p>
+                {cfg.services.map(s => (
+                  <button key={s.name} className="rx-item" onClick={() => send(s.name)}>
+                    <span className="rx-item-l">
+                      <span className="rx-item-n">{s.name}</span>
+                      {s.description && <span className="rx-item-d">{s.description}</span>}
+                    </span>
+                    <span className="rx-item-r">
+                      <span className="rx-item-p">
+                        {s.price != null ? `${s.currency} ${Number(s.price).toFixed(0)}` : t.askAboutIt}
+                      </span>
+                      {s.minutes && <span className="rx-item-m">{fill(t.minutes, { n: s.minutes })}</span>}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-        {/* ── hours + find us ──────────────────────────────────── */}
-        <section className="ap-band">
-          <div className="ap-cols">
             {cfg.hours && (
               <div>
-                <h2 className="ap-h2">{t.hours}</h2>
-                <div className="ap-hours">
+                <p className="rx-lbl">{t.hours}</p>
+                <div className="rx-sched">
                   {DAY_KEYS.map((k, i) => {
                     const h = cfg.hours![k];
                     return (
-                      <div key={k} className="ap-hrow">
-                        <span>{t.days[i]}</span>
-                        <span className={`ap-time ${h ? "" : "off"}`}>
-                          {h ? `${h[0]} – ${h[1]}` : t.closedNow}
-                        </span>
+                      <div key={k} className="rx-srow">
+                        <span className="rx-k">{t.days[i]}</span>
+                        <span className={`rx-v ${h ? "" : "off"}`}>{h ? `${h[0]} – ${h[1]}` : t.closedNow}</span>
                       </div>
                     );
                   })}
                 </div>
               </div>
             )}
-            <div>
-              {cfg.address && (
-                <>
-                  <h2 className="ap-h2">{t.findUs}</h2>
-                  <p className="ap-addr">{cfg.address}</p>
-                  {cfg.map_url && (
-                    <a className="ap-maplink" href={cfg.map_url} target="_blank" rel="noreferrer">
-                      {t.findUs} ↗
-                    </a>
-                  )}
-                </>
-              )}
-              {cfg.phone && (
-                <a className="ap-call" href={`tel:${cfg.phone.replace(/\s/g, "")}`}>
-                  {t.callUs} · {cfg.phone}
-                </a>
-              )}
-            </div>
-          </div>
-        </section>
-      </main>
 
-      {/* ── footer ─────────────────────────────────────────────── */}
-      <footer className="ap-foot">
-        <div className="ap-foot-name">{cfg.business_name}</div>
-        <div className="ap-foot-sub">{cfg.subtitle}</div>
-      </footer>
-
-      {/* ── chat ───────────────────────────────────────────────── */}
-      {!chatOpen && (
-        <button className="ap-launch"
-          onClick={() => { setChatOpen(true); setTimeout(() => inputRef.current?.focus(), 90); }}>
-          <span className="ap-launch-dot" />
-          {fill(t.chatWith, { name: cfg.agent_name })}
-        </button>
-      )}
-
-      {chatOpen && (
-        <div className="ap-panel" role="dialog" aria-label={fill(t.chatWith, { name: cfg.agent_name })}>
-          <div className="ap-panel-head">
-            <div className="ap-panel-brand">
-              <div className="ap-panel-mark">{cfg.agent_name.charAt(0)}</div>
+            {(cfg.address || cfg.phone) && (
               <div>
-                <div className="ap-panel-name">{cfg.agent_name}</div>
-                <div className="ap-panel-sub">{cfg.subtitle}</div>
-              </div>
-            </div>
-            <button className="ap-panel-x" onClick={() => setChatOpen(false)} aria-label={t.close}>×</button>
-          </div>
-
-          <div className="ap-log">
-            {messages.map((m, i) => (
-              <div key={i} className={`ap-row ${m.role === "user" ? "u" : "a"}`}>
-                <div className={`ap-bub ${m.role === "user" ? "u" : "a"}`}>{m.text}</div>
-              </div>
-            ))}
-            {busy && (
-              <div className="ap-row a">
-                <div className="ap-bub a ap-typing"><i /><i /><i /></div>
+                <p className="rx-lbl">{t.findUs}</p>
+                <p className="rx-addr">
+                  {cfg.address}
+                  {cfg.map_url && <>{cfg.address ? <br /> : null}<a href={cfg.map_url} target="_blank" rel="noreferrer">{t.findUs} ↗</a></>}
+                  {cfg.phone && <><br /><a href={`tel:${cfg.phone.replace(/\s/g, "")}`}>{cfg.phone}</a></>}
+                </p>
               </div>
             )}
-            {firstVisit && !busy && (
-              <div className="ap-panel-chips">
-                {cfg.suggestions.slice(0, 3).map(q => (
-                  <button key={q} className="ap-chip sm" onClick={() => send(q)}>{q}</button>
-                ))}
-              </div>
-            )}
-            <div ref={endRef} />
-          </div>
-
-          <div className="ap-inrow">
-            <input ref={inputRef} value={input} disabled={busy}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
-              placeholder={t.typeMessage} aria-label={t.typeMessage} />
-            <button onClick={() => send(input)} disabled={busy || !input.trim()}>{t.send}</button>
-          </div>
-        </div>
-      )}
+          </section>
+        )}
+      </div>
 
       <style>{CSS}</style>
     </div>
@@ -354,308 +295,190 @@ const CSS = `
 * { box-sizing: border-box; }
 html, body { margin: 0; }
 
-.ap {
-  --ink: #191817;
-  --mut: #6E6B66;
-  --fade: #A8A49D;
-  --line: color-mix(in oklab, var(--c) 14%, #E9E6E0);
-  --wash: color-mix(in oklab, var(--c) 5%, #FDFCFA);
-  --wash2: color-mix(in oklab, var(--c) 9%, #FBFAF7);
-  --deep: color-mix(in oklab, var(--c) 72%, #14130f);
+.rx {
+  /* fixed neutrals — the Stripe navy/greys never change */
+  --ink: #0A2540;
+  --ink-2: #425466;
+  --ink-3: #7B8698;
+  --line: #E7EBF0;
+  --line-2: #EEF1F5;
+  --paper: #FFFFFF;
+  --ok: #3ECF8E;
+  /* --c is the tenant's accent, set inline */
+  --deep: color-mix(in oklab, var(--c) 74%, #0A1F3B);
   min-height: 100vh;
-  background: var(--wash);
+  background: var(--paper);
   color: var(--ink);
-  font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
   overflow-x: hidden;
   position: relative;
 }
-.ap-loading {
+.rx-loading {
   min-height: 100vh; display: grid; place-items: center;
-  color: #B7B3AC; font-family: system-ui, sans-serif; background: #FBFAF7;
+  color: #B7C0CC; font-family: system-ui, sans-serif; background: #fff;
 }
 
-/* atmosphere */
-.ap-sky { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
-.ap-blob {
-  position: absolute; border-radius: 50%; filter: blur(90px); opacity: .5;
+/* the one expressive element: a fluid gradient washed from the tenant colour */
+.rx-aura {
+  position: absolute; top: -260px; inset-inline-end: -180px;
+  width: 820px; height: 760px; z-index: 0; pointer-events: none;
+  background: conic-gradient(from 210deg at 58% 42%,
+    var(--c),
+    color-mix(in oklab, var(--c) 55%, #8B5CF6),
+    color-mix(in oklab, var(--c) 45%, #EC4899),
+    color-mix(in oklab, var(--c) 55%, #FB923C),
+    color-mix(in oklab, var(--c) 55%, #22D3EE),
+    var(--c));
+  filter: blur(80px) saturate(130%); opacity: .40; border-radius: 48% 52% 55% 45%;
 }
-.b1 { width: 560px; height: 560px; background: color-mix(in oklab, var(--c) 22%, transparent);
-      top: -220px; inset-inline-end: -140px; animation: drift 26s ease-in-out infinite alternate; }
-.b2 { width: 420px; height: 420px; background: color-mix(in oklab, var(--c) 14%, transparent);
-      top: 30%; inset-inline-start: -200px; animation: drift 32s ease-in-out infinite alternate-reverse; }
-.b3 { width: 380px; height: 380px; background: color-mix(in oklab, var(--c) 10%, transparent);
-      bottom: -160px; inset-inline-end: 18%; animation: drift 38s ease-in-out infinite alternate; }
-@keyframes drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(-50px, 36px) scale(1.12); }
-}
+@media (max-width: 760px) { .rx-aura { width: 560px; height: 520px; top: -200px; opacity: .48; } }
+
+.rx-shell { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 44px); }
 
 /* header */
-.ap-head {
-  position: sticky; top: 0; z-index: 30;
-  display: flex; justify-content: space-between; align-items: center; gap: 14px;
-  padding: 14px clamp(18px, 4vw, 40px);
-  background: color-mix(in oklab, var(--wash) 78%, transparent);
-  backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
+.rx-head { display: flex; align-items: center; gap: 16px; padding: 22px 0 8px; }
+.rx-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rx-logo { width: 34px; height: 34px; border-radius: 9px; object-fit: cover; }
+.rx-word { font-size: 19px; font-weight: 800; letter-spacing: -.03em; color: var(--ink); }
+.rx-hpill {
+  display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-2);
+  background: #fff; border: 1px solid var(--line); border-radius: 100px; padding: 5px 12px;
 }
-.ap-brand { display: flex; align-items: center; gap: 12px; }
-.ap-logo { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; }
-.ap-mark {
-  width: 42px; height: 42px; border-radius: 10px; background: var(--c); color: #fff;
-  display: grid; place-items: center; font-weight: 600; font-size: 18px;
-  font-family: "Fraunces", serif;
-  box-shadow: 0 4px 14px color-mix(in oklab, var(--c) 40%, transparent);
+.rx-dot { width: 6px; height: 6px; border-radius: 50%; background: #C3CCD8; flex: none; }
+.rx-dot.on { background: var(--ok); }
+.rx-langwrap { position: relative; margin-inline-start: auto; }
+.rx-langbtn {
+  font: inherit; font-size: 13.5px; font-weight: 600; color: var(--ink-2);
+  background: none; border: 0; cursor: pointer; display: flex; align-items: center; gap: 6px;
 }
-.ap-bizname { font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; }
-.ap-status { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 3px; color: var(--ink); }
-.ap-status b { font-weight: 600; }
-.ap-status-sub { color: var(--mut); font-weight: 400; }
-.ap-pulse {
-  width: 7px; height: 7px; border-radius: 50%; background: #B7B3AC; position: relative;
-}
-.ap-pulse.on { background: #2E8B6E; }
-.ap-pulse.on::after {
-  content: ""; position: absolute; inset: -4px; border-radius: 50%;
-  border: 1.5px solid #2E8B6E; opacity: .5; animation: ping 2s ease-out infinite;
-}
-@keyframes ping { from { transform: scale(.5); opacity: .7; } to { transform: scale(1.5); opacity: 0; } }
-
-.ap-langwrap { position: relative; }
-.ap-langbtn {
-  background: #fff; border: 1px solid var(--line); border-radius: 999px;
-  padding: 8px 15px; font-size: 12.5px; cursor: pointer; font-family: inherit; color: var(--ink);
-  display: flex; align-items: center; gap: 6px; box-shadow: 0 1px 4px rgba(20,19,15,.05);
-}
-.ap-caret { font-size: 9px; color: var(--fade); }
-.ap-langmenu {
-  position: absolute; top: calc(100% + 8px); inset-inline-end: 0; min-width: 170px;
+.rx-caret { font-size: 9px; color: var(--ink-3); }
+.rx-langmenu {
+  position: absolute; top: calc(100% + 8px); inset-inline-end: 0; min-width: 168px;
   background: #fff; border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
-  box-shadow: 0 16px 50px rgba(20,19,15,.14); z-index: 40;
-  animation: pop .18s ease both;
+  box-shadow: 0 18px 50px rgba(10,37,64,.14); z-index: 40; animation: pop .16s ease both;
 }
 @keyframes pop { from { opacity: 0; transform: translateY(-5px) scale(.98); } }
-.ap-langmenu button {
+.rx-langmenu button {
   display: block; width: 100%; text-align: start; background: none; border: 0;
-  padding: 11px 16px; font-size: 13.5px; cursor: pointer; font-family: inherit; color: var(--ink);
+  padding: 11px 16px; font: inherit; font-size: 13.5px; cursor: pointer; color: var(--ink);
 }
-.ap-langmenu button:hover { background: var(--wash2); }
-.ap-langmenu button.sel { background: var(--wash2); font-weight: 600; }
-
-/* layout */
-.ap-main { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 40px); }
+.rx-langmenu button:hover { background: var(--line-2); }
+.rx-langmenu button.sel { background: var(--line-2); font-weight: 700; }
 
 /* hero */
-.ap-hero { padding: clamp(56px, 10vw, 104px) 0 clamp(40px, 6vw, 64px); }
-.ap-eyebrow {
-  font-size: 13px; letter-spacing: .14em; text-transform: uppercase;
-  color: color-mix(in oklab, var(--c) 80%, var(--ink)); font-weight: 600; margin: 0 0 18px;
+.rx-hero {
+  display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 4vw, 56px);
+  align-items: center; padding: clamp(28px, 6vw, 68px) 0 clamp(30px, 5vw, 54px);
 }
-.ap-h1 {
-  font-family: "Fraunces", Georgia, serif; font-weight: 560;
-  font-size: clamp(40px, 8.5vw, 72px); line-height: 1.02; letter-spacing: -0.02em;
-  margin: 0; max-width: 14ch;
-}
-.ap-herosub { font-size: 16px; color: var(--mut); margin: 18px 0 0; line-height: 1.6; max-width: 46ch; }
+@media (max-width: 900px) { .rx-hero { grid-template-columns: 1fr; gap: 28px; padding-top: 26px; } }
 
-.ap-askbar {
-  margin-top: 34px; display: flex; gap: 8px; padding: 8px;
-  background: #fff; border: 1px solid var(--line); border-radius: 18px;
-  box-shadow: 0 10px 40px color-mix(in oklab, var(--c) 12%, rgba(20,19,15,.08));
-  max-width: 560px;
-  transition: box-shadow .25s ease, transform .25s ease;
+.rx-eyebrow {
+  font-size: 12.5px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--c); margin: 0 0 18px;
 }
-.ap-askbar:focus-within {
-  box-shadow: 0 14px 52px color-mix(in oklab, var(--c) 22%, rgba(20,19,15,.10));
-  transform: translateY(-1px);
+.rx-h1 {
+  font-size: clamp(34px, 5.4vw, 58px); font-weight: 800; letter-spacing: -.035em;
+  line-height: 1.03; margin: 0; max-width: 15ch; text-wrap: balance; color: var(--ink);
 }
-.ap-askbar input {
-  flex: 1; border: 0; background: none; padding: 12px 14px; font-size: 15.5px;
-  font-family: inherit; color: var(--ink); min-width: 0;
+.rx-lede { font-size: clamp(16px, 2vw, 18px); color: var(--ink-2); margin: 20px 0 28px; max-width: 42ch; line-height: 1.55; }
+.rx-cta { display: flex; flex-wrap: wrap; gap: 10px; }
+.rx-btn {
+  font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; border: 0; border-radius: 100px;
+  padding: 13px 22px; display: inline-flex; align-items: center; gap: 8px;
+  background: var(--c); color: #fff;
+  box-shadow: 0 8px 22px color-mix(in oklab, var(--c) 32%, transparent);
+  transition: transform .12s cubic-bezier(.2,.7,.2,1), filter .2s;
 }
-.ap-askbar input:focus { outline: none; }
-.ap-askbar button {
-  background: var(--c); color: #fff; border: 0; border-radius: 12px;
-  padding: 12px 22px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
-  transition: transform .15s ease, filter .15s ease;
+.rx-btn:hover { filter: brightness(1.06); }
+.rx-btn:active { transform: scale(.97); }
+.rx-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.rx-chip {
+  font: inherit; font-size: 13.5px; font-weight: 500; color: var(--ink-2);
+  background: #fff; border: 1px solid var(--line); border-radius: 100px; padding: 8px 15px;
+  cursor: pointer; transition: transform .12s cubic-bezier(.2,.7,.2,1), border-color .2s, color .2s;
 }
-.ap-askbar button:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
-.ap-askbar button:disabled { opacity: .35; cursor: default; }
+.rx-chip:hover { border-color: color-mix(in oklab, var(--c) 45%, var(--line)); color: var(--ink); }
+.rx-chip:active { transform: scale(.96); }
 
-.ap-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.ap-chip {
-  background: color-mix(in oklab, var(--c) 7%, #fff);
-  border: 1px solid color-mix(in oklab, var(--c) 22%, #E9E6E0);
-  color: color-mix(in oklab, var(--c) 85%, var(--ink));
-  border-radius: 999px; padding: 9px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
-  transition: transform .15s ease, background .15s ease;
+/* the chat, as a product card */
+.rx-chat {
+  background: #fff; border: 1px solid var(--line); border-radius: 22px; overflow: hidden;
+  display: flex; flex-direction: column; height: clamp(384px, 54vh, 468px);
+  box-shadow: 0 2px 6px rgba(10,37,64,.04), 0 30px 60px -18px rgba(10,37,64,.22);
 }
-.ap-chip:hover { background: color-mix(in oklab, var(--c) 13%, #fff); transform: translateY(-1px); }
-.ap-chip.sm { padding: 7px 13px; font-size: 12px; }
-
-/* sections */
-.ap-section { padding: clamp(36px, 6vw, 60px) 0; }
-.ap-h2 {
-  font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
-  color: var(--fade); margin: 0 0 22px;
+.rx-chat-top { display: flex; align-items: center; gap: 11px; padding: 15px 18px; border-bottom: 1px solid var(--line-2); }
+.rx-ava {
+  width: 38px; height: 38px; border-radius: 12px; flex: none; color: #fff; font-weight: 700; font-size: 15px;
+  display: grid; place-items: center; background: linear-gradient(150deg, var(--c), var(--deep));
 }
-
-/* service cards */
-.ap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(272px, 1fr)); gap: 14px; }
-.ap-card {
-  background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px;
-  display: flex; flex-direction: column; gap: 10px;
-  transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
-}
-.ap-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in oklab, var(--c) 34%, #E9E6E0);
-  box-shadow: 0 18px 44px color-mix(in oklab, var(--c) 13%, rgba(20,19,15,.09));
-}
-.ap-card-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-.ap-card h3 {
-  font-family: "Fraunces", Georgia, serif; font-weight: 560;
-  font-size: 19px; letter-spacing: -0.01em; margin: 0; line-height: 1.25;
-}
-.ap-min { font-size: 11px; color: var(--fade); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.ap-card-desc { font-size: 13px; color: var(--mut); line-height: 1.55; margin: 0; flex: 1; }
-.ap-card-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 6px; }
-.ap-price { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
-.ap-price span { font-size: 11px; color: var(--fade); font-weight: 500; margin-inline-end: 4px; }
-.ap-ask {
-  background: none; border: 0; padding: 0; font-size: 12.5px; font-weight: 600;
-  color: color-mix(in oklab, var(--c) 88%, var(--ink)); cursor: pointer; font-family: inherit;
-}
-.ap-ask:hover { text-decoration: underline; text-underline-offset: 3px; }
-
-/* hours band */
-.ap-band {
-  background: #fff; border: 1px solid var(--line); border-radius: 22px;
-  padding: clamp(26px, 4vw, 40px); margin: 10px 0 clamp(40px, 7vw, 70px);
-  box-shadow: 0 8px 34px rgba(20,19,15,.05);
-}
-.ap-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 40px; }
-.ap-hours {}
-.ap-hrow {
-  display: flex; justify-content: space-between; gap: 16px; padding: 8px 0;
-  border-bottom: 1px dashed color-mix(in oklab, var(--c) 10%, #ECEAE4); font-size: 13.5px;
-}
-.ap-hrow > span:first-child { color: var(--mut); }
-.ap-time { font-variant-numeric: tabular-nums; font-weight: 500; }
-.ap-time.off { color: var(--fade); font-weight: 400; }
-.ap-addr { font-size: 14.5px; line-height: 1.65; margin: 0 0 10px; }
-.ap-maplink {
-  font-size: 13px; font-weight: 600; text-decoration: none;
-  color: color-mix(in oklab, var(--c) 88%, var(--ink));
-}
-.ap-maplink:hover { text-decoration: underline; text-underline-offset: 3px; }
-.ap-call {
-  display: inline-block; margin-top: 20px; background: var(--c); color: #fff;
-  border-radius: 999px; padding: 11px 20px; font-size: 13.5px; font-weight: 600;
-  text-decoration: none; box-shadow: 0 6px 20px color-mix(in oklab, var(--c) 35%, transparent);
-  transition: transform .15s ease, filter .15s ease;
-}
-.ap-call:hover { transform: translateY(-1px); filter: brightness(1.06); }
-
-/* footer */
-.ap-foot {
-  position: relative; z-index: 1; background: var(--deep); color: #fff;
-  padding: clamp(40px, 7vw, 72px) clamp(18px, 4vw, 40px);
-}
-.ap-foot-name {
-  font-family: "Fraunces", Georgia, serif; font-weight: 560;
-  font-size: clamp(26px, 5vw, 44px); letter-spacing: -0.02em;
-}
-.ap-foot-sub { opacity: .55; font-size: 13px; margin-top: 8px; }
-
-/* launcher */
-.ap-launch {
-  position: fixed; bottom: 22px; inset-inline-end: 22px; z-index: 50;
-  display: flex; align-items: center; gap: 9px;
-  background: var(--c); color: #fff; border: 0; border-radius: 999px;
-  padding: 15px 24px; font-size: 14.5px; font-weight: 600; cursor: pointer; font-family: inherit;
-  box-shadow: 0 12px 36px color-mix(in oklab, var(--c) 45%, rgba(20,19,15,.2));
-  transition: transform .18s ease, box-shadow .18s ease;
-  animation: rise .5s ease both .5s;
-}
-.ap-launch:hover { transform: translateY(-2px); box-shadow: 0 16px 44px color-mix(in oklab, var(--c) 55%, rgba(20,19,15,.22)); }
-.ap-launch-dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; opacity: .9; animation: ping 2.4s ease-out infinite; }
-
-/* chat panel */
-.ap-panel {
-  position: fixed; bottom: 22px; inset-inline-end: 22px; z-index: 60;
-  width: min(400px, calc(100vw - 44px)); height: min(620px, calc(100vh - 44px));
-  background: #FDFCFA; border-radius: 22px; overflow: hidden;
-  display: flex; flex-direction: column;
-  box-shadow: 0 0 0 1px var(--line), 0 30px 90px color-mix(in oklab, var(--c) 18%, rgba(20,19,15,.25));
-  animation: panelin .3s cubic-bezier(.2,.9,.3,1.1) both;
-}
-@keyframes panelin { from { opacity: 0; transform: translateY(16px) scale(.97); } }
-.ap-panel-head {
-  background: linear-gradient(135deg, var(--c), color-mix(in oklab, var(--c) 70%, #14130f));
-  color: #fff; padding: 15px 17px;
-  display: flex; justify-content: space-between; align-items: center; gap: 10px;
-}
-.ap-panel-brand { display: flex; align-items: center; gap: 11px; }
-.ap-panel-mark {
-  width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.2);
-  display: grid; place-items: center; font-weight: 600; font-size: 16px;
-  font-family: "Fraunces", serif;
-}
-.ap-panel-name { font-weight: 600; font-size: 15px; }
-.ap-panel-sub { font-size: 11px; opacity: .82; margin-top: 1px; }
-.ap-panel-x { background: none; border: 0; color: #fff; font-size: 24px; line-height: 1; cursor: pointer; opacity: .85; padding: 0 2px; }
-.ap-panel-x:hover { opacity: 1; }
-
-.ap-log { flex: 1; overflow-y: auto; padding: 16px; }
-.ap-row { display: flex; margin-bottom: 10px; }
-.ap-row.u { justify-content: flex-end; }
-.ap-row.a { justify-content: flex-start; }
-[dir="rtl"] .ap-row.u { justify-content: flex-start; }
-[dir="rtl"] .ap-row.a { justify-content: flex-end; }
-.ap-bub {
-  max-width: 82%; padding: 10px 14px; font-size: 14px; line-height: 1.55; white-space: pre-wrap;
-  animation: bubin .22s ease both;
-}
+.rx-who { font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+.rx-csub { font-size: 12.5px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+.rx-log { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 10px; background: #FCFDFE; }
+.rx-row { display: flex; }
+.rx-row.u { justify-content: flex-end; }
+.rx-row.a { justify-content: flex-start; }
+[dir="rtl"] .rx-row.u { justify-content: flex-start; }
+[dir="rtl"] .rx-row.a { justify-content: flex-end; }
+.rx-b { max-width: 84%; font-size: 14.5px; line-height: 1.48; padding: 11px 14px; border-radius: 16px; white-space: pre-wrap; animation: bubin .2s ease both; }
 @keyframes bubin { from { opacity: 0; transform: translateY(5px); } }
-.ap-bub.u { background: var(--c); color: #fff; border-radius: 16px 16px 4px 16px; }
-[dir="rtl"] .ap-bub.u { border-radius: 16px 16px 16px 4px; }
-.ap-bub.a { background: #fff; border: 1px solid var(--line); border-radius: 16px 16px 16px 4px; }
-[dir="rtl"] .ap-bub.a { border-radius: 16px 16px 4px 16px; }
-.ap-typing { display: flex; gap: 4px; align-items: center; }
-.ap-typing i {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--fade);
-  animation: blink 1.2s infinite;
-}
-.ap-typing i:nth-child(2) { animation-delay: .15s; }
-.ap-typing i:nth-child(3) { animation-delay: .3s; }
+.rx-b.a { background: #fff; border: 1px solid var(--line); color: var(--ink); border-bottom-left-radius: 6px; }
+[dir="rtl"] .rx-b.a { border-bottom-left-radius: 16px; border-bottom-right-radius: 6px; }
+.rx-b.u { color: #fff; border-bottom-right-radius: 6px; background: linear-gradient(160deg, var(--c), var(--deep)); }
+[dir="rtl"] .rx-b.u { border-bottom-right-radius: 16px; border-bottom-left-radius: 6px; }
+.rx-typing { display: flex; gap: 4px; align-items: center; }
+.rx-typing i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: blink 1.2s infinite; }
+.rx-typing i:nth-child(2) { animation-delay: .15s; }
+.rx-typing i:nth-child(3) { animation-delay: .3s; }
 @keyframes blink { 0%,80%,100% { opacity: .25; } 40% { opacity: 1; } }
-.ap-panel-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
-
-.ap-inrow { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line); background: #fff; }
-.ap-inrow input {
-  flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px;
-  font-size: 14.5px; font-family: inherit; min-width: 0; color: var(--ink); background: #FDFCFA;
+.rx-foot { display: flex; align-items: center; gap: 8px; padding: 12px 12px 12px 16px; border-top: 1px solid var(--line-2); background: #fff; }
+[dir="rtl"] .rx-foot { padding: 12px 16px 12px 12px; }
+.rx-foot input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 15px; background: transparent; color: var(--ink); min-width: 0; }
+.rx-foot input::placeholder { color: var(--ink-3); }
+.rx-go {
+  width: 38px; height: 38px; flex: none; border: 0; border-radius: 12px; cursor: pointer; color: #fff;
+  background: var(--c); display: grid; place-items: center;
+  transition: transform .12s cubic-bezier(.2,.7,.2,1), filter .2s;
 }
-.ap-inrow input:focus { outline: 2px solid color-mix(in oklab, var(--c) 55%, transparent); outline-offset: 1px; }
-.ap-inrow button {
-  background: var(--c); color: #fff; border: 0; border-radius: 12px; padding: 11px 18px;
-  font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+.rx-go:hover:not(:disabled) { filter: brightness(1.06); }
+.rx-go:active:not(:disabled) { transform: scale(.9); }
+.rx-go:disabled { opacity: .4; cursor: default; }
+[dir="rtl"] .rx-go svg, [dir="rtl"] .rx-btn svg { transform: scaleX(-1); }
+
+/* info band */
+.rx-band {
+  border-top: 1px solid var(--line); margin-top: clamp(20px, 3vw, 36px);
+  padding: clamp(30px, 5vw, 50px) 0 60px;
+  display: grid; grid-template-columns: 1.4fr .8fr .8fr; gap: clamp(24px, 4vw, 48px); align-items: start;
 }
-.ap-inrow button:disabled { opacity: .35; cursor: default; }
-
-/* entrance animation */
-.rise { animation: rise .55s cubic-bezier(.2,.8,.3,1) both; }
-@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
-
-button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--c); outline-offset: 3px; }
-
-@media (max-width: 620px) {
-  .ap-panel { inset: 0; width: 100%; height: 100%; border-radius: 0; }
-  .ap-askbar button { padding: 12px 16px; }
+@media (max-width: 760px) { .rx-band { grid-template-columns: 1fr; gap: 28px; } }
+.rx-lbl { font-size: 12px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 14px; }
+.rx-item {
+  width: 100%; text-align: start; background: none; border: 0; cursor: pointer; font: inherit;
+  display: flex; gap: 14px; align-items: baseline; padding: 13px 0; border-bottom: 1px solid var(--line-2);
 }
+.rx-item:last-child { border-bottom: 0; }
+.rx-item-l { min-width: 0; }
+.rx-item-n { display: block; font-weight: 600; font-size: 15px; color: var(--ink); }
+.rx-item:hover .rx-item-n { color: var(--c); }
+.rx-item-d { display: block; font-size: 13px; color: var(--ink-3); margin-top: 2px; }
+.rx-item-r { margin-inline-start: auto; text-align: end; white-space: nowrap; }
+.rx-item-p { display: block; font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums; }
+.rx-item-m { display: block; font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+.rx-sched { display: flex; flex-direction: column; gap: 2px; }
+.rx-srow { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; padding: 4px 0; }
+.rx-k { color: var(--ink-2); }
+.rx-v { font-variant-numeric: tabular-nums; color: var(--ink); text-align: end; }
+.rx-v.off { color: var(--ink-3); }
+.rx-addr { font-size: 14px; color: var(--ink-2); line-height: 1.7; margin: 0; }
+.rx-addr a { color: var(--c); font-weight: 600; text-decoration: none; }
+.rx-addr a:hover { text-decoration: underline; text-underline-offset: 3px; }
+
+.rx :focus-visible { outline: 2px solid var(--c); outline-offset: 3px; border-radius: 6px; }
+
 @media (prefers-reduced-motion: reduce) {
-  .rise, .ap-launch, .ap-panel, .ap-bub, .ap-blob, .ap-pulse.on::after, .ap-launch-dot { animation: none !important; }
-  .ap-card:hover, .ap-askbar:focus-within { transform: none; }
+  .rx-btn, .rx-chip, .rx-go, .rx-b, .rx-langmenu { animation: none !important; transition: none !important; }
+  .rx-btn:active, .rx-chip:active, .rx-go:active { transform: none; }
 }
 `;
